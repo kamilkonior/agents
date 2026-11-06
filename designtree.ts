@@ -750,6 +750,38 @@ const Graph = (() => {
         { kind: "question", id: "Q1", text: "q1", answer: { id: "Q1a", text: "a" }, children: [] },
       ]);
     });
+
+    test("tree nests the settled path, with promoted follow-ups in place", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+          { type: "select-option", origin: "Q1a" },
+          { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1a" },
+          { type: "add-question", id: "Q2", text: "f1", origin: "F1" },
+          { type: "add-option", id: "Q2a", text: "x", origin: "Q2" },
+          { type: "promote-follow-up", origin: "F1" },
+          { type: "select-option", origin: "Q2a" },
+        ]),
+      );
+
+      // when
+      const items = tree(graph);
+
+      // then
+      assert.deepEqual(items, [
+        {
+          kind: "question",
+          id: "Q1",
+          text: "q1",
+          answer: { id: "Q1a", text: "a" },
+          children: [
+            { kind: "question", id: "Q2", text: "f1", answer: { id: "Q2a", text: "x" }, children: [] },
+          ],
+        },
+      ]);
+    });
   }
 
   return { build, tree, frontier, tests };
