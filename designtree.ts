@@ -180,7 +180,19 @@ const AddOption = (() => {
     return addOption(log, config.text, config.origin);
   }
 
-  function tests() {}
+  function tests() {
+    test("option without a question throws and appends nothing", () => {
+      // given
+      const log = Log.memoryLog();
+
+      // when
+      const act = () => addOption(log, "a", "Q1");
+
+      // then
+      assert.throws(act, DesignTreeError);
+      assert.deepEqual(log.read(), []);
+    });
+  }
 
   return { options, run, tests };
 })();
