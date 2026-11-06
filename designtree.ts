@@ -1071,12 +1071,15 @@ const Next = (() => {
 
       // then
       assert.deepEqual(question, {
-        id: "Q1",
-        text: "q1",
-        options: [
-          { id: "Q1a", text: "a" },
-          { id: "Q1b", text: "b" },
-        ],
+        kind: "question",
+        question: {
+          id: "Q1",
+          text: "q1",
+          options: [
+            { id: "Q1a", text: "a" },
+            { id: "Q1b", text: "b" },
+          ],
+        },
       });
     });
   }
