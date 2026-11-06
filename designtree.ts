@@ -133,7 +133,7 @@ const Log = (() => {
       t.after(() => rmSync(dir, { recursive: true }));
       const path = join(dir, "designtree.jsonl");
       const question: Event = { type: "add-question", id: "Q1", text: "q" };
-      const option: Event = { type: "add-option", id: "O1", text: "a", origin: "Q1" };
+      const option: Event = { type: "add-option", id: "Q1a", text: "a", origin: "Q1" };
 
       // when
       const log = fileLog(path);
