@@ -982,6 +982,22 @@ const AddFollowUp = (() => {
       assert.throws(act, DesignTreeError);
       assert.deepEqual(log.read(), []);
     });
+
+    test("follow-up under a follow-up throws and appends nothing", () => {
+      // given
+      const events: Event[] = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const act = () => add(log, "f2", "F1");
+
+      // then
+      assert.throws(act, DesignTreeError);
+      assert.deepEqual(log.read(), events);
+    });
   }
 
   return { options, open, run, tests };
