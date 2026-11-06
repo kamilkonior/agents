@@ -184,6 +184,79 @@ const Log = (() => {
   return { fileLog, memoryLog, find, has, nextId, transaction, tests };
 })();
 
+const Graph = (() => {
+  function questionNode(nodes: Graph["nodes"], id: string): QuestionNode {
+    const node = nodes.get(id);
+    if (node?.kind !== "question") throw new Error(`log has no question ${id}`);
+
+    return node;
+  }
+
+  function optionNode(nodes: Graph["nodes"], id: string): OptionNode {
+    const node = nodes.get(id);
+    if (node?.kind !== "option") throw new Error(`log has no option ${id}`);
+
+    return node;
+  }
+
+  function build(log: Log): Graph {
+    const nodes: Graph["nodes"] = new Map();
+    const roots: QuestionNode[] = [];
+
+    for (const event of log.read()) {
+      switch (event.type) {
+        case "add-question": {
+          const node: QuestionNode = {
+            kind: "question",
+            id: event.id,
+            text: event.text,
+            options: [],
+            children: [],
+          };
+          nodes.set(node.id, node);
+
+          if (event.origin === undefined) {
+            roots.push(node);
+            break;
+          }
+
+          const parent = nodes.get(event.origin);
+          if (parent === undefined) throw new Error(`log has no origin ${event.origin}`);
+          node.parent = parent;
+          parent.children.push(node);
+          break;
+        }
+
+        case "add-option": {
+          const question = questionNode(nodes, event.origin);
+          const node: OptionNode = {
+            kind: "option",
+            id: event.id,
+            text: event.text,
+            question,
+            children: [],
+          };
+          nodes.set(node.id, node);
+          question.options.push(node);
+          break;
+        }
+
+        case "select-option": {
+          const option = optionNode(nodes, event.origin);
+          option.question.answer = option;
+          break;
+        }
+      }
+    }
+
+    return { nodes, roots };
+  }
+
+  function tests() {}
+
+  return { build, tests };
+})();
+
 const AddQuestion = (() => {
   const options = {
     text: { type: "string" },
@@ -707,6 +780,7 @@ const Cli = (() => {
 
   function runTests() {
     Log.tests();
+    Graph.tests();
     AddQuestion.tests();
     AddOption.tests();
     SelectOption.tests();
