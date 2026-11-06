@@ -559,6 +559,25 @@ const Graph = (() => {
       // then
       assert.deepEqual(open, []);
     });
+
+    test("a follow-up under an unselected option is off the frontier", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+          { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+          { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1b" },
+          { type: "select-option", origin: "Q1a" },
+        ]),
+      );
+
+      // when
+      const open = frontier(graph);
+
+      // then
+      assert.deepEqual(open, []);
+    });
   }
 
   return { build, frontier, tests };
