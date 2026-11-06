@@ -81,6 +81,15 @@ function readModeConfig<T extends ParseArgsOptionsConfig>(modeOptions: T) {
   }
 }
 
+function addQuestion(log: Log, text: string, origin?: string): string {
+  if (origin !== undefined && !exists(log, origin)) {
+    throw new DesignTreeError(`origin not found: ${origin}`);
+  }
+  const id = nextQuestionId(log);
+  log.append({ type: "add-question", id, text, origin });
+  return id;
+}
+
 function runTests() {}
 
 function main() {
@@ -98,12 +107,7 @@ function runOp(log: Log, op: string) {
     case "add-question": {
       const config = readModeConfig(addQuestionOptions);
       if (!config.text) throw new DesignTreeError("add-question requires --text");
-      if (config.origin !== undefined && !exists(log, config.origin)) {
-        throw new DesignTreeError(`origin not found: ${config.origin}`);
-      }
-      const id = nextQuestionId(log);
-      log.append({ type: "add-question", id, text: config.text, origin: config.origin });
-      console.log(id);
+      console.log(addQuestion(log, config.text, config.origin));
       break;
     }
     default:
