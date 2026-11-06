@@ -99,7 +99,7 @@ const Log = (() => {
     test("transaction flushes only the new events and returns the result", () => {
       // given
       const question: Event = { type: "add-question", id: "Q1", text: "q" };
-      const option: Event = { type: "add-option", id: "O1", text: "a", origin: "Q1" };
+      const option: Event = { type: "add-option", id: "Q1a", text: "a", origin: "Q1" };
       const log = memoryLog([question]);
 
       // when
