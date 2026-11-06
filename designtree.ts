@@ -558,7 +558,7 @@ const Graph = (() => {
           { type: "select-option", origin: "Q1a" },
           { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
           { type: "add-follow-up", id: "F2", text: "f2", origin: "Q1" },
-          { type: "promote-follow-up", origin: "F1", question: "Q2" },
+          { type: "promote-follow-up", origin: "F1" },
           { type: "dismiss-follow-up", origin: "F2" },
         ]),
       );
