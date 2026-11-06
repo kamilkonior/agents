@@ -527,6 +527,25 @@ const SelectOption = (() => {
       assert.throws(act, DesignTreeError);
       assert.deepEqual(log.read(), [question]);
     });
+
+    test("selecting an option records it and returns the question with the option", () => {
+      // given
+      const events: Event[] = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const selection = select(log, "Q1a");
+
+      // then
+      assert.deepEqual(selection, {
+        question: { id: "Q1", text: "q" },
+        option: { id: "Q1a", text: "a" },
+      });
+      assert.deepEqual(log.read(), [...events, { type: "select-option", origin: "Q1a" }]);
+    });
   }
 
   return { options, run, tests };
