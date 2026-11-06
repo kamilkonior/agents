@@ -25,8 +25,9 @@ type QuestionNode = {
   kind: "question";
   id: string;
   text: string;
-  parent?: OptionNode;
+  parent?: OptionNode | QuestionNode;
   options: OptionNode[];
+  children: QuestionNode[];
   answer?: OptionNode;
 };
 
