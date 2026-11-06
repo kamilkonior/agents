@@ -287,6 +287,24 @@ const Graph = (() => {
         ["Q1", "Q2"],
       );
     });
+
+    test("question under an option links both ways", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+      ]);
+
+      // when
+      const graph = build(log);
+
+      // then
+      const option = optionNode(graph.nodes, "Q1a");
+      const question = questionNode(graph.nodes, "Q2");
+      assert.equal(question.parent, option);
+      assert.deepEqual(option.children, [question]);
+    });
   }
 
   return { build, tests };
