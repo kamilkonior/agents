@@ -305,6 +305,25 @@ const Graph = (() => {
       assert.equal(question.parent, option);
       assert.deepEqual(option.children, [question]);
     });
+
+    test("question under a question links both ways", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1" },
+      ]);
+
+      // when
+      const graph = build(log);
+
+      // then
+      const parent = questionNode(graph.nodes, "Q1");
+      const child = questionNode(graph.nodes, "Q2");
+      assert.equal(child.parent, parent);
+      assert.deepEqual(parent.children, [child]);
+      assert.deepEqual(optionNode(graph.nodes, "Q1a").children, []);
+    });
   }
 
   return { build, tests };
