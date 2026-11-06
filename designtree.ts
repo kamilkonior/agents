@@ -1127,7 +1127,23 @@ const DismissFollowUp = (() => {
     return { id: followUp.id, text: followUp.text };
   }
 
-  function tests() {}
+  function tests() {
+    test("dismissing a follow-up records the dismissal", () => {
+      // given
+      const events: Event[] = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-follow-up", id: "F1", text: "f", origin: "Q1" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const followUp = run(log, { origin: "F1" });
+
+      // then
+      assert.deepEqual(followUp, { id: "F1", text: "f" });
+      assert.deepEqual(log.read(), [...events, { type: "dismiss-follow-up", origin: "F1" }]);
+    });
+  }
 
   return { options, run, tests };
 })();
