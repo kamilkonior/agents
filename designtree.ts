@@ -153,6 +153,47 @@ const AddQuestion = (() => {
   return { options, run, tests };
 })();
 
+const AddOption = (() => {
+  const options = {
+    text: { type: "string" },
+    origin: { type: "string" },
+  } as const;
+
+  function nextOptionId(log: Log): string {
+    const numbers = log
+      .read()
+      .filter((event) => event.type === "add-option")
+      .map((event) => Number(event.id.slice(1)));
+
+    return `O${Math.max(0, ...numbers) + 1}`;
+  }
+
+  function addOption(log: Log, text: string, origin: string): string {
+    const question = Log.find(log, origin);
+    if (question === undefined) throw new DesignTreeError(`origin not found: ${origin}`);
+    if (question.type !== "add-question") {
+      throw new DesignTreeError(`origin is not a question: ${origin}`);
+    }
+
+    const id = nextOptionId(log);
+
+    log.append({ type: "add-option", id, text, origin });
+
+    return id;
+  }
+
+  function run(log: Log, config: { text?: string; origin?: string }): string {
+    if (!config.text) throw new DesignTreeError("add-option requires --text");
+    if (!config.origin) throw new DesignTreeError("add-option requires --origin");
+
+    return addOption(log, config.text, config.origin);
+  }
+
+  function tests() {}
+
+  return { options, run, tests };
+})();
+
 const Cli = (() => {
   const cliOptions = {
     op: { type: "string" },
@@ -188,6 +229,7 @@ const Cli = (() => {
 
   function runTests() {
     AddQuestion.tests();
+    AddOption.tests();
   }
 
   function main() {
@@ -207,6 +249,12 @@ const Cli = (() => {
       case "add-question": {
         const config = readModeConfig(AddQuestion.options);
         console.log(AddQuestion.run(log, config));
+        break;
+      }
+
+      case "add-option": {
+        const config = readModeConfig(AddOption.options);
+        console.log(AddOption.run(log, config));
         break;
       }
       default:
