@@ -1176,7 +1176,7 @@ const PromoteFollowUp = (() => {
       assert.deepEqual(log.read(), events);
     });
 
-    test("promoting a follow-up creates its question where it hung", () => {
+    test("promoting a follow-up creates its question under it", () => {
       // given
       const events: Event[] = [
         { type: "add-question", id: "Q1", text: "q" },
@@ -1199,10 +1199,10 @@ const PromoteFollowUp = (() => {
       });
       assert.deepEqual(log.read(), [
         ...events,
-        { type: "add-question", id: "Q2", text: "f", origin: "Q1a" },
+        { type: "add-question", id: "Q2", text: "f", origin: "F1" },
         { type: "add-option", id: "Q2a", text: "x", origin: "Q2" },
         { type: "add-option", id: "Q2b", text: "y", origin: "Q2" },
-        { type: "promote-follow-up", origin: "F1", question: "Q2" },
+        { type: "promote-follow-up", origin: "F1" },
       ]);
     });
   }
