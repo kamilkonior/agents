@@ -1017,6 +1017,21 @@ const AddFollowUp = (() => {
         { type: "add-follow-up", id: "F1", text: "f", origin: "Q1a" },
       ]);
     });
+
+    test("a dismissed follow-up is not open", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-follow-up", id: "F1", text: "f", origin: "Q1" },
+        { type: "dismiss-follow-up", origin: "F1" },
+      ]);
+
+      // when
+      const act = () => open(log, "F1");
+
+      // then
+      assert.throws(act, DesignTreeError);
+    });
   }
 
   return { options, open, run, tests };
