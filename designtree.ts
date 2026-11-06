@@ -442,6 +442,30 @@ const Graph = (() => {
         ["Q1", "Q2"],
       );
     });
+
+    test("changing the answer swaps which branch is on the frontier", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+          { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+          { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+          { type: "add-question", id: "Q3", text: "q3", origin: "Q1b" },
+          { type: "select-option", origin: "Q1a" },
+          { type: "select-option", origin: "Q1b" },
+        ]),
+      );
+
+      // when
+      const open = frontier(graph);
+
+      // then
+      assert.deepEqual(
+        open.map((question) => question.id),
+        ["Q3"],
+      );
+    });
   }
 
   return { build, frontier, tests };
