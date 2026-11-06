@@ -1216,7 +1216,7 @@ const Xml = (() => {
       const data: QuestionData = { id: "Q1", text: "q", options: [{ id: "Q1a", text: "a" }] };
 
       // when
-      const xml = next(data);
+      const xml = next({ kind: "question", question: data });
 
       // then
       const inner = question(data)
