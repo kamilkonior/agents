@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
-import { appendFileSync, existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { parseArgs, type ParseArgsOptionsConfig } from "node:util";
 
@@ -88,6 +88,7 @@ const Log = (() => {
       },
 
       append(event) {
+        mkdirSync(dirname(path), { recursive: true });
         appendFileSync(path, JSON.stringify(event) + "\n");
       },
     };
@@ -1836,32 +1837,44 @@ const Cli = (() => {
     op: { type: "string" },
     query: { type: "string" },
     test: { type: "boolean" },
+    log: { type: "string" },
   } as const;
 
   const testOptions = {} as const;
 
-  type Mode = { kind: "test" } | { kind: "op"; op: string } | { kind: "query"; query: string };
+  type Mode =
+    | { kind: "test" }
+    | { kind: "op"; op: string; log: string }
+    | { kind: "query"; query: string; log: string };
 
   function readMode(): Mode {
-    const { op, query, test } = parseArgs({ options: cliOptions, strict: false }).values;
+    const { op, query, test, log } = parseArgs({ options: cliOptions, strict: false }).values;
 
     const given = [op, query, test].filter((value) => value !== undefined);
     if (given.length > 1) {
       throw new DesignTreeError("--op, --query and --test are mutually exclusive");
     }
 
-    if (test !== undefined) return { kind: "test" };
+    if (test !== undefined) {
+      if (log !== undefined) throw new DesignTreeError("--test does not take --log");
 
-    if (query !== undefined) {
-      if (typeof query !== "string") throw new DesignTreeError("--query requires a value");
-
-      return { kind: "query", query };
+      return { kind: "test" };
     }
 
-    if (op === undefined) throw new DesignTreeError("missing --op, --query or --test");
-    if (typeof op !== "string") throw new DesignTreeError("--op requires a value");
+    if (op === undefined && query === undefined) {
+      throw new DesignTreeError("missing --op, --query or --test");
+    }
+    if (op !== undefined && typeof op !== "string") throw new DesignTreeError("--op requires a value");
+    if (query !== undefined && typeof query !== "string") {
+      throw new DesignTreeError("--query requires a value");
+    }
 
-    return { kind: "op", op };
+    if (log === undefined) throw new DesignTreeError("missing --log");
+    if (typeof log !== "string") throw new DesignTreeError("--log requires a value");
+
+    if (typeof query === "string") return { kind: "query", query, log };
+
+    return { kind: "op", op: op as string, log };
   }
 
   function readModeConfig<T extends ParseArgsOptionsConfig>(modeOptions: T) {
@@ -1895,7 +1908,7 @@ const Cli = (() => {
       return;
     }
 
-    const log = Log.fileLog("designtree.jsonl");
+    const log = Log.fileLog(mode.log);
 
     if (mode.kind === "query") {
       runQuery(log, mode.query);
