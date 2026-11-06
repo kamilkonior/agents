@@ -72,6 +72,7 @@ const AddQuestion = (() => {
   const options = {
     text: { type: "string" },
     origin: { type: "string" },
+    option: { type: "string", multiple: true },
   } as const;
 
   function addQuestion(log: Log, text: string, origin?: string): string {
@@ -88,10 +89,22 @@ const AddQuestion = (() => {
     return id;
   }
 
-  function run(log: Log, config: { text?: string; origin?: string }): string {
+  function run(
+    log: Log,
+    config: { text?: string; origin?: string; option?: string[] },
+  ): QuestionData {
     if (!config.text) throw new DesignTreeError("add-question requires --text");
+    if (config.option?.some((text) => !text)) {
+      throw new DesignTreeError("add-question --option requires a text");
+    }
 
-    return addQuestion(log, config.text, config.origin);
+    const id = addQuestion(log, config.text, config.origin);
+    const options = (config.option ?? []).map((text) => ({
+      id: AddOption.add(log, text, id),
+      text,
+    }));
+
+    return { id, text: config.text, options };
   }
 
   function tests() {
@@ -352,7 +365,7 @@ const Cli = (() => {
     switch (op) {
       case "add-question": {
         const config = readModeConfig(AddQuestion.options);
-        console.log(AddQuestion.run(log, config));
+        console.log(Xml.question(AddQuestion.run(log, config)));
         break;
       }
 
