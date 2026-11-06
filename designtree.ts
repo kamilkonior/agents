@@ -858,6 +858,25 @@ const SelectOption = (() => {
   return { options, run, tests };
 })();
 
+const Next = (() => {
+  const options = {} as const;
+
+  function run(log: Log): QuestionData | undefined {
+    const question = Graph.frontier(Graph.build(log))[0];
+    if (question === undefined) return undefined;
+
+    return {
+      id: question.id,
+      text: question.text,
+      options: question.options.map((option) => ({ id: option.id, text: option.text })),
+    };
+  }
+
+  function tests() {}
+
+  return { options, run, tests };
+})();
+
 const Xml = (() => {
   function escapeXml(text: string): string {
     return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
