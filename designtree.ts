@@ -332,6 +332,39 @@ const Graph = (() => {
     return { nodes, roots, rootFollowUps };
   }
 
+  function tree(graph: Graph): TreeItem[] {
+    function question(node: QuestionNode): TreeItem {
+      const children: TreeItem[] = [];
+      if (node.answer !== undefined) {
+        children.push(...node.answer.children.map(question), ...followUps(node.answer));
+      }
+      children.push(...node.children.map(question), ...followUps(node));
+
+      if (node.answer === undefined) {
+        const options = node.options.map((option) => ({ id: option.id, text: option.text }));
+
+        return { kind: "open-question", id: node.id, text: node.text, options, children };
+      }
+
+      const answer = { id: node.answer.id, text: node.answer.text };
+
+      return { kind: "question", id: node.id, text: node.text, answer, children };
+    }
+
+    function followUps(node: QuestionNode | OptionNode | FollowUpNode): TreeItem[] {
+      return node.followUps.flatMap(followUp);
+    }
+
+    function followUp(node: FollowUpNode): TreeItem[] {
+      if (node.status === "open") return [{ kind: "follow-up", id: node.id, text: node.text }];
+      if (node.status === "dismissed") return [];
+
+      return [...node.children.map(question), ...followUps(node)];
+    }
+
+    return [...graph.roots.map(question), ...graph.rootFollowUps.flatMap(followUp)];
+  }
+
   function frontier(graph: Graph): (QuestionNode | FollowUpNode)[] {
     const open: (QuestionNode | FollowUpNode)[] = [];
 
@@ -717,7 +750,7 @@ const Graph = (() => {
     });
   }
 
-  return { build, frontier, tests };
+  return { build, tree, frontier, tests };
 })();
 
 const AddQuestion = (() => {
