@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import { appendFileSync, existsSync, readFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 import { parseArgs, type ParseArgsOptionsConfig } from "node:util";
 
@@ -109,6 +111,20 @@ const Log = (() => {
       // then
       assert.equal(result, "done");
       assert.deepEqual(log.read(), [question, option]);
+    });
+
+    test("file log without a file reads as empty", (t) => {
+      // given
+      const dir = mkdtempSync(join(tmpdir(), "designtree-"));
+      t.after(() => rmSync(dir, { recursive: true }));
+      const path = join(dir, "designtree.jsonl");
+
+      // when
+      const events = fileLog(path).read();
+
+      // then
+      assert.deepEqual(events, []);
+      assert.equal(existsSync(path), false);
     });
   }
 
