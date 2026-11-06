@@ -1081,11 +1081,12 @@ const AddFollowUp = (() => {
       assert.deepEqual(log.read(), []);
     });
 
-    test("follow-up under a follow-up throws and appends nothing", () => {
+    test("follow-up under a dismissed follow-up throws and appends nothing", () => {
       // given
       const events: Event[] = [
         { type: "add-question", id: "Q1", text: "q" },
         { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
+        { type: "dismiss-follow-up", origin: "F1" },
       ];
       const log = Log.memoryLog([...events]);
 
