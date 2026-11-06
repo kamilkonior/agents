@@ -274,6 +274,30 @@ const AddOption = (() => {
   return { options, add, run, tests };
 })();
 
+const Xml = (() => {
+  function escapeXml(text: string): string {
+    return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+  }
+
+  function option(data: OptionData): string {
+    return `<option><id>${data.id}</id><text>${escapeXml(data.text)}</text></option>`;
+  }
+
+  function question(data: QuestionData): string {
+    const options = data.options.map((each) => `    ${option(each)}\n`).join("");
+
+    return [
+      "<question>",
+      `  <id>${data.id}</id>`,
+      `  <text>${escapeXml(data.text)}</text>`,
+      data.options.length === 0 ? "  <options></options>" : `  <options>\n${options}  </options>`,
+      "</question>",
+    ].join("\n");
+  }
+
+  return { option, question };
+})();
+
 const Cli = (() => {
   const cliOptions = {
     op: { type: "string" },
