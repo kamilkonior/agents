@@ -1429,6 +1429,17 @@ const Xml = (() => {
         .map((line) => `  ${line}`);
       assert.deepEqual(xml.split("\n"), ["<next>", ...inner, "</next>"]);
     });
+
+    test("follow-up text is escaped", () => {
+      // given
+      const data: FollowUpData = { id: "F1", text: "a < b > c & d" };
+
+      // when
+      const xml = followUp(data);
+
+      // then
+      assert.equal(xml, "<follow-up><id>F1</id><text>a &lt; b &gt; c &amp; d</text></follow-up>");
+    });
   }
 
   return { option, question, selection, followUp, next, tests };
