@@ -126,6 +126,24 @@ const Log = (() => {
       assert.deepEqual(events, []);
       assert.equal(existsSync(path), false);
     });
+
+    test("file log reads back what it appended", (t) => {
+      // given
+      const dir = mkdtempSync(join(tmpdir(), "designtree-"));
+      t.after(() => rmSync(dir, { recursive: true }));
+      const path = join(dir, "designtree.jsonl");
+      const question: Event = { type: "add-question", id: "Q1", text: "q" };
+      const option: Event = { type: "add-option", id: "O1", text: "a", origin: "Q1" };
+
+      // when
+      const log = fileLog(path);
+      log.append(question);
+      log.append(option);
+
+      // then
+      assert.deepEqual(fileLog(path).read(), [question, option]);
+      assert.equal(readFileSync(path, "utf8").split("\n").filter((line) => line !== "").length, 2);
+    });
   }
 
   return { fileLog, memoryLog, find, has, nextId, transaction, tests };
