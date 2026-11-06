@@ -252,6 +252,21 @@ const Graph = (() => {
     return { nodes, roots };
   }
 
+  function frontier(graph: Graph): QuestionNode[] {
+    const open: QuestionNode[] = [];
+
+    function walk(question: QuestionNode) {
+      if (question.answer === undefined) open.push(question);
+      else question.answer.children.forEach(walk);
+
+      question.children.forEach(walk);
+    }
+
+    graph.roots.forEach(walk);
+
+    return open;
+  }
+
   function tests() {
     test("the latest selection is the question's answer", () => {
       // given
@@ -346,7 +361,7 @@ const Graph = (() => {
     });
   }
 
-  return { build, tests };
+  return { build, frontier, tests };
 })();
 
 const AddQuestion = (() => {
