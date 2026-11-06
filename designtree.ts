@@ -375,12 +375,12 @@ const AddOption = (() => {
       // given
       const events: Event[] = [
         { type: "add-question", id: "Q1", text: "q" },
-        { type: "add-option", id: "O1", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
       ];
       const log = Log.memoryLog([...events]);
 
       // when
-      const act = () => add(log, "b", "O1");
+      const act = () => add(log, "b", "Q1a");
 
       // then
       assert.throws(act, DesignTreeError);
