@@ -365,37 +365,16 @@ const Graph = (() => {
     return [...graph.roots.map(question), ...graph.rootFollowUps.flatMap(followUp)];
   }
 
-  function frontier(graph: Graph): (QuestionNode | FollowUpNode)[] {
-    const open: (QuestionNode | FollowUpNode)[] = [];
+  function frontier(graph: Graph): Exclude<TreeItem, { kind: "question" }>[] {
+    function open(item: TreeItem): Exclude<TreeItem, { kind: "question" }>[] {
+      if (item.kind === "follow-up") return [item];
 
-    function backtrack(node: QuestionNode | OptionNode | FollowUpNode) {
-      node.followUps.forEach(visit);
+      const below = item.children.flatMap(open);
+
+      return item.kind === "open-question" ? [item, ...below] : below;
     }
 
-    function visit(followUp: FollowUpNode) {
-      if (followUp.status === "open") open.push(followUp);
-      if (followUp.status !== "promoted") return;
-
-      followUp.children.forEach(walk);
-      backtrack(followUp);
-    }
-
-    function walk(question: QuestionNode) {
-      if (question.answer === undefined) {
-        open.push(question);
-      } else {
-        question.answer.children.forEach(walk);
-        backtrack(question.answer);
-      }
-
-      question.children.forEach(walk);
-      backtrack(question);
-    }
-
-    graph.roots.forEach(walk);
-    graph.rootFollowUps.forEach(visit);
-
-    return open;
+    return tree(graph).flatMap(open);
   }
 
   function tests() {
@@ -1427,14 +1406,7 @@ const Next = (() => {
       return { kind: "follow-up", followUp: { id: node.id, text: node.text } };
     }
 
-    return {
-      kind: "question",
-      question: {
-        id: node.id,
-        text: node.text,
-        options: node.options.map((option) => ({ id: option.id, text: option.text })),
-      },
-    };
+    return { kind: "question", question: { id: node.id, text: node.text, options: node.options } };
   }
 
   function tests() {
