@@ -396,10 +396,10 @@ const AddOption = (() => {
       const id = add(log, "a", "Q1");
 
       // then
-      assert.equal(id, "O1");
+      assert.equal(id, "Q1a");
       assert.deepEqual(log.read(), [
         question,
-        { type: "add-option", id: "O1", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
       ]);
     });
 
