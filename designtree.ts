@@ -688,6 +688,26 @@ const Graph = (() => {
       // then
       assert.deepEqual(open, []);
     });
+
+    test("root follow-ups come up after all roots", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-follow-up", id: "F1", text: "f1" },
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-question", id: "Q2", text: "q2" },
+        ]),
+      );
+
+      // when
+      const open = frontier(graph);
+
+      // then
+      assert.deepEqual(
+        open.map((node) => node.id),
+        ["Q1", "Q2", "F1"],
+      );
+    });
   }
 
   return { build, frontier, tests };
