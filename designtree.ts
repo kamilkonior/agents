@@ -727,6 +727,29 @@ const Graph = (() => {
         ["Q1", "Q2", "F1"],
       );
     });
+
+    test("tree leaves out off-path branches and dismissed follow-ups", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+          { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+          { type: "select-option", origin: "Q1a" },
+          { type: "add-question", id: "Q2", text: "q2", origin: "Q1b" },
+          { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
+          { type: "dismiss-follow-up", origin: "F1" },
+        ]),
+      );
+
+      // when
+      const items = tree(graph);
+
+      // then
+      assert.deepEqual(items, [
+        { kind: "question", id: "Q1", text: "q1", answer: { id: "Q1a", text: "a" }, children: [] },
+      ]);
+    });
   }
 
   return { build, tree, frontier, tests };
