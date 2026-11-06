@@ -34,7 +34,7 @@ type QuestionNode = {
   kind: "question";
   id: string;
   text: string;
-  parent?: OptionNode | QuestionNode;
+  parent?: OptionNode | QuestionNode | FollowUpNode;
   options: OptionNode[];
   children: QuestionNode[];
   followUps: FollowUpNode[];
@@ -54,8 +54,10 @@ type FollowUpNode = {
   kind: "follow-up";
   id: string;
   text: string;
-  parent: OptionNode | QuestionNode;
+  parent: OptionNode | QuestionNode | FollowUpNode;
   status: "open" | "promoted" | "dismissed";
+  children: QuestionNode[];
+  followUps: FollowUpNode[];
 };
 
 type Graph = {
@@ -294,6 +296,8 @@ const Graph = (() => {
             text: event.text,
             parent,
             status: "open",
+            children: [],
+            followUps: [],
           };
           nodes.set(node.id, node);
           parent.followUps.push(node);
