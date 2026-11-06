@@ -1743,6 +1743,17 @@ const Xml = (() => {
       // then
       assert.deepEqual(xml.split("\n"), ["<next>", `  ${followUp(data)}`, "</next>"]);
     });
+
+    test("an empty tree renders an empty tree element", () => {
+      // given
+      const items: TreeItem[] = [];
+
+      // when
+      const xml = tree(items);
+
+      // then
+      assert.equal(xml, "<tree></tree>");
+    });
   }
 
   return { option, question, selection, followUp, next, tree, tests };
