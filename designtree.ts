@@ -782,6 +782,35 @@ const Graph = (() => {
         },
       ]);
     });
+
+    test("an open question shows its options and what's under it", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+          { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+          { type: "add-question", id: "Q2", text: "q2", origin: "Q1" },
+        ]),
+      );
+
+      // when
+      const items = tree(graph);
+
+      // then
+      assert.deepEqual(items, [
+        {
+          kind: "open-question",
+          id: "Q1",
+          text: "q1",
+          options: [
+            { id: "Q1a", text: "a" },
+            { id: "Q1b", text: "b" },
+          ],
+          children: [{ kind: "open-question", id: "Q2", text: "q2", options: [], children: [] }],
+        },
+      ]);
+    });
   }
 
   return { build, tree, frontier, tests };
