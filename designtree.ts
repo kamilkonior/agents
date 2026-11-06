@@ -8,7 +8,10 @@ import { parseArgs, type ParseArgsOptionsConfig } from "node:util";
 type Event =
   | { type: "add-question"; id: string; text: string; origin?: string }
   | { type: "add-option"; id: string; text: string; origin: string }
-  | { type: "select-option"; origin: string };
+  | { type: "select-option"; origin: string }
+  | { type: "add-follow-up"; id: string; text: string; origin: string }
+  | { type: "promote-follow-up"; origin: string; question: string }
+  | { type: "dismiss-follow-up"; origin: string };
 
 type Log = {
   read(): Event[];
