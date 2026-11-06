@@ -1077,6 +1077,36 @@ const PromoteFollowUp = (() => {
       assert.throws(act, DesignTreeError);
       assert.deepEqual(log.read(), events);
     });
+
+    test("promoting a follow-up creates its question where it hung", () => {
+      // given
+      const events: Event[] = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-follow-up", id: "F1", text: "f", origin: "Q1a" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const question = run(log, { origin: "F1", option: ["x", "y"] });
+
+      // then
+      assert.deepEqual(question, {
+        id: "Q2",
+        text: "f",
+        options: [
+          { id: "Q2a", text: "x" },
+          { id: "Q2b", text: "y" },
+        ],
+      });
+      assert.deepEqual(log.read(), [
+        ...events,
+        { type: "add-question", id: "Q2", text: "f", origin: "Q1a" },
+        { type: "add-option", id: "Q2a", text: "x", origin: "Q2" },
+        { type: "add-option", id: "Q2b", text: "y", origin: "Q2" },
+        { type: "promote-follow-up", origin: "F1", question: "Q2" },
+      ]);
+    });
   }
 
   return { options, run, tests };
