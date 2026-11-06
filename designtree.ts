@@ -1117,6 +1117,25 @@ const AddFollowUp = (() => {
       ]);
     });
 
+    test("follow-up under an open follow-up is stored with its origin", () => {
+      // given
+      const events: Event[] = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const id = add(log, "f2", "F1");
+
+      // then
+      assert.equal(id, "F2");
+      assert.deepEqual(log.read(), [
+        ...events,
+        { type: "add-follow-up", id: "F2", text: "f2", origin: "F1" },
+      ]);
+    });
+
     test("a dismissed follow-up is not open", () => {
       // given
       const log = Log.memoryLog([
