@@ -104,18 +104,18 @@ const AddQuestion = (() => {
     log: Log,
     config: { text?: string; origin?: string; option?: string[] },
   ): QuestionData {
-    if (!config.text) throw new DesignTreeError("add-question requires --text");
-    if (config.option?.some((text) => !text)) {
-      throw new DesignTreeError("add-question --option requires a text");
-    }
+    const text = config.text;
+    if (!text) throw new DesignTreeError("add-question requires --text");
 
-    const id = addQuestion(log, config.text, config.origin);
-    const options = (config.option ?? []).map((text) => ({
-      id: AddOption.add(log, text, id),
-      text,
-    }));
+    return Log.transaction(log, (staged) => {
+      const id = addQuestion(staged, text, config.origin);
+      const options = (config.option ?? []).map((optionText) => ({
+        id: AddOption.add(staged, optionText, id),
+        text: optionText,
+      }));
 
-    return { id, text: config.text, options };
+      return { id, text, options };
+    });
   }
 
   function tests() {
@@ -200,6 +200,8 @@ const AddOption = (() => {
   } as const;
 
   function add(log: Log, text: string, origin: string): string {
+    if (!text) throw new DesignTreeError("option requires a text");
+
     const question = Log.find(log, origin);
     if (question === undefined) throw new DesignTreeError(`origin not found: ${origin}`);
     if (question.type !== "add-question") {
