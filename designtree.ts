@@ -907,6 +907,17 @@ const Xml = (() => {
     ].join("\n");
   }
 
+  function next(data: QuestionData | undefined): string {
+    if (data === undefined) return "<next></next>";
+
+    const body = question(data)
+      .split("\n")
+      .map((line) => `  ${line}`)
+      .join("\n");
+
+    return `<next>\n${body}\n</next>`;
+  }
+
   function tests() {
     test("option text is escaped", () => {
       // given
@@ -975,7 +986,7 @@ const Xml = (() => {
     });
   }
 
-  return { option, question, selection, tests };
+  return { option, question, selection, next, tests };
 })();
 
 const Cli = (() => {
