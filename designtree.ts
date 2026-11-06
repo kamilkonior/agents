@@ -358,7 +358,7 @@ const Cli = (() => {
 
       case "add-option": {
         const config = readModeConfig(AddOption.options);
-        console.log(AddOption.run(log, config));
+        console.log(Xml.option(AddOption.run(log, config)));
         break;
       }
       default:
