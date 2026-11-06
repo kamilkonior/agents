@@ -9,7 +9,7 @@ type Event =
   | { type: "add-question"; id: string; text: string; origin?: string }
   | { type: "add-option"; id: string; text: string; origin: string }
   | { type: "select-option"; origin: string }
-  | { type: "add-follow-up"; id: string; text: string; origin: string }
+  | { type: "add-follow-up"; id: string; text: string; origin?: string }
   | { type: "promote-follow-up"; origin: string }
   | { type: "dismiss-follow-up"; origin: string };
 
@@ -54,7 +54,7 @@ type FollowUpNode = {
   kind: "follow-up";
   id: string;
   text: string;
-  parent: OptionNode | QuestionNode | FollowUpNode;
+  parent?: OptionNode | QuestionNode | FollowUpNode;
   status: "open" | "promoted" | "dismissed";
   children: QuestionNode[];
   followUps: FollowUpNode[];
@@ -63,6 +63,7 @@ type FollowUpNode = {
 type Graph = {
   nodes: Map<string, QuestionNode | OptionNode | FollowUpNode>;
   roots: QuestionNode[];
+  rootFollowUps: FollowUpNode[];
 };
 
 class DesignTreeError extends Error {}
@@ -240,6 +241,7 @@ const Graph = (() => {
   function build(log: Log): Graph {
     const nodes: Graph["nodes"] = new Map();
     const roots: QuestionNode[] = [];
+    const rootFollowUps: FollowUpNode[] = [];
 
     for (const event of log.read()) {
       switch (event.type) {
@@ -287,17 +289,23 @@ const Graph = (() => {
         }
 
         case "add-follow-up": {
-          const parent = parentNode(nodes, event.origin);
           const node: FollowUpNode = {
             kind: "follow-up",
             id: event.id,
             text: event.text,
-            parent,
             status: "open",
             children: [],
             followUps: [],
           };
           nodes.set(node.id, node);
+
+          if (event.origin === undefined) {
+            rootFollowUps.push(node);
+            break;
+          }
+
+          const parent = parentNode(nodes, event.origin);
+          node.parent = parent;
           parent.followUps.push(node);
           break;
         }
@@ -314,7 +322,7 @@ const Graph = (() => {
       }
     }
 
-    return { nodes, roots };
+    return { nodes, roots, rootFollowUps };
   }
 
   function frontier(graph: Graph): (QuestionNode | FollowUpNode)[] {
@@ -1100,25 +1108,28 @@ const AddFollowUp = (() => {
     origin: { type: "string" },
   } as const;
 
-  function add(log: Log, text: string, origin: string): string {
+  function add(log: Log, text: string, origin?: string): string {
     if (!text) throw new DesignTreeError("follow-up requires a text");
 
-    const parent = Graph.build(log).nodes.get(origin);
-    if (parent === undefined) throw new DesignTreeError(`origin not found: ${origin}`);
-    if (parent.kind === "follow-up" && parent.status === "dismissed") {
-      throw new DesignTreeError(`follow-up ${origin} is dismissed`);
+    if (origin !== undefined) {
+      const parent = Graph.build(log).nodes.get(origin);
+      if (parent === undefined) throw new DesignTreeError(`origin not found: ${origin}`);
+      if (parent.kind === "follow-up" && parent.status === "dismissed") {
+        throw new DesignTreeError(`follow-up ${origin} is dismissed`);
+      }
     }
 
     const id = Log.nextId(log, "add-follow-up", "F");
+    const event: Event = { type: "add-follow-up", id, text };
+    if (origin !== undefined) event.origin = origin;
 
-    log.append({ type: "add-follow-up", id, text, origin });
+    log.append(event);
 
     return id;
   }
 
   function run(log: Log, config: { text?: string; origin?: string }): FollowUpData {
     if (!config.text) throw new DesignTreeError("add-follow-up requires --text");
-    if (!config.origin) throw new DesignTreeError("add-follow-up requires --origin");
 
     const id = add(log, config.text, config.origin);
 
