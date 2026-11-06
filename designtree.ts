@@ -423,6 +423,25 @@ const Graph = (() => {
         ["Q2", "Q3", "Q4"],
       );
     });
+
+    test("an open question and its question-level follow-up are both on the frontier", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-question", id: "Q2", text: "q2", origin: "Q1" },
+        ]),
+      );
+
+      // when
+      const open = frontier(graph);
+
+      // then
+      assert.deepEqual(
+        open.map((question) => question.id),
+        ["Q1", "Q2"],
+      );
+    });
   }
 
   return { build, frontier, tests };
