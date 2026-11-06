@@ -31,6 +31,7 @@ type QuestionNode = {
   parent?: OptionNode | QuestionNode;
   options: OptionNode[];
   children: QuestionNode[];
+  followUps: FollowUpNode[];
   answer?: OptionNode;
 };
 
@@ -40,9 +41,21 @@ type OptionNode = {
   text: string;
   question: QuestionNode;
   children: QuestionNode[];
+  followUps: FollowUpNode[];
 };
 
-type Graph = { nodes: Map<string, QuestionNode | OptionNode>; roots: QuestionNode[] };
+type FollowUpNode = {
+  kind: "follow-up";
+  id: string;
+  text: string;
+  parent: OptionNode | QuestionNode;
+  status: "open" | "promoted" | "dismissed";
+};
+
+type Graph = {
+  nodes: Map<string, QuestionNode | OptionNode | FollowUpNode>;
+  roots: QuestionNode[];
+};
 
 class DesignTreeError extends Error {}
 
@@ -202,6 +215,22 @@ const Graph = (() => {
     return node;
   }
 
+  function followUpNode(nodes: Graph["nodes"], id: string): FollowUpNode {
+    const node = nodes.get(id);
+    if (node?.kind !== "follow-up") throw new Error(`log has no follow-up ${id}`);
+
+    return node;
+  }
+
+  function parentNode(nodes: Graph["nodes"], id: string): OptionNode | QuestionNode {
+    const node = nodes.get(id);
+    if (node === undefined || node.kind === "follow-up") {
+      throw new Error(`log has no option or question ${id}`);
+    }
+
+    return node;
+  }
+
   function build(log: Log): Graph {
     const nodes: Graph["nodes"] = new Map();
     const roots: QuestionNode[] = [];
@@ -215,6 +244,7 @@ const Graph = (() => {
             text: event.text,
             options: [],
             children: [],
+            followUps: [],
           };
           nodes.set(node.id, node);
 
@@ -223,8 +253,7 @@ const Graph = (() => {
             break;
           }
 
-          const parent = nodes.get(event.origin);
-          if (parent === undefined) throw new Error(`log has no origin ${event.origin}`);
+          const parent = parentNode(nodes, event.origin);
           node.parent = parent;
           parent.children.push(node);
           break;
@@ -238,6 +267,7 @@ const Graph = (() => {
             text: event.text,
             question,
             children: [],
+            followUps: [],
           };
           nodes.set(node.id, node);
           question.options.push(node);
@@ -247,6 +277,30 @@ const Graph = (() => {
         case "select-option": {
           const option = optionNode(nodes, event.origin);
           option.question.answer = option;
+          break;
+        }
+
+        case "add-follow-up": {
+          const parent = parentNode(nodes, event.origin);
+          const node: FollowUpNode = {
+            kind: "follow-up",
+            id: event.id,
+            text: event.text,
+            parent,
+            status: "open",
+          };
+          nodes.set(node.id, node);
+          parent.followUps.push(node);
+          break;
+        }
+
+        case "promote-follow-up": {
+          followUpNode(nodes, event.origin).status = "promoted";
+          break;
+        }
+
+        case "dismiss-follow-up": {
+          followUpNode(nodes, event.origin).status = "dismissed";
           break;
         }
       }
