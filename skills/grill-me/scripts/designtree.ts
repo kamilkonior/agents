@@ -1,9 +1,13 @@
-import assert from "node:assert/strict";
-import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-import { test } from "node:test";
-import { parseArgs, type ParseArgsOptionsConfig } from "node:util";
+const assert: typeof import("node:assert/strict") = require("node:assert/strict");
+const fs: typeof import("node:fs") = require("node:fs");
+const { tmpdir }: typeof import("node:os") = require("node:os");
+const { dirname, join }: typeof import("node:path") = require("node:path");
+const { test }: typeof import("node:test") = require("node:test");
+const { parseArgs }: typeof import("node:util") = require("node:util");
+
+const { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } = fs;
+
+type ParseArgsOptionsConfig = import("node:util").ParseArgsOptionsConfig;
 
 type Event =
   | { type: "add-question"; id: string; text: string; origin?: string }
