@@ -252,7 +252,24 @@ const Graph = (() => {
     return { nodes, roots };
   }
 
-  function tests() {}
+  function tests() {
+    test("the latest selection is the question's answer", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", origin: "Q1a" },
+        { type: "select-option", origin: "Q1b" },
+      ]);
+
+      // when
+      const graph = build(log);
+
+      // then
+      assert.equal(questionNode(graph.nodes, "Q1").answer?.id, "Q1b");
+    });
+  }
 
   return { build, tests };
 })();
