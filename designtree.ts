@@ -144,6 +144,18 @@ const Log = (() => {
       assert.deepEqual(fileLog(path).read(), [question, option]);
       assert.equal(readFileSync(path, "utf8").split("\n").filter((line) => line !== "").length, 2);
     });
+
+    test("memory log read returns a copy", () => {
+      // given
+      const question: Event = { type: "add-question", id: "Q1", text: "q" };
+      const log = memoryLog([question]);
+
+      // when
+      log.read().push({ type: "add-question", id: "Q2", text: "q2" });
+
+      // then
+      assert.deepEqual(log.read(), [question]);
+    });
   }
 
   return { fileLog, memoryLog, find, has, nextId, transaction, tests };
