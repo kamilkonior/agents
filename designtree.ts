@@ -635,6 +635,9 @@ const AddQuestion = (() => {
   ): QuestionData {
     const text = config.text;
     if (!text) throw new DesignTreeError("add-question requires --text");
+    if ((config.option ?? []).length < 2) {
+      throw new DesignTreeError("a question requires at least two options");
+    }
 
     return Log.transaction(log, (staged) => {
       const id = addQuestion(staged, text, config.origin);
