@@ -243,6 +243,26 @@ const AddOption = (() => {
         { type: "add-option", id: "O2", text: "b", origin: "Q1" },
       ]);
     });
+
+    test("option ids count across questions", () => {
+      // given
+      const events: Event[] = [
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "O1", text: "a", origin: "Q1" },
+        { type: "add-question", id: "Q2", text: "q2" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const id = addOption(log, "b", "Q2");
+
+      // then
+      assert.equal(id, "O2");
+      assert.deepEqual(log.read(), [
+        ...events,
+        { type: "add-option", id: "O2", text: "b", origin: "Q2" },
+      ]);
+    });
   }
 
   return { options, run, tests };
