@@ -387,6 +387,20 @@ const Xml = (() => {
       // then
       assert.equal(xml, "<option><id>O1</id><text>a &lt; b &gt; c &amp; d</text></option>");
     });
+
+    test("question without options renders empty options", () => {
+      // given
+      const data: QuestionData = { id: "Q1", text: "q", options: [] };
+
+      // when
+      const xml = question(data);
+
+      // then
+      assert.equal(
+        xml,
+        ["<question>", "  <id>Q1</id>", "  <text>q</text>", "  <options></options>", "</question>"].join("\n"),
+      );
+    });
   }
 
   return { option, question, tests };
