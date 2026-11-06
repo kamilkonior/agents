@@ -230,11 +230,9 @@ const Graph = (() => {
     return node;
   }
 
-  function parentNode(nodes: Graph["nodes"], id: string): OptionNode | QuestionNode {
+  function parentNode(nodes: Graph["nodes"], id: string): OptionNode | QuestionNode | FollowUpNode {
     const node = nodes.get(id);
-    if (node === undefined || node.kind === "follow-up") {
-      throw new Error(`log has no option or question ${id}`);
-    }
+    if (node === undefined) throw new Error(`log has no node ${id}`);
 
     return node;
   }
