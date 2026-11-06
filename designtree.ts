@@ -645,6 +645,7 @@ const Cli = (() => {
     Log.tests();
     AddQuestion.tests();
     AddOption.tests();
+    SelectOption.tests();
     Xml.tests();
   }
 
@@ -671,6 +672,12 @@ const Cli = (() => {
       case "add-option": {
         const config = readModeConfig(AddOption.options);
         console.log(Xml.option(AddOption.run(log, config)));
+        break;
+      }
+
+      case "select-option": {
+        const config = readModeConfig(SelectOption.options);
+        console.log(Xml.selection(SelectOption.run(log, config)));
         break;
       }
       default:
