@@ -165,6 +165,18 @@ const AddQuestion = (() => {
       assert.throws(act, DesignTreeError);
       assert.deepEqual(log.read(), []);
     });
+
+    test("question with an empty option throws and appends nothing", () => {
+      // given
+      const log = Log.memoryLog();
+
+      // when
+      const act = () => run(log, { text: "q", option: ["a", ""] });
+
+      // then
+      assert.throws(act, DesignTreeError);
+      assert.deepEqual(log.read(), []);
+    });
   }
 
   return { options, run, tests };
