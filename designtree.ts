@@ -52,7 +52,16 @@ const Log = (() => {
     return find(log, id) !== undefined;
   }
 
-  return { fileLog, memoryLog, find, has };
+  function nextId(log: Log, type: Event["type"], prefix: string): string {
+    const numbers = log
+      .read()
+      .filter((event) => event.type === type)
+      .map((event) => Number(event.id.slice(prefix.length)));
+
+    return `${prefix}${Math.max(0, ...numbers) + 1}`;
+  }
+
+  return { fileLog, memoryLog, find, has, nextId };
 })();
 
 const AddQuestion = (() => {
@@ -61,21 +70,12 @@ const AddQuestion = (() => {
     origin: { type: "string" },
   } as const;
 
-  function nextQuestionId(log: Log): string {
-    const numbers = log
-      .read()
-      .filter((event) => event.type === "add-question")
-      .map((event) => Number(event.id.slice(1)));
-
-    return `Q${Math.max(0, ...numbers) + 1}`;
-  }
-
   function addQuestion(log: Log, text: string, origin?: string): string {
     if (origin !== undefined && !Log.has(log, origin)) {
       throw new DesignTreeError(`origin not found: ${origin}`);
     }
 
-    const id = nextQuestionId(log);
+    const id = Log.nextId(log, "add-question", "Q");
     const event: Event = { type: "add-question", id, text };
     if (origin !== undefined) event.origin = origin;
 
@@ -159,15 +159,6 @@ const AddOption = (() => {
     origin: { type: "string" },
   } as const;
 
-  function nextOptionId(log: Log): string {
-    const numbers = log
-      .read()
-      .filter((event) => event.type === "add-option")
-      .map((event) => Number(event.id.slice(1)));
-
-    return `O${Math.max(0, ...numbers) + 1}`;
-  }
-
   function addOption(log: Log, text: string, origin: string): string {
     const question = Log.find(log, origin);
     if (question === undefined) throw new DesignTreeError(`origin not found: ${origin}`);
@@ -175,7 +166,7 @@ const AddOption = (() => {
       throw new DesignTreeError(`origin is not a question: ${origin}`);
     }
 
-    const id = nextOptionId(log);
+    const id = Log.nextId(log, "add-option", "O");
 
     log.append({ type: "add-option", id, text, origin });
 
