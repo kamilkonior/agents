@@ -21,6 +21,25 @@ type QuestionData = { id: string; text: string; options: OptionData[] };
 
 type SelectionData = { question: { id: string; text: string }; option: OptionData };
 
+type QuestionNode = {
+  kind: "question";
+  id: string;
+  text: string;
+  parent?: OptionNode;
+  options: OptionNode[];
+  answer?: OptionNode;
+};
+
+type OptionNode = {
+  kind: "option";
+  id: string;
+  text: string;
+  question: QuestionNode;
+  children: QuestionNode[];
+};
+
+type Graph = { nodes: Map<string, QuestionNode | OptionNode>; roots: QuestionNode[] };
+
 class DesignTreeError extends Error {}
 
 const Log = (() => {
