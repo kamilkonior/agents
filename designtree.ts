@@ -422,11 +422,11 @@ const AddOption = (() => {
       ]);
     });
 
-    test("option ids count across questions", () => {
+    test("option letters restart per question", () => {
       // given
       const events: Event[] = [
         { type: "add-question", id: "Q1", text: "q1" },
-        { type: "add-option", id: "O1", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
         { type: "add-question", id: "Q2", text: "q2" },
       ];
       const log = Log.memoryLog([...events]);
@@ -435,10 +435,10 @@ const AddOption = (() => {
       const id = add(log, "b", "Q2");
 
       // then
-      assert.equal(id, "O2");
+      assert.equal(id, "Q2a");
       assert.deepEqual(log.read(), [
         ...events,
-        { type: "add-option", id: "O2", text: "b", origin: "Q2" },
+        { type: "add-option", id: "Q2a", text: "b", origin: "Q2" },
       ]);
     });
   }
