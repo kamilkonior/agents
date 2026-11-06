@@ -1440,6 +1440,17 @@ const Xml = (() => {
       // then
       assert.equal(xml, "<follow-up><id>F1</id><text>a &lt; b &gt; c &amp; d</text></follow-up>");
     });
+
+    test("next with a follow-up wraps the follow-up line", () => {
+      // given
+      const data: FollowUpData = { id: "F1", text: "f" };
+
+      // when
+      const xml = next({ kind: "follow-up", followUp: data });
+
+      // then
+      assert.deepEqual(xml.split("\n"), ["<next>", `  ${followUp(data)}`, "</next>"]);
+    });
   }
 
   return { option, question, selection, followUp, next, tests };
