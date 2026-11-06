@@ -44,11 +44,15 @@ const Log = (() => {
     };
   }
 
-  function exists(log: Log, id: string): boolean {
-    return log.read().some((event) => event.id === id);
+  function find(log: Log, id: string): Event | undefined {
+    return log.read().find((event) => event.id === id);
   }
 
-  return { fileLog, memoryLog, exists };
+  function has(log: Log, id: string): boolean {
+    return find(log, id) !== undefined;
+  }
+
+  return { fileLog, memoryLog, find, has };
 })();
 
 const AddQuestion = (() => {
@@ -67,7 +71,7 @@ const AddQuestion = (() => {
   }
 
   function addQuestion(log: Log, text: string, origin?: string): string {
-    if (origin !== undefined && !Log.exists(log, origin)) {
+    if (origin !== undefined && !Log.has(log, origin)) {
       throw new DesignTreeError(`origin not found: ${origin}`);
     }
 
