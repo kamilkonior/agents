@@ -10,11 +10,11 @@ Interview the user about a design decision one question at a time. Every questio
 ## The CLI
 
 ```
-node <this skill's directory>/scripts/designtree.ts --log <path> --op <op> [flags]
-node <this skill's directory>/scripts/designtree.ts --log <path> --query <query>
+node <this skill's directory>/scripts/designtree.js --log <path> --op <op> [flags]
+node <this skill's directory>/scripts/designtree.js --log <path> --query <query>
 ```
 
-Requires Node 22.18+ (or 23.6+), which runs TypeScript directly. Every call needs `--log`. Results print as XML on stdout; errors print as one line on stderr with exit code 1 and write nothing.
+Requires Node 20+. Every call needs `--log`. Results print as XML on stdout; errors print as one line on stderr with exit code 1 and write nothing.
 
 | Command | Does |
 |---|---|
