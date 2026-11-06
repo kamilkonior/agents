@@ -211,6 +211,26 @@ const AddQuestion = (() => {
         { type: "add-option", id: "O2", text: "b", origin: "Q1" },
       ]);
     });
+
+    test("question with options in a non-empty log continues the ids", () => {
+      // given
+      const events: Event[] = [
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "O1", text: "a", origin: "Q1" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const question = run(log, { text: "q2", option: ["b"] });
+
+      // then
+      assert.deepEqual(question, { id: "Q2", text: "q2", options: [{ id: "O2", text: "b" }] });
+      assert.deepEqual(log.read(), [
+        ...events,
+        { type: "add-question", id: "Q2", text: "q2" },
+        { type: "add-option", id: "O2", text: "b", origin: "Q2" },
+      ]);
+    });
   }
 
   return { options, run, tests };
