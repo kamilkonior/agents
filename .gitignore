@@ -4,3 +4,4 @@ do-not-read
 /package-lock.json
 /tsconfig.json
 /.idea/
+/CLAUDE.md
