@@ -87,7 +87,7 @@ const Log = (() => {
       // when
       const act = () =>
         transaction(log, (staged) => {
-          staged.append({ type: "add-option", id: "O1", text: "a", origin: "Q1" });
+          staged.append({ type: "add-option", id: "Q1a", text: "a", origin: "Q1" });
           throw new Error("boom");
         });
 
