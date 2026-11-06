@@ -93,6 +93,23 @@ const Log = (() => {
       assert.throws(act, /boom/);
       assert.deepEqual(log.read(), [question]);
     });
+
+    test("transaction flushes only the new events and returns the result", () => {
+      // given
+      const question: Event = { type: "add-question", id: "Q1", text: "q" };
+      const option: Event = { type: "add-option", id: "O1", text: "a", origin: "Q1" };
+      const log = memoryLog([question]);
+
+      // when
+      const result = transaction(log, (staged) => {
+        staged.append(option);
+        return "done";
+      });
+
+      // then
+      assert.equal(result, "done");
+      assert.deepEqual(log.read(), [question, option]);
+    });
   }
 
   return { fileLog, memoryLog, find, has, nextId, transaction, tests };
