@@ -470,13 +470,13 @@ const Xml = (() => {
   function tests() {
     test("option text is escaped", () => {
       // given
-      const data: OptionData = { id: "O1", text: "a < b > c & d" };
+      const data: OptionData = { id: "Q1a", text: "a < b > c & d" };
 
       // when
       const xml = option(data);
 
       // then
-      assert.equal(xml, "<option><id>O1</id><text>a &lt; b &gt; c &amp; d</text></option>");
+      assert.equal(xml, "<option><id>Q1a</id><text>a &lt; b &gt; c &amp; d</text></option>");
     });
 
     test("question without options renders empty options", () => {
