@@ -24,6 +24,8 @@ type QuestionData = { id: string; text: string; options: OptionData[] };
 
 type SelectionData = { question: { id: string; text: string }; option: OptionData };
 
+type FollowUpData = { id: string; text: string };
+
 type QuestionNode = {
   kind: "question";
   id: string;
@@ -920,6 +922,42 @@ const SelectOption = (() => {
       assert.deepEqual(log.read(), [...events, { type: "select-option", origin: "Q1a" }]);
     });
   }
+
+  return { options, run, tests };
+})();
+
+const AddFollowUp = (() => {
+  const options = {
+    text: { type: "string" },
+    origin: { type: "string" },
+  } as const;
+
+  function add(log: Log, text: string, origin: string): string {
+    if (!text) throw new DesignTreeError("follow-up requires a text");
+
+    const parent = Log.find(log, origin);
+    if (parent === undefined) throw new DesignTreeError(`origin not found: ${origin}`);
+    if (parent.type !== "add-question" && parent.type !== "add-option") {
+      throw new DesignTreeError(`origin is not a question or an option: ${origin}`);
+    }
+
+    const id = Log.nextId(log, "add-follow-up", "F");
+
+    log.append({ type: "add-follow-up", id, text, origin });
+
+    return id;
+  }
+
+  function run(log: Log, config: { text?: string; origin?: string }): FollowUpData {
+    if (!config.text) throw new DesignTreeError("add-follow-up requires --text");
+    if (!config.origin) throw new DesignTreeError("add-follow-up requires --origin");
+
+    const id = add(log, config.text, config.origin);
+
+    return { id, text: config.text };
+  }
+
+  function tests() {}
 
   return { options, run, tests };
 })();
