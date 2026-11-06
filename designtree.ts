@@ -48,7 +48,10 @@ function exists(log: Log, id: string): boolean {
 
 const cliOptions = {
   op: { type: "string" },
+  test: { type: "boolean" },
 } as const;
+
+const testOptions = {} as const;
 
 const addQuestionOptions = {
   text: { type: "string" },
@@ -57,28 +60,43 @@ const addQuestionOptions = {
 
 class DesignTreeError extends Error {}
 
-function readOp() {
-  const { op } = parseArgs({ options: cliOptions, strict: false }).values;
-  if (op === undefined) throw new DesignTreeError("missing --op");
+type Mode = { kind: "test" } | { kind: "op"; op: string };
+
+function readMode(): Mode {
+  const { op, test } = parseArgs({ options: cliOptions, strict: false }).values;
+  if (op !== undefined && test !== undefined) {
+    throw new DesignTreeError("--op and --test are mutually exclusive");
+  }
+  if (test !== undefined) return { kind: "test" };
+  if (op === undefined) throw new DesignTreeError("missing --op or --test");
   if (typeof op !== "string") throw new DesignTreeError("--op requires a value");
-  return op;
+  return { kind: "op", op };
 }
 
-function readOpConfig<T extends ParseArgsOptionsConfig>(opOptions: T) {
+function readModeConfig<T extends ParseArgsOptionsConfig>(modeOptions: T) {
   try {
-    return parseArgs({ options: { ...cliOptions, ...opOptions } }).values;
+    return parseArgs({ options: { ...cliOptions, ...modeOptions } }).values;
   } catch (error) {
     throw new DesignTreeError((error as Error).message);
   }
 }
 
-function main() {
-  const log = fileLog("designtree.jsonl");
-  const op = readOp();
+function runTests() {}
 
+function main() {
+  const mode = readMode();
+  if (mode.kind === "test") {
+    readModeConfig(testOptions);
+    runTests();
+    return;
+  }
+  runOp(fileLog("designtree.jsonl"), mode.op);
+}
+
+function runOp(log: Log, op: string) {
   switch (op) {
     case "add-question": {
-      const config = readOpConfig(addQuestionOptions);
+      const config = readModeConfig(addQuestionOptions);
       if (!config.text) throw new DesignTreeError("add-question requires --text");
       if (config.origin !== undefined && !exists(log, config.origin)) {
         throw new DesignTreeError(`origin not found: ${config.origin}`);
