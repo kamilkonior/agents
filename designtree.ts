@@ -353,6 +353,7 @@ const Graph = (() => {
     }
 
     graph.roots.forEach(walk);
+    graph.rootFollowUps.forEach(visit);
 
     return open;
   }
