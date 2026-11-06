@@ -1061,7 +1061,23 @@ const PromoteFollowUp = (() => {
     });
   }
 
-  function tests() {}
+  function tests() {
+    test("promoting with an empty option throws and appends nothing", () => {
+      // given
+      const events: Event[] = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-follow-up", id: "F1", text: "f", origin: "Q1" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const act = () => run(log, { origin: "F1", option: ["a", ""] });
+
+      // then
+      assert.throws(act, DesignTreeError);
+      assert.deepEqual(log.read(), events);
+    });
+  }
 
   return { options, run, tests };
 })();
