@@ -403,11 +403,11 @@ const AddOption = (() => {
       ]);
     });
 
-    test("second option under the same question gets O2", () => {
+    test("second option under the same question gets Q1b", () => {
       // given
       const events: Event[] = [
         { type: "add-question", id: "Q1", text: "q" },
-        { type: "add-option", id: "O1", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
       ];
       const log = Log.memoryLog([...events]);
 
@@ -415,10 +415,10 @@ const AddOption = (() => {
       const id = add(log, "b", "Q1");
 
       // then
-      assert.equal(id, "O2");
+      assert.equal(id, "Q1b");
       assert.deepEqual(log.read(), [
         ...events,
-        { type: "add-option", id: "O2", text: "b", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
       ]);
     });
 
