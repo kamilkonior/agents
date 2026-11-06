@@ -188,6 +188,29 @@ const AddQuestion = (() => {
       assert.throws(act, DesignTreeError);
       assert.deepEqual(log.read(), []);
     });
+
+    test("question with options stores the question, then its options under it", () => {
+      // given
+      const log = Log.memoryLog();
+
+      // when
+      const question = run(log, { text: "q", option: ["a", "b"] });
+
+      // then
+      assert.deepEqual(question, {
+        id: "Q1",
+        text: "q",
+        options: [
+          { id: "O1", text: "a" },
+          { id: "O2", text: "b" },
+        ],
+      });
+      assert.deepEqual(log.read(), [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "O1", text: "a", origin: "Q1" },
+        { type: "add-option", id: "O2", text: "b", origin: "Q1" },
+      ]);
+    });
   }
 
   return { options, run, tests };
