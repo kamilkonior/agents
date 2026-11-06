@@ -872,7 +872,18 @@ const Next = (() => {
     };
   }
 
-  function tests() {}
+  function tests() {
+    test("next on an empty log is nothing", () => {
+      // given
+      const log = Log.memoryLog();
+
+      // when
+      const question = run(log);
+
+      // then
+      assert.equal(question, undefined);
+    });
+  }
 
   return { options, run, tests };
 })();
