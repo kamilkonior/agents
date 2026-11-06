@@ -324,6 +324,15 @@ const AddOption = (() => {
     origin: { type: "string" },
   } as const;
 
+  function nextOptionId(log: Log, origin: string): string {
+    const count = log
+      .read()
+      .filter((event) => event.type === "add-option" && event.origin === origin).length;
+    if (count >= 26) throw new DesignTreeError(`question ${origin} already has 26 options`);
+
+    return `${origin}${String.fromCharCode("a".charCodeAt(0) + count)}`;
+  }
+
   function add(log: Log, text: string, origin: string): string {
     if (!text) throw new DesignTreeError("option requires a text");
 
@@ -333,7 +342,7 @@ const AddOption = (() => {
       throw new DesignTreeError(`origin is not a question: ${origin}`);
     }
 
-    const id = Log.nextId(log, "add-option", "O");
+    const id = nextOptionId(log, origin);
 
     log.append({ type: "add-option", id, text, origin });
 
