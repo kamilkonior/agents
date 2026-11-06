@@ -298,7 +298,7 @@ const AddQuestion = (() => {
       // given
       const events: Event[] = [
         { type: "add-question", id: "Q1", text: "q1" },
-        { type: "add-option", id: "O1", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
       ];
       const log = Log.memoryLog([...events]);
 
@@ -306,11 +306,11 @@ const AddQuestion = (() => {
       const question = run(log, { text: "q2", option: ["b"] });
 
       // then
-      assert.deepEqual(question, { id: "Q2", text: "q2", options: [{ id: "O2", text: "b" }] });
+      assert.deepEqual(question, { id: "Q2", text: "q2", options: [{ id: "Q2a", text: "b" }] });
       assert.deepEqual(log.read(), [
         ...events,
         { type: "add-question", id: "Q2", text: "q2" },
-        { type: "add-option", id: "O2", text: "b", origin: "Q2" },
+        { type: "add-option", id: "Q2a", text: "b", origin: "Q2" },
       ]);
     });
   }
