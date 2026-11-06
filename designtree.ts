@@ -10,31 +10,39 @@ type Log = {
   append(event: Event): void;
 };
 
-function fileLog(path: string): Log {
-  return {
-    read() {
-      if (!existsSync(path)) return [];
-      return readFileSync(path, "utf8")
-        .split("\n")
-        .filter((line) => line !== "")
-        .map((line) => JSON.parse(line));
-    },
-    append(event) {
-      appendFileSync(path, JSON.stringify(event) + "\n");
-    },
-  };
-}
+const Log = (() => {
+  function fileLog(path: string): Log {
+    return {
+      read() {
+        if (!existsSync(path)) return [];
+        return readFileSync(path, "utf8")
+          .split("\n")
+          .filter((line) => line !== "")
+          .map((line) => JSON.parse(line));
+      },
+      append(event) {
+        appendFileSync(path, JSON.stringify(event) + "\n");
+      },
+    };
+  }
 
-function memoryLog(events: Event[] = []): Log {
-  return {
-    read() {
-      return [...events];
-    },
-    append(event) {
-      events.push(event);
-    },
-  };
-}
+  function memoryLog(events: Event[] = []): Log {
+    return {
+      read() {
+        return [...events];
+      },
+      append(event) {
+        events.push(event);
+      },
+    };
+  }
+
+  function exists(log: Log, id: string): boolean {
+    return log.read().some((event) => event.id === id);
+  }
+
+  return { fileLog, memoryLog, exists };
+})();
 
 function nextQuestionId(log: Log): string {
   const numbers = log
@@ -42,10 +50,6 @@ function nextQuestionId(log: Log): string {
     .filter((event) => event.type === "add-question")
     .map((event) => Number(event.id.slice(1)));
   return `Q${Math.max(0, ...numbers) + 1}`;
-}
-
-function exists(log: Log, id: string): boolean {
-  return log.read().some((event) => event.id === id);
 }
 
 const cliOptions = {
@@ -84,7 +88,7 @@ function readModeConfig<T extends ParseArgsOptionsConfig>(modeOptions: T) {
 }
 
 function addQuestion(log: Log, text: string, origin?: string): string {
-  if (origin !== undefined && !exists(log, origin)) {
+  if (origin !== undefined && !Log.exists(log, origin)) {
     throw new DesignTreeError(`origin not found: ${origin}`);
   }
   const id = nextQuestionId(log);
@@ -96,31 +100,31 @@ function addQuestion(log: Log, text: string, origin?: string): string {
 
 function runTests() {
   test("first question in an empty log gets Q1", () => {
-    const log = memoryLog();
+    const log = Log.memoryLog();
     assert.equal(addQuestion(log, "a"), "Q1");
   });
 
   test("question ids go up in order", () => {
-    const log = memoryLog();
+    const log = Log.memoryLog();
     assert.equal(addQuestion(log, "a"), "Q1");
     assert.equal(addQuestion(log, "b"), "Q2");
   });
 
   test("question without origin is stored without an origin field", () => {
-    const log = memoryLog();
+    const log = Log.memoryLog();
     addQuestion(log, "a");
     assert.deepEqual(log.read(), [{ type: "add-question", id: "Q1", text: "a" }]);
   });
 
   test("question with an existing origin is stored with it", () => {
-    const log = memoryLog();
+    const log = Log.memoryLog();
     addQuestion(log, "a");
     addQuestion(log, "b", "Q1");
     assert.deepEqual(log.read()[1], { type: "add-question", id: "Q2", text: "b", origin: "Q1" });
   });
 
   test("question with an unknown origin throws and appends nothing", () => {
-    const log = memoryLog();
+    const log = Log.memoryLog();
     assert.throws(() => addQuestion(log, "a", "Q9"), DesignTreeError);
     assert.deepEqual(log.read(), []);
   });
@@ -133,7 +137,7 @@ function main() {
     runTests();
     return;
   }
-  runOp(fileLog("designtree.jsonl"), mode.op);
+  runOp(Log.fileLog("designtree.jsonl"), mode.op);
 }
 
 function runOp(log: Log, op: string) {
