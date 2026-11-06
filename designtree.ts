@@ -998,6 +998,25 @@ const AddFollowUp = (() => {
       assert.throws(act, DesignTreeError);
       assert.deepEqual(log.read(), events);
     });
+
+    test("follow-up under an option is stored with its origin", () => {
+      // given
+      const events: Event[] = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const id = add(log, "f", "Q1a");
+
+      // then
+      assert.equal(id, "F1");
+      assert.deepEqual(log.read(), [
+        ...events,
+        { type: "add-follow-up", id: "F1", text: "f", origin: "Q1a" },
+      ]);
+    });
   }
 
   return { options, open, run, tests };
