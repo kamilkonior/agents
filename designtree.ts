@@ -970,7 +970,19 @@ const AddFollowUp = (() => {
     return node;
   }
 
-  function tests() {}
+  function tests() {
+    test("follow-up under an unknown origin throws and appends nothing", () => {
+      // given
+      const log = Log.memoryLog();
+
+      // when
+      const act = () => add(log, "f", "Q1");
+
+      // then
+      assert.throws(act, DesignTreeError);
+      assert.deepEqual(log.read(), []);
+    });
+  }
 
   return { options, open, run, tests };
 })();
