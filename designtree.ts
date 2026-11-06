@@ -28,6 +28,11 @@ type SelectionData = { question: { id: string; text: string }; option: OptionDat
 
 type FollowUpData = { id: string; text: string };
 
+type TreeItem =
+  | { kind: "question"; id: string; text: string; answer: OptionData; children: TreeItem[] }
+  | { kind: "open-question"; id: string; text: string; options: OptionData[]; children: TreeItem[] }
+  | { kind: "follow-up"; id: string; text: string };
+
 type NextData =
   | { kind: "question"; question: QuestionData }
   | { kind: "follow-up"; followUp: FollowUpData };
