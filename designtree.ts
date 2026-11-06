@@ -1018,6 +1018,17 @@ const Xml = (() => {
       // then
       assert.equal(xml.split("\n")[2], "  <text>a &lt; b &gt; c &amp; d</text>");
     });
+
+    test("next without a question renders an empty next", () => {
+      // given
+      const data = undefined;
+
+      // when
+      const xml = next(data);
+
+      // then
+      assert.equal(xml, "<next></next>");
+    });
   }
 
   return { option, question, selection, next, tests };
