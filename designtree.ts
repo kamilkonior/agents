@@ -1037,10 +1037,10 @@ const AddFollowUp = (() => {
   function add(log: Log, text: string, origin: string): string {
     if (!text) throw new DesignTreeError("follow-up requires a text");
 
-    const parent = Log.find(log, origin);
+    const parent = Graph.build(log).nodes.get(origin);
     if (parent === undefined) throw new DesignTreeError(`origin not found: ${origin}`);
-    if (parent.type !== "add-question" && parent.type !== "add-option") {
-      throw new DesignTreeError(`origin is not a question or an option: ${origin}`);
+    if (parent.kind === "follow-up" && parent.status === "dismissed") {
+      throw new DesignTreeError(`follow-up ${origin} is dismissed`);
     }
 
     const id = Log.nextId(log, "add-follow-up", "F");
