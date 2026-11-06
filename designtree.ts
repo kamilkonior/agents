@@ -13,6 +13,8 @@ type Event =
   | { type: "promote-follow-up"; origin: string }
   | { type: "dismiss-follow-up"; origin: string };
 
+type IdEvent = Extract<Event, { id: string }>;
+
 type Log = {
   read(): Event[];
   append(event: Event): void;
@@ -106,11 +108,11 @@ const Log = (() => {
     return find(log, id) !== undefined;
   }
 
-  function nextId(log: Log, type: Event["type"], prefix: string): string {
+  function nextId(log: Log, type: IdEvent["type"], prefix: string): string {
     const numbers = log
       .read()
-      .filter((event) => event.type === type)
-      .map((event) => ("id" in event ? Number(event.id.slice(prefix.length)) : 0));
+      .filter((event): event is IdEvent => event.type === type)
+      .map((event) => Number(event.id.slice(prefix.length)));
 
     return `${prefix}${Math.max(0, ...numbers) + 1}`;
   }
