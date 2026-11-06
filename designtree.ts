@@ -111,62 +111,66 @@ const AddQuestion = (() => {
   return { options, run, tests };
 })();
 
-const cliOptions = {
-  op: { type: "string" },
-  test: { type: "boolean" },
-} as const;
+const Cli = (() => {
+  const cliOptions = {
+    op: { type: "string" },
+    test: { type: "boolean" },
+  } as const;
 
-const testOptions = {} as const;
+  const testOptions = {} as const;
 
-type Mode = { kind: "test" } | { kind: "op"; op: string };
+  type Mode = { kind: "test" } | { kind: "op"; op: string };
 
-function readMode(): Mode {
-  const { op, test } = parseArgs({ options: cliOptions, strict: false }).values;
-  if (op !== undefined && test !== undefined) {
-    throw new DesignTreeError("--op and --test are mutually exclusive");
-  }
-  if (test !== undefined) return { kind: "test" };
-  if (op === undefined) throw new DesignTreeError("missing --op or --test");
-  if (typeof op !== "string") throw new DesignTreeError("--op requires a value");
-  return { kind: "op", op };
-}
-
-function readModeConfig<T extends ParseArgsOptionsConfig>(modeOptions: T) {
-  try {
-    return parseArgs({ options: { ...cliOptions, ...modeOptions } }).values;
-  } catch (error) {
-    throw new DesignTreeError((error as Error).message);
-  }
-}
-
-function runTests() {
-  AddQuestion.tests();
-}
-
-function main() {
-  const mode = readMode();
-  if (mode.kind === "test") {
-    readModeConfig(testOptions);
-    runTests();
-    return;
-  }
-  runOp(Log.fileLog("designtree.jsonl"), mode.op);
-}
-
-function runOp(log: Log, op: string) {
-  switch (op) {
-    case "add-question": {
-      const config = readModeConfig(AddQuestion.options);
-      console.log(AddQuestion.run(log, config));
-      break;
+  function readMode(): Mode {
+    const { op, test } = parseArgs({ options: cliOptions, strict: false }).values;
+    if (op !== undefined && test !== undefined) {
+      throw new DesignTreeError("--op and --test are mutually exclusive");
     }
-    default:
-      throw new DesignTreeError(`unknown op: ${op}`);
+    if (test !== undefined) return { kind: "test" };
+    if (op === undefined) throw new DesignTreeError("missing --op or --test");
+    if (typeof op !== "string") throw new DesignTreeError("--op requires a value");
+    return { kind: "op", op };
   }
-}
+
+  function readModeConfig<T extends ParseArgsOptionsConfig>(modeOptions: T) {
+    try {
+      return parseArgs({ options: { ...cliOptions, ...modeOptions } }).values;
+    } catch (error) {
+      throw new DesignTreeError((error as Error).message);
+    }
+  }
+
+  function runTests() {
+    AddQuestion.tests();
+  }
+
+  function main() {
+    const mode = readMode();
+    if (mode.kind === "test") {
+      readModeConfig(testOptions);
+      runTests();
+      return;
+    }
+    runOp(Log.fileLog("designtree.jsonl"), mode.op);
+  }
+
+  function runOp(log: Log, op: string) {
+    switch (op) {
+      case "add-question": {
+        const config = readModeConfig(AddQuestion.options);
+        console.log(AddQuestion.run(log, config));
+        break;
+      }
+      default:
+        throw new DesignTreeError(`unknown op: ${op}`);
+    }
+  }
+
+  return { main };
+})();
 
 try {
-  main();
+  Cli.main();
 } catch (error) {
   if (!(error instanceof DesignTreeError)) throw error;
   console.error(error.message);
