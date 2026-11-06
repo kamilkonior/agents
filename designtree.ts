@@ -883,6 +883,29 @@ const Next = (() => {
       // then
       assert.equal(question, undefined);
     });
+
+    test("next is the first open question with its options", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "add-question", id: "Q2", text: "q2" },
+      ]);
+
+      // when
+      const question = run(log);
+
+      // then
+      assert.deepEqual(question, {
+        id: "Q1",
+        text: "q1",
+        options: [
+          { id: "Q1a", text: "a" },
+          { id: "Q1b", text: "b" },
+        ],
+      });
+    });
   }
 
   return { options, run, tests };
