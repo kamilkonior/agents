@@ -1214,6 +1214,18 @@ const AddFollowUp = (() => {
       ]);
     });
 
+    test("follow-up without an origin is stored without an origin field", () => {
+      // given
+      const log = Log.memoryLog();
+
+      // when
+      const id = add(log, "f");
+
+      // then
+      assert.equal(id, "F1");
+      assert.deepEqual(log.read(), [{ type: "add-follow-up", id: "F1", text: "f" }]);
+    });
+
     test("a dismissed follow-up is not open", () => {
       // given
       const log = Log.memoryLog([
