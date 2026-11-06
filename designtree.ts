@@ -283,14 +283,14 @@ const AddQuestion = (() => {
         id: "Q1",
         text: "q",
         options: [
-          { id: "O1", text: "a" },
-          { id: "O2", text: "b" },
+          { id: "Q1a", text: "a" },
+          { id: "Q1b", text: "b" },
         ],
       });
       assert.deepEqual(log.read(), [
         { type: "add-question", id: "Q1", text: "q" },
-        { type: "add-option", id: "O1", text: "a", origin: "Q1" },
-        { type: "add-option", id: "O2", text: "b", origin: "Q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
       ]);
     });
 
