@@ -1029,6 +1029,20 @@ const Xml = (() => {
       // then
       assert.equal(xml, "<next></next>");
     });
+
+    test("next with a question wraps the question block", () => {
+      // given
+      const data: QuestionData = { id: "Q1", text: "q", options: [{ id: "Q1a", text: "a" }] };
+
+      // when
+      const xml = next(data);
+
+      // then
+      const inner = question(data)
+        .split("\n")
+        .map((line) => `  ${line}`);
+      assert.deepEqual(xml.split("\n"), ["<next>", ...inner, "</next>"]);
+    });
   }
 
   return { option, question, selection, next, tests };
