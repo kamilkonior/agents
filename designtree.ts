@@ -7,7 +7,8 @@ import { parseArgs, type ParseArgsOptionsConfig } from "node:util";
 
 type Event =
   | { type: "add-question"; id: string; text: string; origin?: string }
-  | { type: "add-option"; id: string; text: string; origin: string };
+  | { type: "add-option"; id: string; text: string; origin: string }
+  | { type: "select-option"; origin: string };
 
 type Log = {
   read(): Event[];
@@ -51,7 +52,7 @@ const Log = (() => {
   }
 
   function find(log: Log, id: string): Event | undefined {
-    return log.read().find((event) => event.id === id);
+    return log.read().find((event) => "id" in event && event.id === id);
   }
 
   function has(log: Log, id: string): boolean {
@@ -62,7 +63,7 @@ const Log = (() => {
     const numbers = log
       .read()
       .filter((event) => event.type === type)
-      .map((event) => Number(event.id.slice(prefix.length)));
+      .map((event) => ("id" in event ? Number(event.id.slice(prefix.length)) : 0));
 
     return `${prefix}${Math.max(0, ...numbers) + 1}`;
   }
