@@ -528,6 +528,15 @@ const Xml = (() => {
     ].join("\n");
   }
 
+  function selection(data: SelectionData): string {
+    return [
+      "<selection>",
+      `  <question><id>${data.question.id}</id><text>${escapeXml(data.question.text)}</text></question>`,
+      `  ${option(data.option)}`,
+      "</selection>",
+    ].join("\n");
+  }
+
   function tests() {
     test("option text is escaped", () => {
       // given
@@ -596,7 +605,7 @@ const Xml = (() => {
     });
   }
 
-  return { option, question, tests };
+  return { option, question, selection, tests };
 })();
 
 const Cli = (() => {
