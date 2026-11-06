@@ -992,23 +992,31 @@ const Xml = (() => {
 const Cli = (() => {
   const cliOptions = {
     op: { type: "string" },
+    query: { type: "string" },
     test: { type: "boolean" },
   } as const;
 
   const testOptions = {} as const;
 
-  type Mode = { kind: "test" } | { kind: "op"; op: string };
+  type Mode = { kind: "test" } | { kind: "op"; op: string } | { kind: "query"; query: string };
 
   function readMode(): Mode {
-    const { op, test } = parseArgs({ options: cliOptions, strict: false }).values;
+    const { op, query, test } = parseArgs({ options: cliOptions, strict: false }).values;
 
-    if (op !== undefined && test !== undefined) {
-      throw new DesignTreeError("--op and --test are mutually exclusive");
+    const given = [op, query, test].filter((value) => value !== undefined);
+    if (given.length > 1) {
+      throw new DesignTreeError("--op, --query and --test are mutually exclusive");
     }
 
     if (test !== undefined) return { kind: "test" };
 
-    if (op === undefined) throw new DesignTreeError("missing --op or --test");
+    if (query !== undefined) {
+      if (typeof query !== "string") throw new DesignTreeError("--query requires a value");
+
+      return { kind: "query", query };
+    }
+
+    if (op === undefined) throw new DesignTreeError("missing --op, --query or --test");
     if (typeof op !== "string") throw new DesignTreeError("--op requires a value");
 
     return { kind: "op", op };
@@ -1028,6 +1036,7 @@ const Cli = (() => {
     AddQuestion.tests();
     AddOption.tests();
     SelectOption.tests();
+    Next.tests();
     Xml.tests();
   }
 
@@ -1040,7 +1049,27 @@ const Cli = (() => {
       return;
     }
 
-    runOp(Log.fileLog("designtree.jsonl"), mode.op);
+    const log = Log.fileLog("designtree.jsonl");
+
+    if (mode.kind === "query") {
+      runQuery(log, mode.query);
+      return;
+    }
+
+    runOp(log, mode.op);
+  }
+
+  function runQuery(log: Log, query: string) {
+    switch (query) {
+      case "next": {
+        readModeConfig(Next.options);
+        console.log(Xml.next(Next.run(log)));
+        break;
+      }
+
+      default:
+        throw new DesignTreeError(`unknown query: ${query}`);
+    }
   }
 
   function runOp(log: Log, op: string) {
