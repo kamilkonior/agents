@@ -76,7 +76,26 @@ const Log = (() => {
     return result;
   }
 
-  return { fileLog, memoryLog, find, has, nextId, transaction };
+  function tests() {
+    test("transaction that throws leaves the log untouched", () => {
+      // given
+      const question: Event = { type: "add-question", id: "Q1", text: "q" };
+      const log = memoryLog([question]);
+
+      // when
+      const act = () =>
+        transaction(log, (staged) => {
+          staged.append({ type: "add-option", id: "O1", text: "a", origin: "Q1" });
+          throw new Error("boom");
+        });
+
+      // then
+      assert.throws(act, /boom/);
+      assert.deepEqual(log.read(), [question]);
+    });
+  }
+
+  return { fileLog, memoryLog, find, has, nextId, transaction, tests };
 })();
 
 const AddQuestion = (() => {
@@ -481,6 +500,7 @@ const Cli = (() => {
   }
 
   function runTests() {
+    Log.tests();
     AddQuestion.tests();
     AddOption.tests();
     Xml.tests();
