@@ -378,6 +378,28 @@ const Graph = (() => {
       // then
       assert.deepEqual(open, []);
     });
+
+    test("a question under the selected option is on the frontier", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+          { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+          { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+          { type: "select-option", origin: "Q1a" },
+        ]),
+      );
+
+      // when
+      const open = frontier(graph);
+
+      // then
+      assert.deepEqual(
+        open.map((question) => question.id),
+        ["Q2"],
+      );
+    });
   }
 
   return { build, frontier, tests };
