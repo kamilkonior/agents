@@ -324,6 +324,26 @@ const Graph = (() => {
       assert.deepEqual(parent.children, [child]);
       assert.deepEqual(optionNode(graph.nodes, "Q1a").children, []);
     });
+
+    test("options attach to their question in order", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+      ]);
+
+      // when
+      const graph = build(log);
+
+      // then
+      const question = questionNode(graph.nodes, "Q1");
+      assert.deepEqual(
+        question.options.map((option) => option.id),
+        ["Q1a", "Q1b"],
+      );
+      for (const option of question.options) assert.equal(option.question, question);
+    });
   }
 
   return { build, tests };
