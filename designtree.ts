@@ -55,15 +55,12 @@ const addQuestionOptions = {
   origin: { type: "string" },
 } as const;
 
-function fail(message: string): never {
-  console.error(message);
-  process.exit(1);
-}
+class DesignTreeError extends Error {}
 
 function readOp() {
   const { op } = parseArgs({ options: cliOptions, strict: false }).values;
-  if (op === undefined) fail("missing --op");
-  if (typeof op !== "string") fail("--op requires a value");
+  if (op === undefined) throw new DesignTreeError("missing --op");
+  if (typeof op !== "string") throw new DesignTreeError("--op requires a value");
   return op;
 }
 
@@ -71,25 +68,35 @@ function readOpConfig<T extends ParseArgsOptionsConfig>(opOptions: T) {
   try {
     return parseArgs({ options: { ...cliOptions, ...opOptions } }).values;
   } catch (error) {
-    fail((error as Error).message);
+    throw new DesignTreeError((error as Error).message);
   }
 }
 
-const log = fileLog("designtree.jsonl");
-const op = readOp();
+function main() {
+  const log = fileLog("designtree.jsonl");
+  const op = readOp();
 
-switch (op) {
-  case "add-question": {
-    const config = readOpConfig(addQuestionOptions);
-    if (!config.text) fail("add-question requires --text");
-    if (config.origin !== undefined && !exists(log, config.origin)) {
-      fail(`origin not found: ${config.origin}`);
+  switch (op) {
+    case "add-question": {
+      const config = readOpConfig(addQuestionOptions);
+      if (!config.text) throw new DesignTreeError("add-question requires --text");
+      if (config.origin !== undefined && !exists(log, config.origin)) {
+        throw new DesignTreeError(`origin not found: ${config.origin}`);
+      }
+      const id = nextQuestionId(log);
+      log.append({ type: "add-question", id, text: config.text, origin: config.origin });
+      console.log(id);
+      break;
     }
-    const id = nextQuestionId(log);
-    log.append({ type: "add-question", id, text: config.text, origin: config.origin });
-    console.log(id);
-    break;
+    default:
+      throw new DesignTreeError(`unknown op: ${op}`);
   }
-  default:
-    fail(`unknown op: ${op}`);
+}
+
+try {
+  main();
+} catch (error) {
+  if (!(error instanceof DesignTreeError)) throw error;
+  console.error(error.message);
+  process.exit(1);
 }
