@@ -499,8 +499,8 @@ const Xml = (() => {
         id: "Q1",
         text: "q",
         options: [
-          { id: "O1", text: "a" },
-          { id: "O2", text: "b" },
+          { id: "Q1a", text: "a" },
+          { id: "Q1b", text: "b" },
         ],
       };
 
@@ -515,8 +515,8 @@ const Xml = (() => {
           "  <id>Q1</id>",
           "  <text>q</text>",
           "  <options>",
-          "    <option><id>O1</id><text>a</text></option>",
-          "    <option><id>O2</id><text>b</text></option>",
+          "    <option><id>Q1a</id><text>a</text></option>",
+          "    <option><id>Q1b</id><text>b</text></option>",
           "  </options>",
           "</question>",
         ].join("\n"),
