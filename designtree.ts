@@ -1,4 +1,6 @@
+import assert from "node:assert/strict";
 import { appendFileSync, existsSync, readFileSync } from "node:fs";
+import { test } from "node:test";
 import { parseArgs, type ParseArgsOptionsConfig } from "node:util";
 
 type Event = { type: "add-question"; id: string; text: string; origin?: string };
@@ -86,11 +88,43 @@ function addQuestion(log: Log, text: string, origin?: string): string {
     throw new DesignTreeError(`origin not found: ${origin}`);
   }
   const id = nextQuestionId(log);
-  log.append({ type: "add-question", id, text, origin });
+  const event: Event = { type: "add-question", id, text };
+  if (origin !== undefined) event.origin = origin;
+  log.append(event);
   return id;
 }
 
-function runTests() {}
+function runTests() {
+  test("first question in an empty log gets Q1", () => {
+    const log = memoryLog();
+    assert.equal(addQuestion(log, "a"), "Q1");
+  });
+
+  test("question ids go up in order", () => {
+    const log = memoryLog();
+    assert.equal(addQuestion(log, "a"), "Q1");
+    assert.equal(addQuestion(log, "b"), "Q2");
+  });
+
+  test("question without origin is stored without an origin field", () => {
+    const log = memoryLog();
+    addQuestion(log, "a");
+    assert.deepEqual(log.read(), [{ type: "add-question", id: "Q1", text: "a" }]);
+  });
+
+  test("question with an existing origin is stored with it", () => {
+    const log = memoryLog();
+    addQuestion(log, "a");
+    addQuestion(log, "b", "Q1");
+    assert.deepEqual(log.read()[1], { type: "add-question", id: "Q2", text: "b", origin: "Q1" });
+  });
+
+  test("question with an unknown origin throws and appends nothing", () => {
+    const log = memoryLog();
+    assert.throws(() => addQuestion(log, "a", "Q9"), DesignTreeError);
+    assert.deepEqual(log.read(), []);
+  });
+}
 
 function main() {
   const mode = readMode();
