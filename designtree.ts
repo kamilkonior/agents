@@ -3,7 +3,9 @@ import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import { parseArgs, type ParseArgsOptionsConfig } from "node:util";
 
-type Event = { type: "add-question"; id: string; text: string; origin?: string };
+type Event =
+  | { type: "add-question"; id: string; text: string; origin?: string }
+  | { type: "add-option"; id: string; text: string; origin: string };
 
 type Log = {
   read(): Event[];
