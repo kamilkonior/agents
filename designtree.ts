@@ -320,8 +320,16 @@ const Graph = (() => {
   function frontier(graph: Graph): (QuestionNode | FollowUpNode)[] {
     const open: (QuestionNode | FollowUpNode)[] = [];
 
-    function backtrack(node: QuestionNode | OptionNode) {
-      open.push(...node.followUps.filter((followUp) => followUp.status === "open"));
+    function backtrack(node: QuestionNode | OptionNode | FollowUpNode) {
+      node.followUps.forEach(visit);
+    }
+
+    function visit(followUp: FollowUpNode) {
+      if (followUp.status === "open") open.push(followUp);
+      if (followUp.status !== "promoted") return;
+
+      followUp.children.forEach(walk);
+      backtrack(followUp);
     }
 
     function walk(question: QuestionNode) {
