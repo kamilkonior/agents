@@ -19,6 +19,8 @@ type OptionData = { id: string; text: string };
 
 type QuestionData = { id: string; text: string; options: OptionData[] };
 
+type SelectionData = { question: { id: string; text: string }; option: OptionData };
+
 class DesignTreeError extends Error {}
 
 const Log = (() => {
