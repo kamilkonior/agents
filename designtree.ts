@@ -514,6 +514,19 @@ const SelectOption = (() => {
       assert.throws(act, DesignTreeError);
       assert.deepEqual(log.read(), []);
     });
+
+    test("selecting a question throws and appends nothing", () => {
+      // given
+      const question: Event = { type: "add-question", id: "Q1", text: "q" };
+      const log = Log.memoryLog([question]);
+
+      // when
+      const act = () => select(log, "Q1");
+
+      // then
+      assert.throws(act, DesignTreeError);
+      assert.deepEqual(log.read(), [question]);
+    });
   }
 
   return { options, run, tests };
