@@ -163,7 +163,7 @@ const AddOption = (() => {
     origin: { type: "string" },
   } as const;
 
-  function addOption(log: Log, text: string, origin: string): string {
+  function add(log: Log, text: string, origin: string): string {
     const question = Log.find(log, origin);
     if (question === undefined) throw new DesignTreeError(`origin not found: ${origin}`);
     if (question.type !== "add-question") {
@@ -177,11 +177,13 @@ const AddOption = (() => {
     return id;
   }
 
-  function run(log: Log, config: { text?: string; origin?: string }): string {
+  function run(log: Log, config: { text?: string; origin?: string }): OptionData {
     if (!config.text) throw new DesignTreeError("add-option requires --text");
     if (!config.origin) throw new DesignTreeError("add-option requires --origin");
 
-    return addOption(log, config.text, config.origin);
+    const id = add(log, config.text, config.origin);
+
+    return { id, text: config.text };
   }
 
   function tests() {
@@ -190,7 +192,7 @@ const AddOption = (() => {
       const log = Log.memoryLog();
 
       // when
-      const act = () => addOption(log, "a", "Q1");
+      const act = () => add(log, "a", "Q1");
 
       // then
       assert.throws(act, DesignTreeError);
@@ -206,7 +208,7 @@ const AddOption = (() => {
       const log = Log.memoryLog([...events]);
 
       // when
-      const act = () => addOption(log, "b", "O1");
+      const act = () => add(log, "b", "O1");
 
       // then
       assert.throws(act, DesignTreeError);
@@ -219,7 +221,7 @@ const AddOption = (() => {
       const log = Log.memoryLog([question]);
 
       // when
-      const id = addOption(log, "a", "Q1");
+      const id = add(log, "a", "Q1");
 
       // then
       assert.equal(id, "O1");
@@ -238,7 +240,7 @@ const AddOption = (() => {
       const log = Log.memoryLog([...events]);
 
       // when
-      const id = addOption(log, "b", "Q1");
+      const id = add(log, "b", "Q1");
 
       // then
       assert.equal(id, "O2");
@@ -258,7 +260,7 @@ const AddOption = (() => {
       const log = Log.memoryLog([...events]);
 
       // when
-      const id = addOption(log, "b", "Q2");
+      const id = add(log, "b", "Q2");
 
       // then
       assert.equal(id, "O2");
@@ -269,7 +271,7 @@ const AddOption = (() => {
     });
   }
 
-  return { options, run, tests };
+  return { options, add, run, tests };
 })();
 
 const Cli = (() => {
