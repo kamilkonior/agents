@@ -10,6 +10,8 @@ type Log = {
   append(event: Event): void;
 };
 
+class DesignTreeError extends Error {}
+
 const Log = (() => {
   function fileLog(path: string): Log {
     return {
@@ -44,13 +46,70 @@ const Log = (() => {
   return { fileLog, memoryLog, exists };
 })();
 
-function nextQuestionId(log: Log): string {
-  const numbers = log
-    .read()
-    .filter((event) => event.type === "add-question")
-    .map((event) => Number(event.id.slice(1)));
-  return `Q${Math.max(0, ...numbers) + 1}`;
-}
+const AddQuestion = (() => {
+  const options = {
+    text: { type: "string" },
+    origin: { type: "string" },
+  } as const;
+
+  function nextQuestionId(log: Log): string {
+    const numbers = log
+      .read()
+      .filter((event) => event.type === "add-question")
+      .map((event) => Number(event.id.slice(1)));
+    return `Q${Math.max(0, ...numbers) + 1}`;
+  }
+
+  function addQuestion(log: Log, text: string, origin?: string): string {
+    if (origin !== undefined && !Log.exists(log, origin)) {
+      throw new DesignTreeError(`origin not found: ${origin}`);
+    }
+    const id = nextQuestionId(log);
+    const event: Event = { type: "add-question", id, text };
+    if (origin !== undefined) event.origin = origin;
+    log.append(event);
+    return id;
+  }
+
+  function run(log: Log, config: { text?: string; origin?: string }): string {
+    if (!config.text) throw new DesignTreeError("add-question requires --text");
+    return addQuestion(log, config.text, config.origin);
+  }
+
+  function tests() {
+    test("first question in an empty log gets Q1", () => {
+      const log = Log.memoryLog();
+      assert.equal(addQuestion(log, "a"), "Q1");
+    });
+
+    test("question ids go up in order", () => {
+      const log = Log.memoryLog();
+      assert.equal(addQuestion(log, "a"), "Q1");
+      assert.equal(addQuestion(log, "b"), "Q2");
+    });
+
+    test("question without origin is stored without an origin field", () => {
+      const log = Log.memoryLog();
+      addQuestion(log, "a");
+      assert.deepEqual(log.read(), [{ type: "add-question", id: "Q1", text: "a" }]);
+    });
+
+    test("question with an existing origin is stored with it", () => {
+      const log = Log.memoryLog();
+      addQuestion(log, "a");
+      addQuestion(log, "b", "Q1");
+      assert.deepEqual(log.read()[1], { type: "add-question", id: "Q2", text: "b", origin: "Q1" });
+    });
+
+    test("question with an unknown origin throws and appends nothing", () => {
+      const log = Log.memoryLog();
+      assert.throws(() => addQuestion(log, "a", "Q9"), DesignTreeError);
+      assert.deepEqual(log.read(), []);
+    });
+  }
+
+  return { options, run, tests };
+})();
 
 const cliOptions = {
   op: { type: "string" },
@@ -58,13 +117,6 @@ const cliOptions = {
 } as const;
 
 const testOptions = {} as const;
-
-const addQuestionOptions = {
-  text: { type: "string" },
-  origin: { type: "string" },
-} as const;
-
-class DesignTreeError extends Error {}
 
 type Mode = { kind: "test" } | { kind: "op"; op: string };
 
@@ -87,47 +139,8 @@ function readModeConfig<T extends ParseArgsOptionsConfig>(modeOptions: T) {
   }
 }
 
-function addQuestion(log: Log, text: string, origin?: string): string {
-  if (origin !== undefined && !Log.exists(log, origin)) {
-    throw new DesignTreeError(`origin not found: ${origin}`);
-  }
-  const id = nextQuestionId(log);
-  const event: Event = { type: "add-question", id, text };
-  if (origin !== undefined) event.origin = origin;
-  log.append(event);
-  return id;
-}
-
 function runTests() {
-  test("first question in an empty log gets Q1", () => {
-    const log = Log.memoryLog();
-    assert.equal(addQuestion(log, "a"), "Q1");
-  });
-
-  test("question ids go up in order", () => {
-    const log = Log.memoryLog();
-    assert.equal(addQuestion(log, "a"), "Q1");
-    assert.equal(addQuestion(log, "b"), "Q2");
-  });
-
-  test("question without origin is stored without an origin field", () => {
-    const log = Log.memoryLog();
-    addQuestion(log, "a");
-    assert.deepEqual(log.read(), [{ type: "add-question", id: "Q1", text: "a" }]);
-  });
-
-  test("question with an existing origin is stored with it", () => {
-    const log = Log.memoryLog();
-    addQuestion(log, "a");
-    addQuestion(log, "b", "Q1");
-    assert.deepEqual(log.read()[1], { type: "add-question", id: "Q2", text: "b", origin: "Q1" });
-  });
-
-  test("question with an unknown origin throws and appends nothing", () => {
-    const log = Log.memoryLog();
-    assert.throws(() => addQuestion(log, "a", "Q9"), DesignTreeError);
-    assert.deepEqual(log.read(), []);
-  });
+  AddQuestion.tests();
 }
 
 function main() {
@@ -143,9 +156,8 @@ function main() {
 function runOp(log: Log, op: string) {
   switch (op) {
     case "add-question": {
-      const config = readModeConfig(addQuestionOptions);
-      if (!config.text) throw new DesignTreeError("add-question requires --text");
-      console.log(addQuestion(log, config.text, config.origin));
+      const config = readModeConfig(AddQuestion.options);
+      console.log(AddQuestion.run(log, config));
       break;
     }
     default:
