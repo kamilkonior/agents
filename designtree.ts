@@ -10,7 +10,7 @@ type Event =
   | { type: "add-option"; id: string; text: string; origin: string }
   | { type: "select-option"; origin: string }
   | { type: "add-follow-up"; id: string; text: string; origin: string }
-  | { type: "promote-follow-up"; origin: string; question: string }
+  | { type: "promote-follow-up"; origin: string }
   | { type: "dismiss-follow-up"; origin: string };
 
 type Log = {
@@ -1149,11 +1149,11 @@ const PromoteFollowUp = (() => {
       const followUp = AddFollowUp.open(staged, origin);
       const question = AddQuestion.run(staged, {
         text: followUp.text,
-        origin: followUp.parent.id,
+        origin: followUp.id,
         option: config.option,
       });
 
-      staged.append({ type: "promote-follow-up", origin, question: question.id });
+      staged.append({ type: "promote-follow-up", origin });
 
       return question;
     });
