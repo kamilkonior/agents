@@ -208,6 +208,22 @@ const AddOption = (() => {
       assert.throws(act, DesignTreeError);
       assert.deepEqual(log.read(), events);
     });
+
+    test("option under a question is stored with its origin", () => {
+      // given
+      const question: Event = { type: "add-question", id: "Q1", text: "q" };
+      const log = Log.memoryLog([question]);
+
+      // when
+      const id = addOption(log, "a", "Q1");
+
+      // then
+      assert.equal(id, "O1");
+      assert.deepEqual(log.read(), [
+        question,
+        { type: "add-option", id: "O1", text: "a", origin: "Q1" },
+      ]);
+    });
   }
 
   return { options, run, tests };
