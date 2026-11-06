@@ -12,6 +12,10 @@ type Log = {
   append(event: Event): void;
 };
 
+type OptionData = { id: string; text: string };
+
+type QuestionData = { id: string; text: string; options: OptionData[] };
+
 class DesignTreeError extends Error {}
 
 const Log = (() => {
