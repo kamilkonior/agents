@@ -957,6 +957,64 @@ const AddFollowUp = (() => {
     return { id, text: config.text };
   }
 
+  function open(log: Log, id: string): FollowUpNode {
+    const node = Graph.build(log).nodes.get(id);
+    if (node === undefined) throw new DesignTreeError(`origin not found: ${id}`);
+    if (node.kind !== "follow-up") throw new DesignTreeError(`origin is not a follow-up: ${id}`);
+    if (node.status !== "open") throw new DesignTreeError(`follow-up ${id} is already ${node.status}`);
+
+    return node;
+  }
+
+  function tests() {}
+
+  return { options, open, run, tests };
+})();
+
+const PromoteFollowUp = (() => {
+  const options = {
+    origin: { type: "string" },
+    option: { type: "string", multiple: true },
+  } as const;
+
+  function run(log: Log, config: { origin?: string; option?: string[] }): QuestionData {
+    const origin = config.origin;
+    if (!origin) throw new DesignTreeError("promote-follow-up requires --origin");
+
+    return Log.transaction(log, (staged) => {
+      const followUp = AddFollowUp.open(staged, origin);
+      const question = AddQuestion.run(staged, {
+        text: followUp.text,
+        origin: followUp.parent.id,
+        option: config.option,
+      });
+
+      staged.append({ type: "promote-follow-up", origin, question: question.id });
+
+      return question;
+    });
+  }
+
+  function tests() {}
+
+  return { options, run, tests };
+})();
+
+const DismissFollowUp = (() => {
+  const options = {
+    origin: { type: "string" },
+  } as const;
+
+  function run(log: Log, config: { origin?: string }): FollowUpData {
+    if (!config.origin) throw new DesignTreeError("dismiss-follow-up requires --origin");
+
+    const followUp = AddFollowUp.open(log, config.origin);
+
+    log.append({ type: "dismiss-follow-up", origin: followUp.id });
+
+    return { id: followUp.id, text: followUp.text };
+  }
+
   function tests() {}
 
   return { options, run, tests };
