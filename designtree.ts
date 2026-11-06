@@ -78,32 +78,60 @@ const AddQuestion = (() => {
 
   function tests() {
     test("first question in an empty log gets Q1", () => {
+      // given
       const log = Log.memoryLog();
-      assert.equal(addQuestion(log, "a"), "Q1");
+
+      // when
+      const id = addQuestion(log, "a");
+
+      // then
+      assert.equal(id, "Q1");
     });
 
     test("question ids go up in order", () => {
+      // given
       const log = Log.memoryLog();
-      assert.equal(addQuestion(log, "a"), "Q1");
-      assert.equal(addQuestion(log, "b"), "Q2");
+      addQuestion(log, "a");
+
+      // when
+      const id = addQuestion(log, "b");
+
+      // then
+      assert.equal(id, "Q2");
     });
 
     test("question without origin is stored without an origin field", () => {
+      // given
       const log = Log.memoryLog();
+
+      // when
       addQuestion(log, "a");
+
+      // then
       assert.deepEqual(log.read(), [{ type: "add-question", id: "Q1", text: "a" }]);
     });
 
     test("question with an existing origin is stored with it", () => {
+      // given
       const log = Log.memoryLog();
       addQuestion(log, "a");
+
+      // when
       addQuestion(log, "b", "Q1");
+
+      // then
       assert.deepEqual(log.read()[1], { type: "add-question", id: "Q2", text: "b", origin: "Q1" });
     });
 
     test("question with an unknown origin throws and appends nothing", () => {
+      // given
       const log = Log.memoryLog();
-      assert.throws(() => addQuestion(log, "a", "Q9"), DesignTreeError);
+
+      // when
+      const act = () => addQuestion(log, "a", "Q9");
+
+      // then
+      assert.throws(act, DesignTreeError);
       assert.deepEqual(log.read(), []);
     });
   }
