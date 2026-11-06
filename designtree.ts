@@ -1754,6 +1754,55 @@ const Xml = (() => {
       // then
       assert.equal(xml, "<tree></tree>");
     });
+
+    test("tree renders a settled question with an open question nested inside", () => {
+      // given
+      const items: TreeItem[] = [
+        {
+          kind: "question",
+          id: "Q1",
+          text: "q1",
+          answer: { id: "Q1a", text: "a" },
+          children: [
+            {
+              kind: "open-question",
+              id: "Q2",
+              text: "q2",
+              options: [
+                { id: "Q2a", text: "x" },
+                { id: "Q2b", text: "y" },
+              ],
+              children: [],
+            },
+          ],
+        },
+      ];
+
+      // when
+      const xml = tree(items);
+
+      // then
+      assert.equal(
+        xml,
+        [
+          "<tree>",
+          "  <question>",
+          "    <id>Q1</id>",
+          "    <text>q1</text>",
+          "    <answer><id>Q1a</id><text>a</text></answer>",
+          "    <question>",
+          "      <id>Q2</id>",
+          "      <text>q2</text>",
+          "      <open>",
+          "        <option><id>Q2a</id><text>x</text></option>",
+          "        <option><id>Q2b</id><text>y</text></option>",
+          "      </open>",
+          "    </question>",
+          "  </question>",
+          "</tree>",
+        ].join("\n"),
+      );
+    });
   }
 
   return { option, question, selection, followUp, next, tree, tests };
