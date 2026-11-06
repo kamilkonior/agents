@@ -65,7 +65,18 @@ const Log = (() => {
     return `${prefix}${Math.max(0, ...numbers) + 1}`;
   }
 
-  return { fileLog, memoryLog, find, has, nextId };
+  function transaction<T>(log: Log, work: (staged: Log) => T): T {
+    const existing = log.read();
+    const staged = memoryLog([...existing]);
+
+    const result = work(staged);
+
+    for (const event of staged.read().slice(existing.length)) log.append(event);
+
+    return result;
+  }
+
+  return { fileLog, memoryLog, find, has, nextId, transaction };
 })();
 
 const AddQuestion = (() => {
