@@ -431,6 +431,17 @@ const Xml = (() => {
         ].join("\n"),
       );
     });
+
+    test("question text is escaped", () => {
+      // given
+      const data: QuestionData = { id: "Q1", text: "a < b > c & d", options: [] };
+
+      // when
+      const xml = question(data);
+
+      // then
+      assert.equal(xml.split("\n")[2], "  <text>a &lt; b &gt; c &amp; d</text>");
+    });
   }
 
   return { option, question, tests };
