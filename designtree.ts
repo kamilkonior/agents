@@ -1467,6 +1467,18 @@ const Next = (() => {
   return { options, run, tests };
 })();
 
+const Tree = (() => {
+  const options = {} as const;
+
+  function run(log: Log): TreeItem[] {
+    return Graph.tree(Graph.build(log));
+  }
+
+  function tests() {}
+
+  return { options, run, tests };
+})();
+
 const Xml = (() => {
   function escapeXml(text: string): string {
     return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
@@ -1511,6 +1523,27 @@ const Xml = (() => {
       .join("\n");
 
     return `<next>\n${body}\n</next>`;
+  }
+
+  function tree(items: TreeItem[]): string {
+    if (items.length === 0) return "<tree></tree>";
+
+    function lines(item: TreeItem): string[] {
+      if (item.kind === "follow-up") return [followUp(item)];
+
+      const head = [`  <id>${item.id}</id>`, `  <text>${escapeXml(item.text)}</text>`];
+      const state =
+        item.kind === "question"
+          ? [`  <answer><id>${item.answer.id}</id><text>${escapeXml(item.answer.text)}</text></answer>`]
+          : ["  <open>", ...item.options.map((each) => `    ${option(each)}`), "  </open>"];
+      const children = item.children.flatMap(lines).map((line) => `  ${line}`);
+
+      return ["<question>", ...head, ...state, ...children, "</question>"];
+    }
+
+    const body = items.flatMap(lines).map((line) => `  ${line}`);
+
+    return ["<tree>", ...body, "</tree>"].join("\n");
   }
 
   function tests() {
@@ -1628,7 +1661,7 @@ const Xml = (() => {
     });
   }
 
-  return { option, question, selection, followUp, next, tests };
+  return { option, question, selection, followUp, next, tree, tests };
 })();
 
 const Cli = (() => {
@@ -1682,6 +1715,7 @@ const Cli = (() => {
     PromoteFollowUp.tests();
     DismissFollowUp.tests();
     Next.tests();
+    Tree.tests();
     Xml.tests();
   }
 
@@ -1709,6 +1743,12 @@ const Cli = (() => {
       case "next": {
         readModeConfig(Next.options);
         console.log(Xml.next(Next.run(log)));
+        break;
+      }
+
+      case "tree": {
+        readModeConfig(Tree.options);
+        console.log(Xml.tree(Tree.run(log)));
         break;
       }
 
