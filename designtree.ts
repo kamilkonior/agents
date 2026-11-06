@@ -401,6 +401,36 @@ const Xml = (() => {
         ["<question>", "  <id>Q1</id>", "  <text>q</text>", "  <options></options>", "</question>"].join("\n"),
       );
     });
+
+    test("question with options renders them nested in order", () => {
+      // given
+      const data: QuestionData = {
+        id: "Q1",
+        text: "q",
+        options: [
+          { id: "O1", text: "a" },
+          { id: "O2", text: "b" },
+        ],
+      };
+
+      // when
+      const xml = question(data);
+
+      // then
+      assert.equal(
+        xml,
+        [
+          "<question>",
+          "  <id>Q1</id>",
+          "  <text>q</text>",
+          "  <options>",
+          "    <option><id>O1</id><text>a</text></option>",
+          "    <option><id>O2</id><text>b</text></option>",
+          "  </options>",
+          "</question>",
+        ].join("\n"),
+      );
+    });
   }
 
   return { option, question, tests };
