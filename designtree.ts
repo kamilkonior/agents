@@ -26,6 +26,10 @@ type SelectionData = { question: { id: string; text: string }; option: OptionDat
 
 type FollowUpData = { id: string; text: string };
 
+type NextData =
+  | { kind: "question"; question: QuestionData }
+  | { kind: "follow-up"; followUp: FollowUpData };
+
 type QuestionNode = {
   kind: "question";
   id: string;
@@ -1023,14 +1027,21 @@ const DismissFollowUp = (() => {
 const Next = (() => {
   const options = {} as const;
 
-  function run(log: Log): QuestionData | undefined {
-    const question = Graph.frontier(Graph.build(log)).find((node) => node.kind === "question");
-    if (question === undefined) return undefined;
+  function run(log: Log): NextData | undefined {
+    const node = Graph.frontier(Graph.build(log))[0];
+    if (node === undefined) return undefined;
+
+    if (node.kind === "follow-up") {
+      return { kind: "follow-up", followUp: { id: node.id, text: node.text } };
+    }
 
     return {
-      id: question.id,
-      text: question.text,
-      options: question.options.map((option) => ({ id: option.id, text: option.text })),
+      kind: "question",
+      question: {
+        id: node.id,
+        text: node.text,
+        options: node.options.map((option) => ({ id: option.id, text: option.text })),
+      },
     };
   }
 
@@ -1103,10 +1114,15 @@ const Xml = (() => {
     ].join("\n");
   }
 
-  function next(data: QuestionData | undefined): string {
-    if (data === undefined) return "<next></next>";
+  function followUp(data: FollowUpData): string {
+    return `<follow-up><id>${data.id}</id><text>${escapeXml(data.text)}</text></follow-up>`;
+  }
 
-    const body = question(data)
+  function next(data: NextData | undefined): string {
+    if (data === undefined) return "<next></next>";
+    if (data.kind === "follow-up") return `<next>\n  ${followUp(data.followUp)}\n</next>`;
+
+    const body = question(data.question)
       .split("\n")
       .map((line) => `  ${line}`)
       .join("\n");
@@ -1207,7 +1223,7 @@ const Xml = (() => {
     });
   }
 
-  return { option, question, selection, next, tests };
+  return { option, question, selection, followUp, next, tests };
 })();
 
 const Cli = (() => {
