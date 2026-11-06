@@ -471,6 +471,42 @@ const AddOption = (() => {
   return { options, add, run, tests };
 })();
 
+const SelectOption = (() => {
+  const options = {
+    origin: { type: "string" },
+  } as const;
+
+  function select(log: Log, origin: string): SelectionData {
+    const option = Log.find(log, origin);
+    if (option === undefined) throw new DesignTreeError(`origin not found: ${origin}`);
+    if (option.type !== "add-option") {
+      throw new DesignTreeError(`origin is not an option: ${origin}`);
+    }
+
+    const question = Log.find(log, option.origin);
+    if (question?.type !== "add-question") {
+      throw new Error(`option ${option.id} has no question ${option.origin}`);
+    }
+
+    log.append({ type: "select-option", origin });
+
+    return {
+      question: { id: question.id, text: question.text },
+      option: { id: option.id, text: option.text },
+    };
+  }
+
+  function run(log: Log, config: { origin?: string }): SelectionData {
+    if (!config.origin) throw new DesignTreeError("select-option requires --origin");
+
+    return select(log, config.origin);
+  }
+
+  function tests() {}
+
+  return { options, run, tests };
+})();
+
 const Xml = (() => {
   function escapeXml(text: string): string {
     return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
