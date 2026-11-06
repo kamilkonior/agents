@@ -400,6 +400,29 @@ const Graph = (() => {
         ["Q2"],
       );
     });
+
+    test("frontier lists answer's children, then question's children, then the next root", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+          { type: "add-question", id: "Q3", text: "q3", origin: "Q1" },
+          { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+          { type: "add-question", id: "Q4", text: "q4" },
+          { type: "select-option", origin: "Q1a" },
+        ]),
+      );
+
+      // when
+      const open = frontier(graph);
+
+      // then
+      assert.deepEqual(
+        open.map((question) => question.id),
+        ["Q2", "Q3", "Q4"],
+      );
+    });
   }
 
   return { build, frontier, tests };
