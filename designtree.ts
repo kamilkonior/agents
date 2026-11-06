@@ -376,7 +376,20 @@ const Xml = (() => {
     ].join("\n");
   }
 
-  return { option, question };
+  function tests() {
+    test("option text is escaped", () => {
+      // given
+      const data: OptionData = { id: "O1", text: "a < b > c & d" };
+
+      // when
+      const xml = option(data);
+
+      // then
+      assert.equal(xml, "<option><id>O1</id><text>a &lt; b &gt; c &amp; d</text></option>");
+    });
+  }
+
+  return { option, question, tests };
 })();
 
 const Cli = (() => {
@@ -415,6 +428,7 @@ const Cli = (() => {
   function runTests() {
     AddQuestion.tests();
     AddOption.tests();
+    Xml.tests();
   }
 
   function main() {
