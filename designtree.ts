@@ -387,6 +387,28 @@ const AddOption = (() => {
       assert.deepEqual(log.read(), events);
     });
 
+    test("27th option under a question throws and appends nothing", () => {
+      // given
+      const letters = "abcdefghijklmnopqrstuvwxyz".split("");
+      const events: Event[] = [
+        { type: "add-question", id: "Q1", text: "q" },
+        ...letters.map((letter): Event => ({
+          type: "add-option",
+          id: `Q1${letter}`,
+          text: letter,
+          origin: "Q1",
+        })),
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const act = () => add(log, "extra", "Q1");
+
+      // then
+      assert.throws(act, DesignTreeError);
+      assert.deepEqual(log.read(), events);
+    });
+
     test("option under a question is stored with its origin", () => {
       // given
       const question: Event = { type: "add-question", id: "Q1", text: "q" };
