@@ -269,6 +269,24 @@ const Graph = (() => {
       // then
       assert.equal(questionNode(graph.nodes, "Q1").answer?.id, "Q1b");
     });
+
+    test("questions without an origin become roots in order", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-question", id: "Q2", text: "q2" },
+        { type: "add-question", id: "Q3", text: "q3", origin: "Q1" },
+      ]);
+
+      // when
+      const graph = build(log);
+
+      // then
+      assert.deepEqual(
+        graph.roots.map((root) => root.id),
+        ["Q1", "Q2"],
+      );
+    });
   }
 
   return { build, tests };
