@@ -502,7 +502,19 @@ const SelectOption = (() => {
     return select(log, config.origin);
   }
 
-  function tests() {}
+  function tests() {
+    test("selecting an unknown option throws and appends nothing", () => {
+      // given
+      const log = Log.memoryLog();
+
+      // when
+      const act = () => select(log, "Q1a");
+
+      // then
+      assert.throws(act, DesignTreeError);
+      assert.deepEqual(log.read(), []);
+    });
+  }
 
   return { options, run, tests };
 })();
