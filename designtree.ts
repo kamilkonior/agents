@@ -1276,6 +1276,9 @@ const Cli = (() => {
     AddQuestion.tests();
     AddOption.tests();
     SelectOption.tests();
+    AddFollowUp.tests();
+    PromoteFollowUp.tests();
+    DismissFollowUp.tests();
     Next.tests();
     Xml.tests();
   }
@@ -1329,6 +1332,24 @@ const Cli = (() => {
       case "select-option": {
         const config = readModeConfig(SelectOption.options);
         console.log(Xml.selection(SelectOption.run(log, config)));
+        break;
+      }
+
+      case "add-follow-up": {
+        const config = readModeConfig(AddFollowUp.options);
+        console.log(Xml.followUp(AddFollowUp.run(log, config)));
+        break;
+      }
+
+      case "promote-follow-up": {
+        const config = readModeConfig(PromoteFollowUp.options);
+        console.log(Xml.question(PromoteFollowUp.run(log, config)));
+        break;
+      }
+
+      case "dismiss-follow-up": {
+        const config = readModeConfig(DismissFollowUp.options);
+        console.log(Xml.followUp(DismissFollowUp.run(log, config)));
         break;
       }
       default:
