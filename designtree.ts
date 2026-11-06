@@ -578,6 +578,31 @@ const Graph = (() => {
       // then
       assert.deepEqual(open, []);
     });
+
+    test("follow-ups come up on backtrack from where they hang", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+          { type: "add-follow-up", id: "F2", text: "f2", origin: "Q1" },
+          { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1a" },
+          { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+          { type: "add-question", id: "Q3", text: "q3", origin: "Q1" },
+          { type: "add-question", id: "Q4", text: "q4" },
+          { type: "select-option", origin: "Q1a" },
+        ]),
+      );
+
+      // when
+      const open = frontier(graph);
+
+      // then
+      assert.deepEqual(
+        open.map((node) => node.id),
+        ["Q2", "F1", "Q3", "F2", "Q4"],
+      );
+    });
   }
 
   return { build, frontier, tests };
