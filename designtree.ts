@@ -659,6 +659,26 @@ const Graph = (() => {
         ["Q2", "F2"],
       );
     });
+
+    test("a dismissed follow-up hides what hangs under it", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+          { type: "select-option", origin: "Q1a" },
+          { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
+          { type: "add-follow-up", id: "F2", text: "f2", origin: "F1" },
+          { type: "dismiss-follow-up", origin: "F1" },
+        ]),
+      );
+
+      // when
+      const open = frontier(graph);
+
+      // then
+      assert.deepEqual(open, []);
+    });
   }
 
   return { build, frontier, tests };
