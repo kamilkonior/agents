@@ -309,14 +309,23 @@ const Graph = (() => {
     return { nodes, roots };
   }
 
-  function frontier(graph: Graph): QuestionNode[] {
-    const open: QuestionNode[] = [];
+  function frontier(graph: Graph): (QuestionNode | FollowUpNode)[] {
+    const open: (QuestionNode | FollowUpNode)[] = [];
+
+    function backtrack(node: QuestionNode | OptionNode) {
+      open.push(...node.followUps.filter((followUp) => followUp.status === "open"));
+    }
 
     function walk(question: QuestionNode) {
-      if (question.answer === undefined) open.push(question);
-      else question.answer.children.forEach(walk);
+      if (question.answer === undefined) {
+        open.push(question);
+      } else {
+        question.answer.children.forEach(walk);
+        backtrack(question.answer);
+      }
 
       question.children.forEach(walk);
+      backtrack(question);
     }
 
     graph.roots.forEach(walk);
@@ -919,7 +928,7 @@ const Next = (() => {
   const options = {} as const;
 
   function run(log: Log): QuestionData | undefined {
-    const question = Graph.frontier(Graph.build(log))[0];
+    const question = Graph.frontier(Graph.build(log)).find((node) => node.kind === "question");
     if (question === undefined) return undefined;
 
     return {
