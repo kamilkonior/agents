@@ -17,11 +17,13 @@ const Log = (() => {
     return {
       read() {
         if (!existsSync(path)) return [];
+
         return readFileSync(path, "utf8")
           .split("\n")
           .filter((line) => line !== "")
           .map((line) => JSON.parse(line));
       },
+
       append(event) {
         appendFileSync(path, JSON.stringify(event) + "\n");
       },
@@ -33,6 +35,7 @@ const Log = (() => {
       read() {
         return [...events];
       },
+
       append(event) {
         events.push(event);
       },
@@ -57,6 +60,7 @@ const AddQuestion = (() => {
       .read()
       .filter((event) => event.type === "add-question")
       .map((event) => Number(event.id.slice(1)));
+
     return `Q${Math.max(0, ...numbers) + 1}`;
   }
 
@@ -64,15 +68,19 @@ const AddQuestion = (() => {
     if (origin !== undefined && !Log.exists(log, origin)) {
       throw new DesignTreeError(`origin not found: ${origin}`);
     }
+
     const id = nextQuestionId(log);
     const event: Event = { type: "add-question", id, text };
     if (origin !== undefined) event.origin = origin;
+
     log.append(event);
+
     return id;
   }
 
   function run(log: Log, config: { text?: string; origin?: string }): string {
     if (!config.text) throw new DesignTreeError("add-question requires --text");
+
     return addQuestion(log, config.text, config.origin);
   }
 
@@ -151,12 +159,16 @@ const Cli = (() => {
 
   function readMode(): Mode {
     const { op, test } = parseArgs({ options: cliOptions, strict: false }).values;
+
     if (op !== undefined && test !== undefined) {
       throw new DesignTreeError("--op and --test are mutually exclusive");
     }
+
     if (test !== undefined) return { kind: "test" };
+
     if (op === undefined) throw new DesignTreeError("missing --op or --test");
     if (typeof op !== "string") throw new DesignTreeError("--op requires a value");
+
     return { kind: "op", op };
   }
 
@@ -174,11 +186,13 @@ const Cli = (() => {
 
   function main() {
     const mode = readMode();
+
     if (mode.kind === "test") {
       readModeConfig(testOptions);
       runTests();
       return;
     }
+
     runOp(Log.fileLog("designtree.jsonl"), mode.op);
   }
 
@@ -201,6 +215,7 @@ try {
   Cli.main();
 } catch (error) {
   if (!(error instanceof DesignTreeError)) throw error;
+
   console.error(error.message);
   process.exit(1);
 }
