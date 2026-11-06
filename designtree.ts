@@ -538,6 +538,27 @@ const Graph = (() => {
         ["Q3"],
       );
     });
+
+    test("closed follow-ups are off the frontier", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+          { type: "select-option", origin: "Q1a" },
+          { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
+          { type: "add-follow-up", id: "F2", text: "f2", origin: "Q1" },
+          { type: "promote-follow-up", origin: "F1", question: "Q2" },
+          { type: "dismiss-follow-up", origin: "F2" },
+        ]),
+      );
+
+      // when
+      const open = frontier(graph);
+
+      // then
+      assert.deepEqual(open, []);
+    });
   }
 
   return { build, frontier, tests };
