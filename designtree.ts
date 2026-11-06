@@ -1803,6 +1803,29 @@ const Xml = (() => {
         ].join("\n"),
       );
     });
+
+    test("tree escapes answer text and renders follow-ups as follow-up lines", () => {
+      // given
+      const follow: FollowUpData = { id: "F1", text: "f" };
+      const items: TreeItem[] = [
+        {
+          kind: "question",
+          id: "Q1",
+          text: "q1",
+          answer: { id: "Q1a", text: "a < b > c & d" },
+          children: [],
+        },
+        { kind: "follow-up", ...follow },
+      ];
+
+      // when
+      const xml = tree(items);
+
+      // then
+      const lines = xml.split("\n");
+      assert.ok(lines.includes("    <answer><id>Q1a</id><text>a &lt; b &gt; c &amp; d</text></answer>"));
+      assert.equal(lines.at(-2), `  ${followUp(follow)}`);
+    });
   }
 
   return { option, question, selection, followUp, next, tree, tests };
