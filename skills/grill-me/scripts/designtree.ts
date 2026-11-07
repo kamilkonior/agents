@@ -1070,6 +1070,17 @@ const Graph = (() => {
       assert.equal(node.text, "a");
       assert.equal(node.kind === "option" ? node.question.id : undefined, "Q1");
     });
+
+    test("looking up an unknown id to restore throws not found", () => {
+      // given
+      const log = Log.memoryLog();
+
+      // when
+      const act = () => excludedNode(log, "Q9");
+
+      // then
+      assert.throws(act, (error) => error instanceof DesignTreeError && error.message === "target not found: Q9");
+    });
   }
 
   return {
