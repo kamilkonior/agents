@@ -88,7 +88,7 @@ type Graph = {
   exclusions: Map<string, ExclusionReason>;
 };
 
-class DesignTreeError extends Error {}
+class DecisionTreeError extends Error {}
 
 const Log = (() => {
   function fileLog(path: string): Log {
@@ -186,9 +186,9 @@ const Log = (() => {
 
     test("file log without a file reads as empty", (t) => {
       // given
-      const dir = mkdtempSync(join(tmpdir(), "designtree-"));
+      const dir = mkdtempSync(join(tmpdir(), "decision-tree-"));
       t.after(() => rmSync(dir, { recursive: true }));
-      const path = join(dir, "designtree.jsonl");
+      const path = join(dir, "decision-tree.jsonl");
 
       // when
       const events = fileLog(path).read();
@@ -200,9 +200,9 @@ const Log = (() => {
 
     test("file log reads back what it appended", (t) => {
       // given
-      const dir = mkdtempSync(join(tmpdir(), "designtree-"));
+      const dir = mkdtempSync(join(tmpdir(), "decision-tree-"));
       t.after(() => rmSync(dir, { recursive: true }));
-      const path = join(dir, "designtree.jsonl");
+      const path = join(dir, "decision-tree.jsonl");
       const question: Event = { type: "add-question", id: "Q1", text: "q" };
       const option: Event = { type: "add-option", id: "Q1a", text: "a", origin: "Q1" };
 
@@ -278,9 +278,9 @@ const Graph = (() => {
       if (current.kind === "question" && current.supersededBy !== undefined) {
         const replacement = current.supersededBy.id;
         if (current === node) {
-          throw new DesignTreeError(`${node.id} is frozen, as it was superseded by ${replacement}`);
+          throw new DecisionTreeError(`${node.id} is frozen, as it was superseded by ${replacement}`);
         }
-        throw new DesignTreeError(
+        throw new DecisionTreeError(
           `${node.id} is frozen, as its ancestor ${current.id} was superseded by ${replacement}`,
         );
       }
@@ -399,7 +399,7 @@ const Graph = (() => {
 
         default: {
           const unknown: never = event;
-          throw new DesignTreeError(`unknown event type: ${(unknown as { type: string }).type}`);
+          throw new DecisionTreeError(`unknown event type: ${(unknown as { type: string }).type}`);
         }
       }
     }
@@ -462,8 +462,8 @@ const Graph = (() => {
     const graph = build(log);
 
     const node = graph.nodes.get(id);
-    if (node === undefined) throw new DesignTreeError(`${role} not found: ${id}`);
-    if (excludedBy(graph, node) !== undefined) throw new DesignTreeError(`${role} is excluded: ${id}`);
+    if (node === undefined) throw new DecisionTreeError(`${role} not found: ${id}`);
+    if (excludedBy(graph, node) !== undefined) throw new DecisionTreeError(`${role} is excluded: ${id}`);
     rejectFrozen(node);
 
     return node;
@@ -473,13 +473,13 @@ const Graph = (() => {
     const graph = build(log);
 
     const node = graph.nodes.get(id);
-    if (node === undefined) throw new DesignTreeError(`target not found: ${id}`);
+    if (node === undefined) throw new DecisionTreeError(`target not found: ${id}`);
     rejectFrozen(node);
 
     const excluding = excludedBy(graph, node);
-    if (excluding === undefined) throw new DesignTreeError(`target is not excluded: ${id}`);
+    if (excluding === undefined) throw new DecisionTreeError(`target is not excluded: ${id}`);
     if (excluding !== node) {
-      throw new DesignTreeError(`${id} cannot be restored, as its ancestor ${excluding.id} is excluded`);
+      throw new DecisionTreeError(`${id} cannot be restored, as its ancestor ${excluding.id} is excluded`);
     }
 
     return node;
@@ -515,7 +515,7 @@ const Graph = (() => {
       // then
       assert.throws(
         act,
-        (error) => error instanceof DesignTreeError && error.message === "unknown event type: dismiss-follow-up",
+        (error) => error instanceof DecisionTreeError && error.message === "unknown event type: dismiss-follow-up",
       );
     });
 
@@ -1112,7 +1112,7 @@ const Graph = (() => {
       const act = () => liveNode(log, "Q9", "target");
 
       // then
-      assert.throws(act, (error) => error instanceof DesignTreeError && error.message === "target not found: Q9");
+      assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "target not found: Q9");
     });
 
     test("looking up an excluded item throws excluded for its role", () => {
@@ -1126,7 +1126,7 @@ const Graph = (() => {
       const act = () => liveNode(log, "Q1", "origin");
 
       // then
-      assert.throws(act, (error) => error instanceof DesignTreeError && error.message === "origin is excluded: Q1");
+      assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "origin is excluded: Q1");
     });
 
     test("looking up an item under an excluded option throws excluded", () => {
@@ -1142,7 +1142,7 @@ const Graph = (() => {
       const act = () => liveNode(log, "Q2", "target");
 
       // then
-      assert.throws(act, (error) => error instanceof DesignTreeError && error.message === "target is excluded: Q2");
+      assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "target is excluded: Q2");
     });
 
     test("looking up a live item returns its node", () => {
@@ -1170,7 +1170,7 @@ const Graph = (() => {
       const act = () => excludedNode(log, "Q9");
 
       // then
-      assert.throws(act, (error) => error instanceof DesignTreeError && error.message === "target not found: Q9");
+      assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "target not found: Q9");
     });
 
     test("looking up a live item to restore throws not excluded", () => {
@@ -1181,7 +1181,7 @@ const Graph = (() => {
       const act = () => excludedNode(log, "Q1");
 
       // then
-      assert.throws(act, (error) => error instanceof DesignTreeError && error.message === "target is not excluded: Q1");
+      assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "target is not excluded: Q1");
     });
 
     test("looking up an item hidden by an excluded ancestor to restore throws", () => {
@@ -1200,7 +1200,7 @@ const Graph = (() => {
       assert.throws(
         act,
         (error) =>
-          error instanceof DesignTreeError && error.message === "Q2 cannot be restored, as its ancestor Q1a is excluded",
+          error instanceof DecisionTreeError && error.message === "Q2 cannot be restored, as its ancestor Q1a is excluded",
       );
     });
 
@@ -1234,7 +1234,7 @@ const Graph = (() => {
       // then
       assert.throws(
         act,
-        (error) => error instanceof DesignTreeError && error.message === "Q1 is frozen, as it was superseded by Q2",
+        (error) => error instanceof DecisionTreeError && error.message === "Q1 is frozen, as it was superseded by Q2",
       );
     });
 
@@ -1254,7 +1254,7 @@ const Graph = (() => {
       assert.throws(
         act,
         (error) =>
-          error instanceof DesignTreeError &&
+          error instanceof DecisionTreeError &&
           error.message === "Q1a is frozen, as its ancestor Q1 was superseded by Q2",
       );
     });
@@ -1276,7 +1276,7 @@ const Graph = (() => {
       assert.throws(
         act,
         (error) =>
-          error instanceof DesignTreeError &&
+          error instanceof DecisionTreeError &&
           error.message === "Q1a is frozen, as its ancestor Q1 was superseded by Q2",
       );
     });
@@ -1316,9 +1316,9 @@ const AddQuestion = (() => {
     config: { text?: string; origin?: string; option?: string[] },
   ): QuestionData {
     const text = config.text;
-    if (!text) throw new DesignTreeError("add-question requires --text");
+    if (!text) throw new DecisionTreeError("add-question requires --text");
     if ((config.option ?? []).length < 2) {
-      throw new DesignTreeError("a question requires at least two options");
+      throw new DecisionTreeError("a question requires at least two options");
     }
 
     return Log.transaction(log, (staged) => {
@@ -1387,7 +1387,7 @@ const AddQuestion = (() => {
       const act = () => addQuestion(log, "a", "Q9");
 
       // then
-      assert.throws(act, DesignTreeError);
+      assert.throws(act, DecisionTreeError);
       assert.deepEqual(log.read(), []);
     });
 
@@ -1399,7 +1399,7 @@ const AddQuestion = (() => {
       const act = () => run(log, { text: "q", option: ["a", ""] });
 
       // then
-      assert.throws(act, DesignTreeError);
+      assert.throws(act, DecisionTreeError);
       assert.deepEqual(log.read(), []);
     });
 
@@ -1411,7 +1411,7 @@ const AddQuestion = (() => {
       const act = () => run(log, { text: "q", option: ["a"] });
 
       // then
-      assert.throws(act, DesignTreeError);
+      assert.throws(act, DecisionTreeError);
       assert.deepEqual(log.read(), []);
     });
 
@@ -1480,17 +1480,17 @@ const AddOption = (() => {
     const count = log
       .read()
       .filter((event) => event.type === "add-option" && event.origin === origin).length;
-    if (count >= 26) throw new DesignTreeError(`question ${origin} already has 26 options`);
+    if (count >= 26) throw new DecisionTreeError(`question ${origin} already has 26 options`);
 
     return `${origin}${String.fromCharCode("a".charCodeAt(0) + count)}`;
   }
 
   function add(log: Log, text: string, origin: string): string {
-    if (!text) throw new DesignTreeError("option requires a text");
+    if (!text) throw new DecisionTreeError("option requires a text");
 
     const question = Graph.liveNode(log, origin, "origin");
     if (question.kind !== "question") {
-      throw new DesignTreeError(`origin is not a question: ${origin}`);
+      throw new DecisionTreeError(`origin is not a question: ${origin}`);
     }
 
     const id = nextOptionId(log, origin);
@@ -1501,8 +1501,8 @@ const AddOption = (() => {
   }
 
   function run(log: Log, config: { text?: string; origin?: string }): OptionData {
-    if (!config.text) throw new DesignTreeError("add-option requires --text");
-    if (!config.origin) throw new DesignTreeError("add-option requires --origin");
+    if (!config.text) throw new DecisionTreeError("add-option requires --text");
+    if (!config.origin) throw new DecisionTreeError("add-option requires --origin");
 
     const id = add(log, config.text, config.origin);
 
@@ -1518,7 +1518,7 @@ const AddOption = (() => {
       const act = () => add(log, "a", "Q1");
 
       // then
-      assert.throws(act, DesignTreeError);
+      assert.throws(act, DecisionTreeError);
       assert.deepEqual(log.read(), []);
     });
 
@@ -1534,7 +1534,7 @@ const AddOption = (() => {
       const act = () => add(log, "b", "Q1a");
 
       // then
-      assert.throws(act, DesignTreeError);
+      assert.throws(act, DecisionTreeError);
       assert.deepEqual(log.read(), events);
     });
 
@@ -1556,7 +1556,7 @@ const AddOption = (() => {
       const act = () => add(log, "extra", "Q1");
 
       // then
-      assert.throws(act, DesignTreeError);
+      assert.throws(act, DecisionTreeError);
       assert.deepEqual(log.read(), events);
     });
 
@@ -1627,7 +1627,7 @@ const SelectOption = (() => {
   function select(log: Log, target: string): SelectionData {
     const option = Graph.liveNode(log, target, "target");
     if (option.kind !== "option") {
-      throw new DesignTreeError(`target is not an option: ${target}`);
+      throw new DecisionTreeError(`target is not an option: ${target}`);
     }
 
     const question = option.question;
@@ -1641,7 +1641,7 @@ const SelectOption = (() => {
   }
 
   function run(log: Log, config: { target?: string }): SelectionData {
-    if (!config.target) throw new DesignTreeError("select-option requires --target");
+    if (!config.target) throw new DecisionTreeError("select-option requires --target");
 
     return select(log, config.target);
   }
@@ -1657,7 +1657,7 @@ const SelectOption = (() => {
       // then
       assert.throws(
         act,
-        (error) => error instanceof DesignTreeError && error.message === "select-option requires --target",
+        (error) => error instanceof DecisionTreeError && error.message === "select-option requires --target",
       );
       assert.deepEqual(log.read(), []);
     });
@@ -1670,7 +1670,7 @@ const SelectOption = (() => {
       const act = () => select(log, "Q1a");
 
       // then
-      assert.throws(act, DesignTreeError);
+      assert.throws(act, DecisionTreeError);
       assert.deepEqual(log.read(), []);
     });
 
@@ -1683,7 +1683,7 @@ const SelectOption = (() => {
       const act = () => select(log, "Q1");
 
       // then
-      assert.throws(act, DesignTreeError);
+      assert.throws(act, DecisionTreeError);
       assert.deepEqual(log.read(), [question]);
     });
 
@@ -1717,7 +1717,7 @@ const AddFollowUp = (() => {
   } as const;
 
   function add(log: Log, text: string, origin?: string): string {
-    if (!text) throw new DesignTreeError("follow-up requires a text");
+    if (!text) throw new DecisionTreeError("follow-up requires a text");
 
     if (origin !== undefined) Graph.liveNode(log, origin, "origin");
 
@@ -1731,7 +1731,7 @@ const AddFollowUp = (() => {
   }
 
   function run(log: Log, config: { text?: string; origin?: string }): FollowUpData {
-    if (!config.text) throw new DesignTreeError("add-follow-up requires --text");
+    if (!config.text) throw new DecisionTreeError("add-follow-up requires --text");
 
     const id = add(log, config.text, config.origin);
 
@@ -1740,8 +1740,8 @@ const AddFollowUp = (() => {
 
   function open(log: Log, id: string): FollowUpNode {
     const node = Graph.liveNode(log, id, "target");
-    if (node.kind !== "follow-up") throw new DesignTreeError(`target is not a follow-up: ${id}`);
-    if (node.status !== "open") throw new DesignTreeError(`follow-up ${id} is already ${node.status}`);
+    if (node.kind !== "follow-up") throw new DecisionTreeError(`target is not a follow-up: ${id}`);
+    if (node.status !== "open") throw new DecisionTreeError(`follow-up ${id} is already ${node.status}`);
 
     return node;
   }
@@ -1755,7 +1755,7 @@ const AddFollowUp = (() => {
       const act = () => add(log, "f", "Q1");
 
       // then
-      assert.throws(act, DesignTreeError);
+      assert.throws(act, DecisionTreeError);
       assert.deepEqual(log.read(), []);
     });
 
@@ -1772,7 +1772,7 @@ const AddFollowUp = (() => {
       const act = () => add(log, "f2", "F1");
 
       // then
-      assert.throws(act, DesignTreeError);
+      assert.throws(act, DecisionTreeError);
       assert.deepEqual(log.read(), events);
     });
 
@@ -1838,7 +1838,7 @@ const AddFollowUp = (() => {
       const act = () => open(log, "F1");
 
       // then
-      assert.throws(act, DesignTreeError);
+      assert.throws(act, DecisionTreeError);
     });
   }
 
@@ -1853,7 +1853,7 @@ const PromoteFollowUp = (() => {
 
   function run(log: Log, config: { target?: string; option?: string[] }): QuestionData {
     const target = config.target;
-    if (!target) throw new DesignTreeError("promote-follow-up requires --target");
+    if (!target) throw new DecisionTreeError("promote-follow-up requires --target");
 
     return Log.transaction(log, (staged) => {
       const followUp = AddFollowUp.open(staged, target);
@@ -1884,7 +1884,7 @@ const PromoteFollowUp = (() => {
       // then
       assert.throws(
         act,
-        (error) => error instanceof DesignTreeError && error.message === "promote-follow-up requires --target",
+        (error) => error instanceof DecisionTreeError && error.message === "promote-follow-up requires --target",
       );
       assert.deepEqual(log.read(), events);
     });
@@ -1901,7 +1901,7 @@ const PromoteFollowUp = (() => {
       const act = () => run(log, { target: "F1", option: ["a", ""] });
 
       // then
-      assert.throws(act, DesignTreeError);
+      assert.throws(act, DecisionTreeError);
       assert.deepEqual(log.read(), events);
     });
 
@@ -1949,12 +1949,12 @@ const ExcludeItem = (() => {
 
   function run(log: Log, config: { target?: string; reason?: string }): ItemData {
     const { target, reason } = config;
-    if (!target) throw new DesignTreeError("exclude-item requires --target");
-    if (!reason) throw new DesignTreeError("exclude-item requires --reason");
+    if (!target) throw new DecisionTreeError("exclude-item requires --target");
+    if (!reason) throw new DecisionTreeError("exclude-item requires --reason");
 
     const exclusionReason = reasons.find((each) => each === reason);
     if (exclusionReason === undefined) {
-      throw new DesignTreeError(`reason must be ${reasons.join(" or ")}: ${reason}`);
+      throw new DecisionTreeError(`reason must be ${reasons.join(" or ")}: ${reason}`);
     }
 
     const node = Graph.liveNode(log, target, "target");
@@ -1978,7 +1978,7 @@ const ExcludeItem = (() => {
       // then
       assert.throws(
         act,
-        (error) => error instanceof DesignTreeError && error.message === "exclude-item requires --target",
+        (error) => error instanceof DecisionTreeError && error.message === "exclude-item requires --target",
       );
       assert.deepEqual(log.read(), events);
     });
@@ -1994,7 +1994,7 @@ const ExcludeItem = (() => {
       // then
       assert.throws(
         act,
-        (error) => error instanceof DesignTreeError && error.message === "exclude-item requires --reason",
+        (error) => error instanceof DecisionTreeError && error.message === "exclude-item requires --reason",
       );
       assert.deepEqual(log.read(), events);
     });
@@ -2011,7 +2011,7 @@ const ExcludeItem = (() => {
       assert.throws(
         act,
         (error) =>
-          error instanceof DesignTreeError && error.message === "reason must be not-applicable or deferred: later",
+          error instanceof DecisionTreeError && error.message === "reason must be not-applicable or deferred: later",
       );
       assert.deepEqual(log.read(), events);
     });
@@ -2024,7 +2024,7 @@ const ExcludeItem = (() => {
       const act = () => run(log, { target: "Q9", reason: "deferred" });
 
       // then
-      assert.throws(act, (error) => error instanceof DesignTreeError && error.message === "target not found: Q9");
+      assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "target not found: Q9");
       assert.deepEqual(log.read(), []);
     });
 
@@ -2097,7 +2097,7 @@ const RestoreItem = (() => {
 
   function run(log: Log, config: { target?: string }): ItemData {
     const target = config.target;
-    if (!target) throw new DesignTreeError("restore-item requires --target");
+    if (!target) throw new DecisionTreeError("restore-item requires --target");
 
     const node = Graph.excludedNode(log, target);
 
@@ -2120,7 +2120,7 @@ const RestoreItem = (() => {
       // then
       assert.throws(
         act,
-        (error) => error instanceof DesignTreeError && error.message === "restore-item requires --target",
+        (error) => error instanceof DecisionTreeError && error.message === "restore-item requires --target",
       );
       assert.deepEqual(log.read(), events);
     });
@@ -2154,11 +2154,11 @@ const SupersedeQuestion = (() => {
 
   function run(log: Log, config: { target?: string; text?: string }): QuestionData {
     const { target, text } = config;
-    if (!target) throw new DesignTreeError("supersede-question requires --target");
-    if (!text) throw new DesignTreeError("supersede-question requires --text");
+    if (!target) throw new DecisionTreeError("supersede-question requires --target");
+    if (!text) throw new DecisionTreeError("supersede-question requires --text");
 
     const old = Graph.liveNode(log, target, "target");
-    if (old.kind !== "question") throw new DesignTreeError(`target is not a question: ${target}`);
+    if (old.kind !== "question") throw new DecisionTreeError(`target is not a question: ${target}`);
 
     return Log.transaction(log, (staged) => {
       const id = AddQuestion.addQuestion(staged, text, old.parent?.id);
@@ -2181,7 +2181,7 @@ const SupersedeQuestion = (() => {
       // then
       assert.throws(
         act,
-        (error) => error instanceof DesignTreeError && error.message === "supersede-question requires --target",
+        (error) => error instanceof DecisionTreeError && error.message === "supersede-question requires --target",
       );
       assert.deepEqual(log.read(), events);
     });
@@ -2197,7 +2197,7 @@ const SupersedeQuestion = (() => {
       // then
       assert.throws(
         act,
-        (error) => error instanceof DesignTreeError && error.message === "supersede-question requires --text",
+        (error) => error instanceof DecisionTreeError && error.message === "supersede-question requires --text",
       );
       assert.deepEqual(log.read(), events);
     });
@@ -2214,7 +2214,7 @@ const SupersedeQuestion = (() => {
       const act = () => run(log, { target: "Q1a", text: "q2" });
 
       // then
-      assert.throws(act, (error) => error instanceof DesignTreeError && error.message === "target is not a question: Q1a");
+      assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "target is not a question: Q1a");
       assert.deepEqual(log.read(), events);
     });
 
@@ -2637,25 +2637,25 @@ const Cli = (() => {
 
     const given = [op, query, test].filter((value) => value !== undefined);
     if (given.length > 1) {
-      throw new DesignTreeError("--op, --query and --test are mutually exclusive");
+      throw new DecisionTreeError("--op, --query and --test are mutually exclusive");
     }
 
     if (test !== undefined) {
-      if (log !== undefined) throw new DesignTreeError("--test does not take --log");
+      if (log !== undefined) throw new DecisionTreeError("--test does not take --log");
 
       return { kind: "test" };
     }
 
     if (op === undefined && query === undefined) {
-      throw new DesignTreeError("missing --op, --query or --test");
+      throw new DecisionTreeError("missing --op, --query or --test");
     }
-    if (op !== undefined && typeof op !== "string") throw new DesignTreeError("--op requires a value");
+    if (op !== undefined && typeof op !== "string") throw new DecisionTreeError("--op requires a value");
     if (query !== undefined && typeof query !== "string") {
-      throw new DesignTreeError("--query requires a value");
+      throw new DecisionTreeError("--query requires a value");
     }
 
-    if (log === undefined) throw new DesignTreeError("missing --log");
-    if (typeof log !== "string") throw new DesignTreeError("--log requires a value");
+    if (log === undefined) throw new DecisionTreeError("missing --log");
+    if (typeof log !== "string") throw new DecisionTreeError("--log requires a value");
 
     if (typeof query === "string") return { kind: "query", query, log };
 
@@ -2666,7 +2666,7 @@ const Cli = (() => {
     try {
       return parseArgs({ options: { ...cliOptions, ...modeOptions } }).values;
     } catch (error) {
-      throw new DesignTreeError((error as Error).message);
+      throw new DecisionTreeError((error as Error).message);
     }
   }
 
@@ -2720,7 +2720,7 @@ const Cli = (() => {
       }
 
       default:
-        throw new DesignTreeError(`unknown query: ${query}`);
+        throw new DecisionTreeError(`unknown query: ${query}`);
     }
   }
 
@@ -2774,7 +2774,7 @@ const Cli = (() => {
         break;
       }
       default:
-        throw new DesignTreeError(`unknown op: ${op}`);
+        throw new DecisionTreeError(`unknown op: ${op}`);
     }
   }
 
@@ -2784,7 +2784,7 @@ const Cli = (() => {
 try {
   Cli.main();
 } catch (error) {
-  if (!(error instanceof DesignTreeError)) throw error;
+  if (!(error instanceof DecisionTreeError)) throw error;
 
   console.error(error.message);
   process.exit(1);
