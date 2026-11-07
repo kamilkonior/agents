@@ -983,6 +983,22 @@ const Graph = (() => {
       // then
       assert.throws(act, (error) => error instanceof DesignTreeError && error.message === "origin is excluded: Q1");
     });
+
+    test("looking up an item under an excluded option throws excluded", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+        { type: "exclude-item", target: "Q1a", reason: "not-applicable" },
+      ]);
+
+      // when
+      const act = () => liveNode(log, "Q2", "target");
+
+      // then
+      assert.throws(act, (error) => error instanceof DesignTreeError && error.message === "target is excluded: Q2");
+    });
   }
 
   return {
