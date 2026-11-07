@@ -2148,6 +2148,17 @@ const Xml = (() => {
       assert.deepEqual(xml.split("\n"), ["<next>", `  ${followUp(data)}`, "</next>"]);
     });
 
+    test("an excluded follow-up renders as its follow-up line", () => {
+      // given
+      const data               = { id: "F1", text: "f" };
+
+      // when
+      const xml = excluded({ kind: "follow-up", followUp: data });
+
+      // then
+      assert.equal(xml, "<follow-up><id>F1</id><text>f</text></follow-up>");
+    });
+
     test("an empty tree renders an empty tree element", () => {
       // given
       const items             = [];
