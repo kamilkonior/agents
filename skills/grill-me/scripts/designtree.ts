@@ -9,13 +9,16 @@ const { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync
 
 type ParseArgsOptionsConfig = import("node:util").ParseArgsOptionsConfig;
 
+type ExclusionReason = "not-applicable" | "deferred";
+
 type Event =
   | { type: "add-question"; id: string; text: string; origin?: string }
   | { type: "add-option"; id: string; text: string; origin: string }
   | { type: "select-option"; target: string }
   | { type: "add-follow-up"; id: string; text: string; origin?: string }
   | { type: "promote-follow-up"; target: string }
-  | { type: "dismiss-follow-up"; target: string };
+  | { type: "dismiss-follow-up"; target: string }
+  | { type: "exclude-item"; target: string; reason: ExclusionReason };
 
 type IdEvent = Extract<Event, { id: string }>;
 
@@ -50,6 +53,7 @@ type QuestionNode = {
   children: QuestionNode[];
   followUps: FollowUpNode[];
   answer?: OptionNode;
+  excluded?: ExclusionReason;
 };
 
 type OptionNode = {
@@ -59,6 +63,7 @@ type OptionNode = {
   question: QuestionNode;
   children: QuestionNode[];
   followUps: FollowUpNode[];
+  excluded?: ExclusionReason;
 };
 
 type FollowUpNode = {
@@ -66,9 +71,10 @@ type FollowUpNode = {
   id: string;
   text: string;
   parent?: OptionNode | QuestionNode | FollowUpNode;
-  status: "open" | "promoted" | "dismissed";
+  status: "open" | "promoted";
   children: QuestionNode[];
   followUps: FollowUpNode[];
+  excluded?: ExclusionReason;
 };
 
 type Graph = {
@@ -328,7 +334,12 @@ const Graph = (() => {
         }
 
         case "dismiss-follow-up": {
-          followUpNode(nodes, event.target).status = "dismissed";
+          followUpNode(nodes, event.target).excluded = "not-applicable";
+          break;
+        }
+
+        case "exclude-item": {
+          parentNode(nodes, event.target).excluded = event.reason;
           break;
         }
       }
@@ -338,22 +349,28 @@ const Graph = (() => {
   }
 
   function tree(graph: Graph): TreeItem[] {
-    function question(node: QuestionNode): TreeItem {
+    function question(node: QuestionNode): TreeItem[] {
+      if (node.excluded !== undefined) return [];
+
+      const answer = node.answer?.excluded === undefined ? node.answer : undefined;
+
       const children: TreeItem[] = [];
-      if (node.answer !== undefined) {
-        children.push(...node.answer.children.map(question), ...followUps(node.answer));
+      if (answer !== undefined) {
+        children.push(...answer.children.flatMap(question), ...followUps(answer));
       }
-      children.push(...node.children.map(question), ...followUps(node));
+      children.push(...node.children.flatMap(question), ...followUps(node));
 
-      if (node.answer === undefined) {
-        const options = node.options.map((option) => ({ id: option.id, text: option.text }));
+      if (answer === undefined) {
+        const options = node.options
+          .filter((option) => option.excluded === undefined)
+          .map((option) => ({ id: option.id, text: option.text }));
 
-        return { kind: "open-question", id: node.id, text: node.text, options, children };
+        return [{ kind: "open-question", id: node.id, text: node.text, options, children }];
       }
 
-      const answer = { id: node.answer.id, text: node.answer.text };
-
-      return { kind: "question", id: node.id, text: node.text, answer, children };
+      return [
+        { kind: "question", id: node.id, text: node.text, answer: { id: answer.id, text: answer.text }, children },
+      ];
     }
 
     function followUps(node: QuestionNode | OptionNode | FollowUpNode): TreeItem[] {
@@ -361,13 +378,13 @@ const Graph = (() => {
     }
 
     function followUp(node: FollowUpNode): TreeItem[] {
+      if (node.excluded !== undefined) return [];
       if (node.status === "open") return [{ kind: "follow-up", id: node.id, text: node.text }];
-      if (node.status === "dismissed") return [];
 
-      return [...node.children.map(question), ...followUps(node)];
+      return [...node.children.flatMap(question), ...followUps(node)];
     }
 
-    return [...graph.roots.map(question), ...graph.rootFollowUps.flatMap(followUp)];
+    return [...graph.roots.flatMap(question), ...graph.rootFollowUps.flatMap(followUp)];
   }
 
   function frontier(graph: Graph): Exclude<TreeItem, { kind: "question" }>[] {
@@ -1258,8 +1275,8 @@ const AddFollowUp = (() => {
     if (origin !== undefined) {
       const parent = Graph.build(log).nodes.get(origin);
       if (parent === undefined) throw new DesignTreeError(`origin not found: ${origin}`);
-      if (parent.kind === "follow-up" && parent.status === "dismissed") {
-        throw new DesignTreeError(`follow-up ${origin} is dismissed`);
+      if (parent.kind === "follow-up" && parent.excluded !== undefined) {
+        throw new DesignTreeError(`follow-up ${origin} is excluded`);
       }
     }
 
@@ -1284,6 +1301,7 @@ const AddFollowUp = (() => {
     const node = Graph.build(log).nodes.get(id);
     if (node === undefined) throw new DesignTreeError(`target not found: ${id}`);
     if (node.kind !== "follow-up") throw new DesignTreeError(`target is not a follow-up: ${id}`);
+    if (node.excluded !== undefined) throw new DesignTreeError(`follow-up ${id} is excluded`);
     if (node.status !== "open") throw new DesignTreeError(`follow-up ${id} is already ${node.status}`);
 
     return node;
