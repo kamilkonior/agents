@@ -1112,6 +1112,22 @@ const Graph = (() => {
           error instanceof DesignTreeError && error.message === "Q2 cannot be restored, as its ancestor Q1a is excluded",
       );
     });
+
+    test("looking up an excluded item to restore returns its node", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "exclude-item", target: "Q1a", reason: "deferred" },
+      ]);
+
+      // when
+      const node = excludedNode(log, "Q1a");
+
+      // then
+      assert.equal(node.kind, "option");
+      assert.equal(node.id, "Q1a");
+    });
   }
 
   return {
