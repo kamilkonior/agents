@@ -796,6 +796,36 @@ const Graph = (() => {
       ]);
     });
 
+    test("an excluded option is not offered by its open question", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+          { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+          { type: "add-option", id: "Q1c", text: "c", origin: "Q1" },
+          { type: "exclude-item", target: "Q1b", reason: "deferred" },
+        ]),
+      );
+
+      // when
+      const items = tree(graph);
+
+      // then
+      assert.deepEqual(items, [
+        {
+          kind: "open-question",
+          id: "Q1",
+          text: "q1",
+          options: [
+            { id: "Q1a", text: "a" },
+            { id: "Q1c", text: "c" },
+          ],
+          children: [],
+        },
+      ]);
+    });
+
     test("tree nests the settled path, with promoted follow-ups in place", () => {
       // given
       const graph = build(
