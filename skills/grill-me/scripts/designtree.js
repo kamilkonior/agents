@@ -354,6 +354,11 @@ const Graph = (() => {
           exclusions.set(parentNode(nodes, event.target).id, event.reason);
           break;
         }
+
+        default: {
+          const unknown        = event;
+          throw new DesignTreeError(`unknown event type: ${(unknown                    ).type}`);
+        }
       }
     }
 
