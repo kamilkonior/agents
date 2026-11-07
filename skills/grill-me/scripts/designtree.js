@@ -17,7 +17,8 @@ const { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync
                                              
                                                                         
                                                  
-                                                                      
+                                                                     
+                                             
 
                                               
 
@@ -39,7 +40,7 @@ const { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync
                                                                                                     
                                                     
 
-                   
+               
                                                 
                                           
                                                   
@@ -258,12 +259,15 @@ const Graph = (() => {
     return node;
   }
 
-  function isExcluded(graph       , node                                          )          {
-    if (graph.exclusions.has(node.id)) return true;
+  function excludedBy(
+    graph       ,
+    node                                          ,
+  )                                                       {
+    if (graph.exclusions.has(node.id)) return node;
 
     const parent = node.kind === "option" ? node.question : node.parent;
 
-    return parent !== undefined && isExcluded(graph, parent);
+    return parent === undefined ? undefined : excludedBy(graph, parent);
   }
 
   function liveOptions(graph       , question              )               {
@@ -355,6 +359,11 @@ const Graph = (() => {
           break;
         }
 
+        case "restore-item": {
+          exclusions.delete(parentNode(nodes, event.target).id);
+          break;
+        }
+
         default: {
           const unknown        = event;
           throw new DesignTreeError(`unknown event type: ${(unknown                    ).type}`);
@@ -421,17 +430,40 @@ const Graph = (() => {
 
     const node = graph.nodes.get(id);
     if (node === undefined) throw new DesignTreeError(`${role} not found: ${id}`);
-    if (isExcluded(graph, node)) throw new DesignTreeError(`${role} is excluded: ${id}`);
+    if (excludedBy(graph, node) !== undefined) throw new DesignTreeError(`${role} is excluded: ${id}`);
 
     return node;
   }
 
-  function questionData(log     , id        )               {
+  function excludedNode(log     , id        )                                           {
     const graph = build(log);
 
-    const question = questionNode(graph.nodes, id);
+    const node = graph.nodes.get(id);
+    if (node === undefined) throw new DesignTreeError(`target not found: ${id}`);
 
-    return { id: question.id, text: question.text, options: liveOptions(graph, question) };
+    const excluding = excludedBy(graph, node);
+    if (excluding === undefined) throw new DesignTreeError(`target is not excluded: ${id}`);
+    if (excluding !== node) {
+      throw new DesignTreeError(`${id} cannot be restored, as its ancestor ${excluding.id} is excluded`);
+    }
+
+    return node;
+  }
+
+  function itemData(log     , node                                          )           {
+    switch (node.kind) {
+      case "question": {
+        const options = liveOptions(build(log), node);
+
+        return { kind: "question", question: { id: node.id, text: node.text, options } };
+      }
+
+      case "option":
+        return { kind: "option", option: { id: node.id, text: node.text } };
+
+      case "follow-up":
+        return { kind: "follow-up", followUp: { id: node.id, text: node.text } };
+    }
   }
 
   function tests() {
@@ -1044,7 +1076,8 @@ const Graph = (() => {
     tree: (log     ) => tree(build(log)),
     frontier: (log     ) => frontier(build(log)),
     liveNode,
-    questionData,
+    excludedNode,
+    itemData,
     tests,
   };
 })();
@@ -1704,7 +1737,7 @@ const ExcludeItem = (() => {
 
   const reasons                    = ["not-applicable", "deferred"];
 
-  function run(log     , config                                      )               {
+  function run(log     , config                                      )           {
     const { target, reason } = config;
     if (!target) throw new DesignTreeError("exclude-item requires --target");
     if (!reason) throw new DesignTreeError("exclude-item requires --reason");
@@ -1716,24 +1749,11 @@ const ExcludeItem = (() => {
 
     const node = Graph.liveNode(log, target, "target");
 
-    const excluded = excludedData(log, node);
+    const excluded = Graph.itemData(log, node);
 
     log.append({ type: "exclude-item", target, reason: exclusionReason });
 
     return excluded;
-  }
-
-  function excludedData(log     , node                                          )               {
-    switch (node.kind) {
-      case "question":
-        return { kind: "question", question: Graph.questionData(log, node.id) };
-
-      case "option":
-        return { kind: "option", option: { id: node.id, text: node.text } };
-
-      case "follow-up":
-        return { kind: "follow-up", followUp: { id: node.id, text: node.text } };
-    }
   }
 
   function tests() {
@@ -1860,6 +1880,29 @@ const ExcludeItem = (() => {
   return { options, run, tests };
 })();
 
+const RestoreItem = (() => {
+  const options = {
+    target: { type: "string" },
+  }         ;
+
+  function run(log     , config                     )           {
+    const target = config.target;
+    if (!target) throw new DesignTreeError("restore-item requires --target");
+
+    const node = Graph.excludedNode(log, target);
+
+    const restored = Graph.itemData(log, node);
+
+    log.append({ type: "restore-item", target });
+
+    return restored;
+  }
+
+  function tests() {}
+
+  return { options, run, tests };
+})();
+
 const Next = (() => {
   const options = {}         ;
 
@@ -1978,7 +2021,7 @@ const Xml = (() => {
     return `<follow-up><id>${data.id}</id><text>${escapeXml(data.text)}</text></follow-up>`;
   }
 
-  function excluded(data              )         {
+  function item(data          )         {
     switch (data.kind) {
       case "question":
         return question(data.question);
@@ -2136,12 +2179,12 @@ const Xml = (() => {
       assert.deepEqual(xml.split("\n"), ["<next>", `  ${followUp(data)}`, "</next>"]);
     });
 
-    test("an excluded follow-up renders as its follow-up line", () => {
+    test("a follow-up item renders as its follow-up line", () => {
       // given
       const data               = { id: "F1", text: "f" };
 
       // when
-      const xml = excluded({ kind: "follow-up", followUp: data });
+      const xml = item({ kind: "follow-up", followUp: data });
 
       // then
       assert.equal(xml, "<follow-up><id>F1</id><text>f</text></follow-up>");
@@ -2231,7 +2274,7 @@ const Xml = (() => {
     });
   }
 
-  return { option, question, selection, followUp, excluded, next, tree, tests };
+  return { option, question, selection, followUp, item, next, tree, tests };
 })();
 
 const Cli = (() => {
@@ -2296,6 +2339,7 @@ const Cli = (() => {
     AddFollowUp.tests();
     PromoteFollowUp.tests();
     ExcludeItem.tests();
+    RestoreItem.tests();
     Next.tests();
     Tree.tests();
     Xml.tests();
@@ -2373,7 +2417,13 @@ const Cli = (() => {
 
       case "exclude-item": {
         const config = readModeConfig(ExcludeItem.options);
-        console.log(Xml.excluded(ExcludeItem.run(log, config)));
+        console.log(Xml.item(ExcludeItem.run(log, config)));
+        break;
+      }
+
+      case "restore-item": {
+        const config = readModeConfig(RestoreItem.options);
+        console.log(Xml.item(RestoreItem.run(log, config)));
         break;
       }
       default:
