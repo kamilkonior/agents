@@ -1898,7 +1898,23 @@ const RestoreItem = (() => {
     return restored;
   }
 
-  function tests() {}
+  function tests() {
+    test("restoring without a target throws and appends nothing", () => {
+      // given
+      const events: Event[] = [{ type: "add-question", id: "Q1", text: "q" }];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const act = () => run(log, {});
+
+      // then
+      assert.throws(
+        act,
+        (error) => error instanceof DesignTreeError && error.message === "restore-item requires --target",
+      );
+      assert.deepEqual(log.read(), events);
+    });
+  }
 
   return { options, run, tests };
 })();
