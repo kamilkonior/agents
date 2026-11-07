@@ -20,10 +20,10 @@ Requires Node 20+. Every call needs `--log`. Results print as XML on stdout; err
 |---|---|
 | `--op add-question --text T --option A --option B [--origin ID]` | adds a question with at least two options; prints `<question>` |
 | `--op add-option --origin QID --text T` | adds one more option to a question |
-| `--op select-option --origin OID` | answers a question; a later selection replaces an earlier one |
+| `--op select-option --target OID` | answers a question; a later selection replaces an earlier one |
 | `--op add-follow-up --text T [--origin ID]` | records a candidate topic that isn't ready to be a question |
-| `--op promote-follow-up --origin FID --option A --option B` | turns a follow-up into a question under it |
-| `--op dismiss-follow-up --origin FID` | drops a follow-up and everything under it |
+| `--op promote-follow-up --target FID --option A --option B` | turns a follow-up into a question under it |
+| `--op dismiss-follow-up --target FID` | drops a follow-up and everything under it |
 | `--query next` | the one thing to ask now: `<next>` with a `<question>` or a `<follow-up>`, or an empty `<next></next>` when done |
 | `--query tree` | the settled design: answers on the chosen path, open questions with their options |
 
@@ -34,6 +34,8 @@ Ids: questions are `Q1`, `Q2`…; options are their question's id plus a letter 
 - under a **question** when it matters whatever the answer is;
 - under a **follow-up** when it only matters if that follow-up is pursued;
 - no origin for a question or follow-up about the design as a whole.
+
+`--target` names the existing item an op acts on.
 
 ## The session log
 

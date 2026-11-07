@@ -295,7 +295,7 @@ const Graph = (() => {
         }
 
         case "select-option": {
-          const option = optionNode(nodes, event.origin);
+          const option = optionNode(nodes, event.target);
           option.question.answer = option;
           break;
         }
@@ -323,12 +323,12 @@ const Graph = (() => {
         }
 
         case "promote-follow-up": {
-          followUpNode(nodes, event.origin).status = "promoted";
+          followUpNode(nodes, event.target).status = "promoted";
           break;
         }
 
         case "dismiss-follow-up": {
-          followUpNode(nodes, event.origin).status = "dismissed";
+          followUpNode(nodes, event.target).status = "dismissed";
           break;
         }
       }
@@ -389,8 +389,8 @@ const Graph = (() => {
         { type: "add-question", id: "Q1", text: "q" },
         { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
         { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
-        { type: "select-option", origin: "Q1a" },
-        { type: "select-option", origin: "Q1b" },
+        { type: "select-option", target: "Q1a" },
+        { type: "select-option", target: "Q1b" },
       ]);
 
       // when
@@ -483,7 +483,7 @@ const Graph = (() => {
           { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
           { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
           { type: "add-question", id: "Q2", text: "q2", origin: "Q1b" },
-          { type: "select-option", origin: "Q1a" },
+          { type: "select-option", target: "Q1a" },
         ]),
       );
 
@@ -502,7 +502,7 @@ const Graph = (() => {
           { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
           { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
           { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
-          { type: "select-option", origin: "Q1a" },
+          { type: "select-option", target: "Q1a" },
         ]),
       );
 
@@ -525,7 +525,7 @@ const Graph = (() => {
           { type: "add-question", id: "Q3", text: "q3", origin: "Q1" },
           { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
           { type: "add-question", id: "Q4", text: "q4" },
-          { type: "select-option", origin: "Q1a" },
+          { type: "select-option", target: "Q1a" },
         ]),
       );
 
@@ -567,8 +567,8 @@ const Graph = (() => {
           { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
           { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
           { type: "add-question", id: "Q3", text: "q3", origin: "Q1b" },
-          { type: "select-option", origin: "Q1a" },
-          { type: "select-option", origin: "Q1b" },
+          { type: "select-option", target: "Q1a" },
+          { type: "select-option", target: "Q1b" },
         ]),
       );
 
@@ -588,11 +588,11 @@ const Graph = (() => {
         Log.memoryLog([
           { type: "add-question", id: "Q1", text: "q1" },
           { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-          { type: "select-option", origin: "Q1a" },
+          { type: "select-option", target: "Q1a" },
           { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
           { type: "add-follow-up", id: "F2", text: "f2", origin: "Q1" },
-          { type: "promote-follow-up", origin: "F1" },
-          { type: "dismiss-follow-up", origin: "F2" },
+          { type: "promote-follow-up", target: "F1" },
+          { type: "dismiss-follow-up", target: "F2" },
         ]),
       );
 
@@ -611,7 +611,7 @@ const Graph = (() => {
           { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
           { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
           { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1b" },
-          { type: "select-option", origin: "Q1a" },
+          { type: "select-option", target: "Q1a" },
         ]),
       );
 
@@ -633,7 +633,7 @@ const Graph = (() => {
           { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
           { type: "add-question", id: "Q3", text: "q3", origin: "Q1" },
           { type: "add-question", id: "Q4", text: "q4" },
-          { type: "select-option", origin: "Q1a" },
+          { type: "select-option", target: "Q1a" },
         ]),
       );
 
@@ -653,7 +653,7 @@ const Graph = (() => {
         Log.memoryLog([
           { type: "add-question", id: "Q1", text: "q1" },
           { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-          { type: "select-option", origin: "Q1a" },
+          { type: "select-option", target: "Q1a" },
           { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
           { type: "add-follow-up", id: "F2", text: "f2", origin: "F1" },
         ]),
@@ -675,11 +675,11 @@ const Graph = (() => {
         Log.memoryLog([
           { type: "add-question", id: "Q1", text: "q1" },
           { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-          { type: "select-option", origin: "Q1a" },
+          { type: "select-option", target: "Q1a" },
           { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
           { type: "add-follow-up", id: "F2", text: "f2", origin: "F1" },
           { type: "add-question", id: "Q2", text: "f1", origin: "F1" },
-          { type: "promote-follow-up", origin: "F1" },
+          { type: "promote-follow-up", target: "F1" },
         ]),
       );
 
@@ -699,10 +699,10 @@ const Graph = (() => {
         Log.memoryLog([
           { type: "add-question", id: "Q1", text: "q1" },
           { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-          { type: "select-option", origin: "Q1a" },
+          { type: "select-option", target: "Q1a" },
           { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
           { type: "add-follow-up", id: "F2", text: "f2", origin: "F1" },
-          { type: "dismiss-follow-up", origin: "F1" },
+          { type: "dismiss-follow-up", target: "F1" },
         ]),
       );
 
@@ -740,10 +740,10 @@ const Graph = (() => {
           { type: "add-question", id: "Q1", text: "q1" },
           { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
           { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
-          { type: "select-option", origin: "Q1a" },
+          { type: "select-option", target: "Q1a" },
           { type: "add-question", id: "Q2", text: "q2", origin: "Q1b" },
           { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
-          { type: "dismiss-follow-up", origin: "F1" },
+          { type: "dismiss-follow-up", target: "F1" },
         ]),
       );
 
@@ -762,12 +762,12 @@ const Graph = (() => {
         Log.memoryLog([
           { type: "add-question", id: "Q1", text: "q1" },
           { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-          { type: "select-option", origin: "Q1a" },
+          { type: "select-option", target: "Q1a" },
           { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1a" },
           { type: "add-question", id: "Q2", text: "f1", origin: "F1" },
           { type: "add-option", id: "Q2a", text: "x", origin: "Q2" },
-          { type: "promote-follow-up", origin: "F1" },
-          { type: "select-option", origin: "Q2a" },
+          { type: "promote-follow-up", target: "F1" },
+          { type: "select-option", target: "Q2a" },
         ]),
       );
 
@@ -1153,14 +1153,14 @@ const AddOption = (() => {
 
 const SelectOption = (() => {
   const options = {
-    origin: { type: "string" },
+    target: { type: "string" },
   }         ;
 
-  function select(log     , origin        )                {
-    const option = Log.find(log, origin);
-    if (option === undefined) throw new DesignTreeError(`origin not found: ${origin}`);
+  function select(log     , target        )                {
+    const option = Log.find(log, target);
+    if (option === undefined) throw new DesignTreeError(`target not found: ${target}`);
     if (option.type !== "add-option") {
-      throw new DesignTreeError(`origin is not an option: ${origin}`);
+      throw new DesignTreeError(`target is not an option: ${target}`);
     }
 
     const question = Log.find(log, option.origin);
@@ -1168,7 +1168,7 @@ const SelectOption = (() => {
       throw new Error(`option ${option.id} has no question ${option.origin}`);
     }
 
-    log.append({ type: "select-option", origin });
+    log.append({ type: "select-option", target });
 
     return {
       question: { id: question.id, text: question.text },
@@ -1177,9 +1177,9 @@ const SelectOption = (() => {
   }
 
   function run(log     , config                     )                {
-    if (!config.origin) throw new DesignTreeError("select-option requires --origin");
+    if (!config.target) throw new DesignTreeError("select-option requires --target");
 
-    return select(log, config.origin);
+    return select(log, config.target);
   }
 
   function tests() {
@@ -1224,7 +1224,7 @@ const SelectOption = (() => {
         question: { id: "Q1", text: "q" },
         option: { id: "Q1a", text: "a" },
       });
-      assert.deepEqual(log.read(), [...events, { type: "select-option", origin: "Q1a" }]);
+      assert.deepEqual(log.read(), [...events, { type: "select-option", target: "Q1a" }]);
     });
   }
 
@@ -1267,8 +1267,8 @@ const AddFollowUp = (() => {
 
   function open(log     , id        )               {
     const node = Graph.build(log).nodes.get(id);
-    if (node === undefined) throw new DesignTreeError(`origin not found: ${id}`);
-    if (node.kind !== "follow-up") throw new DesignTreeError(`origin is not a follow-up: ${id}`);
+    if (node === undefined) throw new DesignTreeError(`target not found: ${id}`);
+    if (node.kind !== "follow-up") throw new DesignTreeError(`target is not a follow-up: ${id}`);
     if (node.status !== "open") throw new DesignTreeError(`follow-up ${id} is already ${node.status}`);
 
     return node;
@@ -1292,7 +1292,7 @@ const AddFollowUp = (() => {
       const events          = [
         { type: "add-question", id: "Q1", text: "q" },
         { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
-        { type: "dismiss-follow-up", origin: "F1" },
+        { type: "dismiss-follow-up", target: "F1" },
       ];
       const log = Log.memoryLog([...events]);
 
@@ -1359,7 +1359,7 @@ const AddFollowUp = (() => {
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q" },
         { type: "add-follow-up", id: "F1", text: "f", origin: "Q1" },
-        { type: "dismiss-follow-up", origin: "F1" },
+        { type: "dismiss-follow-up", target: "F1" },
       ]);
 
       // when
@@ -1375,23 +1375,23 @@ const AddFollowUp = (() => {
 
 const PromoteFollowUp = (() => {
   const options = {
-    origin: { type: "string" },
+    target: { type: "string" },
     option: { type: "string", multiple: true },
   }         ;
 
   function run(log     , config                                        )               {
-    const origin = config.origin;
-    if (!origin) throw new DesignTreeError("promote-follow-up requires --origin");
+    const target = config.target;
+    if (!target) throw new DesignTreeError("promote-follow-up requires --target");
 
     return Log.transaction(log, (staged) => {
-      const followUp = AddFollowUp.open(staged, origin);
+      const followUp = AddFollowUp.open(staged, target);
       const question = AddQuestion.run(staged, {
         text: followUp.text,
         origin: followUp.id,
         option: config.option,
       });
 
-      staged.append({ type: "promote-follow-up", origin });
+      staged.append({ type: "promote-follow-up", target });
 
       return question;
     });
@@ -1407,7 +1407,7 @@ const PromoteFollowUp = (() => {
       const log = Log.memoryLog([...events]);
 
       // when
-      const act = () => run(log, { origin: "F1", option: ["a", ""] });
+      const act = () => run(log, { target: "F1", option: ["a", ""] });
 
       // then
       assert.throws(act, DesignTreeError);
@@ -1424,7 +1424,7 @@ const PromoteFollowUp = (() => {
       const log = Log.memoryLog([...events]);
 
       // when
-      const question = run(log, { origin: "F1", option: ["x", "y"] });
+      const question = run(log, { target: "F1", option: ["x", "y"] });
 
       // then
       assert.deepEqual(question, {
@@ -1440,7 +1440,7 @@ const PromoteFollowUp = (() => {
         { type: "add-question", id: "Q2", text: "f", origin: "F1" },
         { type: "add-option", id: "Q2a", text: "x", origin: "Q2" },
         { type: "add-option", id: "Q2b", text: "y", origin: "Q2" },
-        { type: "promote-follow-up", origin: "F1" },
+        { type: "promote-follow-up", target: "F1" },
       ]);
     });
   }
@@ -1450,15 +1450,15 @@ const PromoteFollowUp = (() => {
 
 const DismissFollowUp = (() => {
   const options = {
-    origin: { type: "string" },
+    target: { type: "string" },
   }         ;
 
   function run(log     , config                     )               {
-    if (!config.origin) throw new DesignTreeError("dismiss-follow-up requires --origin");
+    if (!config.target) throw new DesignTreeError("dismiss-follow-up requires --target");
 
-    const followUp = AddFollowUp.open(log, config.origin);
+    const followUp = AddFollowUp.open(log, config.target);
 
-    log.append({ type: "dismiss-follow-up", origin: followUp.id });
+    log.append({ type: "dismiss-follow-up", target: followUp.id });
 
     return { id: followUp.id, text: followUp.text };
   }
@@ -1473,11 +1473,11 @@ const DismissFollowUp = (() => {
       const log = Log.memoryLog([...events]);
 
       // when
-      const followUp = run(log, { origin: "F1" });
+      const followUp = run(log, { target: "F1" });
 
       // then
       assert.deepEqual(followUp, { id: "F1", text: "f" });
-      assert.deepEqual(log.read(), [...events, { type: "dismiss-follow-up", origin: "F1" }]);
+      assert.deepEqual(log.read(), [...events, { type: "dismiss-follow-up", target: "F1" }]);
     });
   }
 
@@ -1541,7 +1541,7 @@ const Next = (() => {
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q1" },
         { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-        { type: "select-option", origin: "Q1a" },
+        { type: "select-option", target: "Q1a" },
         { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1a" },
       ]);
 
