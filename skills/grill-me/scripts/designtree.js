@@ -1183,6 +1183,21 @@ const SelectOption = (() => {
   }
 
   function tests() {
+    test("selecting without a target throws and appends nothing", () => {
+      // given
+      const log = Log.memoryLog();
+
+      // when
+      const act = () => run(log, {});
+
+      // then
+      assert.throws(
+        act,
+        (error) => error instanceof DesignTreeError && error.message === "select-option requires --target",
+      );
+      assert.deepEqual(log.read(), []);
+    });
+
     test("selecting an unknown option throws and appends nothing", () => {
       // given
       const log = Log.memoryLog();
