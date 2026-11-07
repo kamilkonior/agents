@@ -24,6 +24,7 @@ Requires Node 20+. Every call needs `--log`. Results print as XML on stdout; err
 | `--op add-follow-up --text T [--origin ID]` | records a candidate topic that isn't ready to be a question |
 | `--op promote-follow-up --target FID --option A --option B` | turns a follow-up into a question under it |
 | `--op exclude-item --target ID --reason R` | takes a question, option or follow-up and everything under it out of the design; `R` is `not-applicable`, or `deferred` to keep it as out of scope for later |
+| `--op restore-item --target ID` | brings an excluded item back with everything under it; an item hidden only by an excluded ancestor cannot be restored on its own |
 | `--query next` | the one thing to ask now: `<next>` with a `<question>` or a `<follow-up>`, or an empty `<next></next>` when done |
 | `--query tree` | the settled design: answers on the chosen path, open questions with their options |
 
