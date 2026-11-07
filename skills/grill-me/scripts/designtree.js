@@ -1571,6 +1571,21 @@ const AddFollowUp = (() => {
       // then
       assert.throws(act, DesignTreeError);
     });
+
+    test("a follow-up under an excluded question is not open", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-follow-up", id: "F1", text: "f", origin: "Q1" },
+        { type: "exclude-item", target: "Q1", reason: "not-applicable" },
+      ]);
+
+      // when
+      const act = () => open(log, "F1");
+
+      // then
+      assert.throws(act, (error) => error instanceof DesignTreeError && error.message === "target is excluded: F1");
+    });
   }
 
   return { options, open, run, tests };
