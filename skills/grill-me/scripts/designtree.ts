@@ -59,6 +59,7 @@ type QuestionNode = {
   children: QuestionNode[];
   followUps: FollowUpNode[];
   answer?: OptionNode;
+  supersededBy?: QuestionNode;
 };
 
 type OptionNode = {
@@ -271,6 +272,23 @@ const Graph = (() => {
     return parent === undefined ? undefined : excludedBy(graph, parent);
   }
 
+  function rejectFrozen(node: QuestionNode | OptionNode | FollowUpNode): void {
+    let current: QuestionNode | OptionNode | FollowUpNode | undefined = node;
+    while (current !== undefined) {
+      if (current.kind === "question" && current.supersededBy !== undefined) {
+        const replacement = current.supersededBy.id;
+        if (current === node) {
+          throw new DesignTreeError(`${node.id} is frozen, as it was superseded by ${replacement}`);
+        }
+        throw new DesignTreeError(
+          `${node.id} is frozen, as its ancestor ${current.id} was superseded by ${replacement}`,
+        );
+      }
+
+      current = current.kind === "option" ? current.question : current.parent;
+    }
+  }
+
   function liveOptions(graph: Graph, question: QuestionNode): OptionData[] {
     return question.options
       .filter((option) => !graph.exclusions.has(option.id))
@@ -375,6 +393,7 @@ const Graph = (() => {
 
           siblings.splice(siblings.indexOf(replacement), 1);
           siblings.splice(siblings.indexOf(old), 1, replacement);
+          old.supersededBy = replacement;
           break;
         }
 
@@ -445,6 +464,7 @@ const Graph = (() => {
     const node = graph.nodes.get(id);
     if (node === undefined) throw new DesignTreeError(`${role} not found: ${id}`);
     if (excludedBy(graph, node) !== undefined) throw new DesignTreeError(`${role} is excluded: ${id}`);
+    rejectFrozen(node);
 
     return node;
   }
@@ -454,6 +474,7 @@ const Graph = (() => {
 
     const node = graph.nodes.get(id);
     if (node === undefined) throw new DesignTreeError(`target not found: ${id}`);
+    rejectFrozen(node);
 
     const excluding = excludedBy(graph, node);
     if (excluding === undefined) throw new DesignTreeError(`target is not excluded: ${id}`);
