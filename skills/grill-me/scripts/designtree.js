@@ -260,6 +260,14 @@ const Graph = (() => {
     return node;
   }
 
+  function isExcluded(node                                          )          {
+    if (node.excluded !== undefined) return true;
+
+    const parent = node.kind === "option" ? node.question : node.parent;
+
+    return parent !== undefined && isExcluded(parent);
+  }
+
   function build(log     )        {
     const nodes                 = new Map();
     const roots                 = [];
@@ -929,7 +937,7 @@ const Graph = (() => {
     });
   }
 
-  return { build, tree, frontier, tests };
+  return { build, isExcluded, tree, frontier, tests };
 })();
 
 const AddQuestion = (() => {
@@ -940,8 +948,10 @@ const AddQuestion = (() => {
   }         ;
 
   function addQuestion(log     , text        , origin         )         {
-    if (origin !== undefined && !Log.has(log, origin)) {
-      throw new DesignTreeError(`origin not found: ${origin}`);
+    if (origin !== undefined) {
+      const parent = Graph.build(log).nodes.get(origin);
+      if (parent === undefined) throw new DesignTreeError(`origin not found: ${origin}`);
+      if (Graph.isExcluded(parent)) throw new DesignTreeError(`origin is excluded: ${origin}`);
     }
 
     const id = Log.nextId(log, "add-question", "Q");
@@ -1130,11 +1140,12 @@ const AddOption = (() => {
   function add(log     , text        , origin        )         {
     if (!text) throw new DesignTreeError("option requires a text");
 
-    const question = Log.find(log, origin);
+    const question = Graph.build(log).nodes.get(origin);
     if (question === undefined) throw new DesignTreeError(`origin not found: ${origin}`);
-    if (question.type !== "add-question") {
+    if (question.kind !== "question") {
       throw new DesignTreeError(`origin is not a question: ${origin}`);
     }
+    if (Graph.isExcluded(question)) throw new DesignTreeError(`origin is excluded: ${origin}`);
 
     const id = nextOptionId(log, origin);
 
@@ -1268,16 +1279,14 @@ const SelectOption = (() => {
   }         ;
 
   function select(log     , target        )                {
-    const option = Log.find(log, target);
+    const option = Graph.build(log).nodes.get(target);
     if (option === undefined) throw new DesignTreeError(`target not found: ${target}`);
-    if (option.type !== "add-option") {
+    if (option.kind !== "option") {
       throw new DesignTreeError(`target is not an option: ${target}`);
     }
+    if (Graph.isExcluded(option)) throw new DesignTreeError(`target is excluded: ${target}`);
 
-    const question = Log.find(log, option.origin);
-    if (question?.type !== "add-question") {
-      throw new Error(`option ${option.id} has no question ${option.origin}`);
-    }
+    const question = option.question;
 
     log.append({ type: "select-option", target });
 
@@ -1369,9 +1378,7 @@ const AddFollowUp = (() => {
     if (origin !== undefined) {
       const parent = Graph.build(log).nodes.get(origin);
       if (parent === undefined) throw new DesignTreeError(`origin not found: ${origin}`);
-      if (parent.kind === "follow-up" && parent.excluded !== undefined) {
-        throw new DesignTreeError(`follow-up ${origin} is excluded`);
-      }
+      if (Graph.isExcluded(parent)) throw new DesignTreeError(`origin is excluded: ${origin}`);
     }
 
     const id = Log.nextId(log, "add-follow-up", "F");
@@ -1395,7 +1402,7 @@ const AddFollowUp = (() => {
     const node = Graph.build(log).nodes.get(id);
     if (node === undefined) throw new DesignTreeError(`target not found: ${id}`);
     if (node.kind !== "follow-up") throw new DesignTreeError(`target is not a follow-up: ${id}`);
-    if (node.excluded !== undefined) throw new DesignTreeError(`follow-up ${id} is excluded`);
+    if (Graph.isExcluded(node)) throw new DesignTreeError(`target is excluded: ${id}`);
     if (node.status !== "open") throw new DesignTreeError(`follow-up ${id} is already ${node.status}`);
 
     return node;
@@ -1614,7 +1621,7 @@ const ExcludeItem = (() => {
 
     const node = Graph.build(log).nodes.get(target);
     if (node === undefined) throw new DesignTreeError(`target not found: ${target}`);
-    if (node.excluded !== undefined) throw new DesignTreeError(`${target} is already excluded`);
+    if (Graph.isExcluded(node)) throw new DesignTreeError(`target is excluded: ${target}`);
 
     log.append({ type: "exclude-item", target, reason: exclusionReason });
 
