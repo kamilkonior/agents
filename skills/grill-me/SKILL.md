@@ -5,39 +5,18 @@ description: Interview the user about a design one question at a time, recording
 
 # Grill me
 
-Interview the user about a design decision one question at a time. Every question, its options, the chosen answer and every follow-up go into an event log through the `designtree` CLI, until the design is settled. The CLI is the memory and decides what comes next; you run the conversation.
+Interview the user about a design decision one question at a time. Every question, its options, the chosen answer and every follow-up go into an event log through the `decision-tree` CLI, until the design is settled. The CLI is the memory and decides what comes next; you run the conversation.
 
 ## The CLI
 
+This skill drives the CLI of the `decision-tree` skill, which must be installed next to it:
+
 ```
-node <this skill's directory>/scripts/designtree.js --log <path> --op <op> [flags]
-node <this skill's directory>/scripts/designtree.js --log <path> --query <query>
+node <this skill's directory>/../decision-tree/scripts/decision-tree.js --log <path> --op <op> [flags]
+node <this skill's directory>/../decision-tree/scripts/decision-tree.js --log <path> --query <query>
 ```
 
-Requires Node 20+. Every call needs `--log`. Results print as XML on stdout; errors print as one line on stderr with exit code 1 and write nothing.
-
-| Command | Does |
-|---|---|
-| `--op add-question --text T --option A --option B [--origin ID]` | adds a question with at least two options; prints `<question>` |
-| `--op add-option --origin QID --text T` | adds one more option to a question |
-| `--op select-option --target OID` | answers a question; a later selection replaces an earlier one |
-| `--op add-follow-up --text T [--origin ID]` | records a candidate topic that isn't ready to be a question |
-| `--op promote-follow-up --target FID --option A --option B` | turns a follow-up into a question under it |
-| `--op exclude-item --target ID --reason R` | takes a question, option or follow-up and everything under it out of the design; `R` is `not-applicable`, or `deferred` to keep it as out of scope for later |
-| `--op restore-item --target ID` | brings an excluded item back with everything under it; an item hidden only by an excluded ancestor cannot be restored on its own |
-| `--op supersede-question --target QID --text T` | replaces a question with a reworded one in its place, without options; the old question and everything under it leave the tree and are frozen: ops on them fail |
-| `--query next` | the one thing to ask now: `<next>` with a `<question>` or a `<follow-up>`, or an empty `<next></next>` when done |
-| `--query tree` | the settled design: answers on the chosen path, open questions with their options |
-
-Ids: questions are `Q1`, `Q2`…; options are their question's id plus a letter (`Q1a`, `Q1b`…); follow-ups are `F1`, `F2`….
-
-`--origin` says where something hangs:
-- under an **option** when it only matters because that option was chosen;
-- under a **question** when it matters whatever the answer is;
-- under a **follow-up** when it only matters if that follow-up is pursued;
-- no origin for a question or follow-up about the design as a whole.
-
-`--target` names the existing item an op acts on.
+Before the first call, read `<this skill's directory>/../decision-tree/SKILL.md`: it lists the commands, the ids, and the `--origin` and `--target` rules used below.
 
 ## The session log
 
@@ -59,7 +38,7 @@ Use one log per session: `.grill-me/<topic>.jsonl` in the project root, where `<
 3. If it is a **follow-up**, ask the user whether it is worth deciding.
    - Yes: `promote-follow-up` it with at least two options you draft.
    - No: `exclude-item` it with `--reason not-applicable`.
-4. Record what the answer opened up, on your own, without asking first: new questions (at least two options each) or follow-ups, hung where they belong (see `--origin` above). Uncertain topics go in as follow-ups; the user decides each one when `next` reaches it.
+4. Record what the answer opened up, on your own, without asking first: new questions (at least two options each) or follow-ups, hung where they belong (see `--origin` in the decision-tree skill). Uncertain topics go in as follow-ups; the user decides each one when `next` reaches it.
 5. Repeat.
 
 Ask one question per message. `next` already orders the work: it finishes the current branch first, raises follow-ups on the way back up, and leaves other topics for later. Do not batch questions or reorder them.
