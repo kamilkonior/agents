@@ -1473,6 +1473,22 @@ const AddFollowUp = (() => {
       assert.deepEqual(log.read(), events);
     });
 
+    test("follow-up under an excluded question throws and appends nothing", () => {
+      // given
+      const events          = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "exclude-item", target: "Q1", reason: "deferred" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const act = () => add(log, "f", "Q1");
+
+      // then
+      assert.throws(act, (error) => error instanceof DesignTreeError && error.message === "origin is excluded: Q1");
+      assert.deepEqual(log.read(), events);
+    });
+
     test("follow-up under an option is stored with its origin", () => {
       // given
       const events          = [
