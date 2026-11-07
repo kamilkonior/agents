@@ -1731,6 +1731,22 @@ const ExcludeItem = (() => {
   }
 
   function tests() {
+    test("excluding without a target throws and appends nothing", () => {
+      // given
+      const events          = [{ type: "add-question", id: "Q1", text: "q" }];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const act = () => run(log, { reason: "deferred" });
+
+      // then
+      assert.throws(
+        act,
+        (error) => error instanceof DesignTreeError && error.message === "exclude-item requires --target",
+      );
+      assert.deepEqual(log.read(), events);
+    });
+
     test("excluding an item under an excluded option throws and appends nothing", () => {
       // given
       const events          = [
