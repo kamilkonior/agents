@@ -5,3 +5,4 @@ do-not-read
 /tsconfig.json
 /.idea/
 /CLAUDE.md
+/.claude/
