@@ -952,6 +952,35 @@ const Graph = (() => {
       ]);
     });
 
+    test("a restored answer settles its question again with its subtree", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+          { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+          { type: "select-option", target: "Q1a" },
+          { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+          { type: "exclude-item", target: "Q1a", reason: "not-applicable" },
+          { type: "restore-item", target: "Q1a" },
+        ]),
+      );
+
+      // when
+      const items = tree(graph);
+
+      // then
+      assert.deepEqual(items, [
+        {
+          kind: "question",
+          id: "Q1",
+          text: "q1",
+          answer: { id: "Q1a", text: "a" },
+          children: [{ kind: "open-question", id: "Q2", text: "q2", options: [], children: [] }],
+        },
+      ]);
+    });
+
     test("tree nests the settled path, with promoted follow-ups in place", () => {
       // given
       const graph = build(
