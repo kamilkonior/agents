@@ -1826,6 +1826,33 @@ const ExcludeItem = (() => {
       assert.deepEqual(excluded, { kind: "option", option: { id: "Q1a", text: "a" } });
       assert.deepEqual(log.read(), [...events, { type: "exclude-item", target: "Q1a", reason: "deferred" }]);
     });
+
+    test("excluding a question returns it with its options that are not excluded", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "add-option", id: "Q1c", text: "c", origin: "Q1" },
+        { type: "exclude-item", target: "Q1b", reason: "not-applicable" },
+      ]);
+
+      // when
+      const excluded = run(log, { target: "Q1", reason: "not-applicable" });
+
+      // then
+      assert.deepEqual(excluded, {
+        kind: "question",
+        question: {
+          id: "Q1",
+          text: "q",
+          options: [
+            { id: "Q1a", text: "a" },
+            { id: "Q1c", text: "c" },
+          ],
+        },
+      });
+    });
   }
 
   return { options, run, tests };
