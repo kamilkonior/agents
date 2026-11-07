@@ -1498,6 +1498,25 @@ const DismissFollowUp = (() => {
   }
 
   function tests() {
+    test("dismissing without a target throws and appends nothing", () => {
+      // given
+      const events          = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-follow-up", id: "F1", text: "f", origin: "Q1" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const act = () => run(log, {});
+
+      // then
+      assert.throws(
+        act,
+        (error) => error instanceof DesignTreeError && error.message === "dismiss-follow-up requires --target",
+      );
+      assert.deepEqual(log.read(), events);
+    });
+
     test("dismissing a follow-up records the dismissal", () => {
       // given
       const events          = [
