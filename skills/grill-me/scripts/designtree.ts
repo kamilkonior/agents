@@ -1730,7 +1730,25 @@ const ExcludeItem = (() => {
     }
   }
 
-  function tests() {}
+  function tests() {
+    test("excluding an item under an excluded option throws and appends nothing", () => {
+      // given
+      const events: Event[] = [
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+        { type: "exclude-item", target: "Q1a", reason: "not-applicable" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const act = () => run(log, { target: "Q2", reason: "deferred" });
+
+      // then
+      assert.throws(act, (error) => error instanceof DesignTreeError && error.message === "target is excluded: Q2");
+      assert.deepEqual(log.read(), events);
+    });
+  }
 
   return { options, run, tests };
 })();
