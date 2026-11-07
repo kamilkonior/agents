@@ -2135,6 +2135,27 @@ const SupersedeQuestion = (() => {
       assert.throws(act, (error) => error instanceof DesignTreeError && error.message === "target is not a question: Q1a");
       assert.deepEqual(log.read(), events);
     });
+
+    test("superseding a question adds one without options where the old one hung", () => {
+      // given
+      const events          = [
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const question = run(log, { target: "Q2", text: "q3" });
+
+      // then
+      assert.deepEqual(question, { id: "Q3", text: "q3", options: [] });
+      assert.deepEqual(log.read(), [
+        ...events,
+        { type: "add-question", id: "Q3", text: "q3", origin: "Q1a" },
+        { type: "supersede-question", target: "Q2", question: "Q3" },
+      ]);
+    });
   }
 
   return { options, run, tests };
