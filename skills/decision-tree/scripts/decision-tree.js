@@ -121,14 +121,6 @@ const Log = (() => {
     };
   }
 
-  function find(log     , id        )                    {
-    return log.read().find((event) => "id" in event && event.id === id);
-  }
-
-  function has(log     , id        )          {
-    return find(log, id) !== undefined;
-  }
-
   function nextId(log     , type                 , prefix        )         {
     const numbers = log
       .read()
@@ -229,7 +221,7 @@ const Log = (() => {
     });
   }
 
-  return { fileLog, memoryLog, find, has, nextId, transaction, tests };
+  return { fileLog, memoryLog, nextId, transaction, tests };
 })();
 
 const Graph = (() => {
