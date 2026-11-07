@@ -1780,6 +1780,18 @@ const ExcludeItem = (() => {
       assert.deepEqual(log.read(), events);
     });
 
+    test("excluding an unknown target throws and appends nothing", () => {
+      // given
+      const log = Log.memoryLog();
+
+      // when
+      const act = () => run(log, { target: "Q9", reason: "deferred" });
+
+      // then
+      assert.throws(act, (error) => error instanceof DesignTreeError && error.message === "target not found: Q9");
+      assert.deepEqual(log.read(), []);
+    });
+
     test("excluding an item under an excluded option throws and appends nothing", () => {
       // given
       const events: Event[] = [
