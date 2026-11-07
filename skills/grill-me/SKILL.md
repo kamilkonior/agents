@@ -25,7 +25,7 @@ Requires Node 20+. Every call needs `--log`. Results print as XML on stdout; err
 | `--op promote-follow-up --target FID --option A --option B` | turns a follow-up into a question under it |
 | `--op exclude-item --target ID --reason R` | takes a question, option or follow-up and everything under it out of the design; `R` is `not-applicable`, or `deferred` to keep it as out of scope for later |
 | `--op restore-item --target ID` | brings an excluded item back with everything under it; an item hidden only by an excluded ancestor cannot be restored on its own |
-| `--op supersede-question --target QID --text T` | replaces a question with a reworded one in its place, without options; the old question and everything under it leave the tree |
+| `--op supersede-question --target QID --text T` | replaces a question with a reworded one in its place, without options; the old question and everything under it leave the tree and are frozen: ops on them fail |
 | `--query next` | the one thing to ask now: `<next>` with a `<question>` or a `<follow-up>`, or an empty `<next></next>` when done |
 | `--query tree` | the settled design: answers on the chosen path, open questions with their options |
 
