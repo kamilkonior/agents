@@ -2061,6 +2061,22 @@ const SupersedeQuestion = (() => {
   }
 
   function tests() {
+    test("superseding without a target throws and appends nothing", () => {
+      // given
+      const events          = [{ type: "add-question", id: "Q1", text: "q" }];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const act = () => run(log, { text: "q2" });
+
+      // then
+      assert.throws(
+        act,
+        (error) => error instanceof DesignTreeError && error.message === "supersede-question requires --target",
+      );
+      assert.deepEqual(log.read(), events);
+    });
+
     test("superseding an option throws and appends nothing", () => {
       // given
       const events          = [
