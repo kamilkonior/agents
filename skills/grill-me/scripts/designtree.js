@@ -999,6 +999,23 @@ const Graph = (() => {
       // then
       assert.throws(act, (error) => error instanceof DesignTreeError && error.message === "target is excluded: Q2");
     });
+
+    test("looking up a live item returns its node", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+      ]);
+
+      // when
+      const node = liveNode(log, "Q1a", "target");
+
+      // then
+      assert.equal(node.kind, "option");
+      assert.equal(node.id, "Q1a");
+      assert.equal(node.text, "a");
+      assert.equal(node.kind === "option" ? node.question.id : undefined, "Q1");
+    });
   }
 
   return {
