@@ -1258,6 +1258,28 @@ const Graph = (() => {
           error.message === "Q1a is frozen, as its ancestor Q1 was superseded by Q2",
       );
     });
+
+    test("looking up a frozen excluded item to restore throws frozen", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "exclude-item", target: "Q1a", reason: "deferred" },
+        { type: "add-question", id: "Q2", text: "q2" },
+        { type: "supersede-question", target: "Q1", question: "Q2" },
+      ]);
+
+      // when
+      const act = () => excludedNode(log, "Q1a");
+
+      // then
+      assert.throws(
+        act,
+        (error) =>
+          error instanceof DesignTreeError &&
+          error.message === "Q1a is frozen, as its ancestor Q1 was superseded by Q2",
+      );
+    });
   }
 
   return {
