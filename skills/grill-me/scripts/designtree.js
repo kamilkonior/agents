@@ -1237,6 +1237,27 @@ const Graph = (() => {
         (error) => error instanceof DesignTreeError && error.message === "Q1 is frozen, as it was superseded by Q2",
       );
     });
+
+    test("looking up an item under a superseded question throws frozen", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-question", id: "Q2", text: "q2" },
+        { type: "supersede-question", target: "Q1", question: "Q2" },
+      ]);
+
+      // when
+      const act = () => liveNode(log, "Q1a", "target");
+
+      // then
+      assert.throws(
+        act,
+        (error) =>
+          error instanceof DesignTreeError &&
+          error.message === "Q1a is frozen, as its ancestor Q1 was superseded by Q2",
+      );
+    });
   }
 
   return {
