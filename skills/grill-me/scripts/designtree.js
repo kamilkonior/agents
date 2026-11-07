@@ -1413,6 +1413,25 @@ const PromoteFollowUp = (() => {
   }
 
   function tests() {
+    test("promoting without a target throws and appends nothing", () => {
+      // given
+      const events          = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-follow-up", id: "F1", text: "f", origin: "Q1" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const act = () => run(log, { option: ["x", "y"] });
+
+      // then
+      assert.throws(
+        act,
+        (error) => error instanceof DesignTreeError && error.message === "promote-follow-up requires --target",
+      );
+      assert.deepEqual(log.read(), events);
+    });
+
     test("promoting with an empty option throws and appends nothing", () => {
       // given
       const events          = [
