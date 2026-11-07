@@ -2001,6 +2001,23 @@ const RestoreItem = (() => {
       );
       assert.deepEqual(log.read(), events);
     });
+
+    test("restoring an option records the restore and returns the option", () => {
+      // given
+      const events: Event[] = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "exclude-item", target: "Q1a", reason: "deferred" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const restored = run(log, { target: "Q1a" });
+
+      // then
+      assert.deepEqual(restored, { kind: "option", option: { id: "Q1a", text: "a" } });
+      assert.deepEqual(log.read(), [...events, { type: "restore-item", target: "Q1a" }]);
+    });
   }
 
   return { options, run, tests };
