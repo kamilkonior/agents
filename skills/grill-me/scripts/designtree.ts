@@ -773,6 +773,29 @@ const Graph = (() => {
       ]);
     });
 
+    test("an excluded answer reopens its question and leaves its subtree out", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+          { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+          { type: "select-option", target: "Q1a" },
+          { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+          { type: "add-option", id: "Q2a", text: "x", origin: "Q2" },
+          { type: "exclude-item", target: "Q1a", reason: "not-applicable" },
+        ]),
+      );
+
+      // when
+      const items = tree(graph);
+
+      // then
+      assert.deepEqual(items, [
+        { kind: "open-question", id: "Q1", text: "q1", options: [{ id: "Q1b", text: "b" }], children: [] },
+      ]);
+    });
+
     test("tree nests the settled path, with promoted follow-ups in place", () => {
       // given
       const graph = build(
