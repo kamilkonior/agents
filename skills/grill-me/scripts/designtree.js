@@ -435,6 +435,23 @@ const Graph = (() => {
   }
 
   function tests() {
+    test("an unknown event type throws", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "dismiss-follow-up", target: "F1" }                    ,
+      ]);
+
+      // when
+      const act = () => build(log);
+
+      // then
+      assert.throws(
+        act,
+        (error) => error instanceof DesignTreeError && error.message === "unknown event type: dismiss-follow-up",
+      );
+    });
+
     test("the latest selection is the question's answer", () => {
       // given
       const log = Log.memoryLog([
