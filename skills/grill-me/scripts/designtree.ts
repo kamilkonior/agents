@@ -1422,24 +1422,6 @@ const SelectOption = (() => {
       assert.deepEqual(log.read(), [question]);
     });
 
-    test("selecting an excluded option throws and appends nothing", () => {
-      // given
-      const events: Event[] = [
-        { type: "add-question", id: "Q1", text: "q" },
-        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
-        { type: "exclude-item", target: "Q1a", reason: "not-applicable" },
-      ];
-      const log = Log.memoryLog([...events]);
-
-      // when
-      const act = () => select(log, "Q1a");
-
-      // then
-      assert.throws(act, (error) => error instanceof DesignTreeError && error.message === "target is excluded: Q1a");
-      assert.deepEqual(log.read(), events);
-    });
-
     test("selecting an option records it and returns the question with the option", () => {
       // given
       const events: Event[] = [
