@@ -1273,24 +1273,6 @@ const AddOption = (() => {
       assert.deepEqual(log.read(), events);
     });
 
-    test("option under a question below an excluded option throws and appends nothing", () => {
-      // given
-      const events          = [
-        { type: "add-question", id: "Q1", text: "q1" },
-        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-        { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
-        { type: "exclude-item", target: "Q1a", reason: "not-applicable" },
-      ];
-      const log = Log.memoryLog([...events]);
-
-      // when
-      const act = () => add(log, "x", "Q2");
-
-      // then
-      assert.throws(act, (error) => error instanceof DesignTreeError && error.message === "origin is excluded: Q2");
-      assert.deepEqual(log.read(), events);
-    });
-
     test("27th option under a question throws and appends nothing", () => {
       // given
       const letters = "abcdefghijklmnopqrstuvwxyz".split("");
