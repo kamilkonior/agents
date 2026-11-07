@@ -958,6 +958,17 @@ const Graph = (() => {
         },
       ]);
     });
+
+    test("looking up an unknown id throws not found for its role", () => {
+      // given
+      const log = Log.memoryLog();
+
+      // when
+      const act = () => liveNode(log, "Q9", "target");
+
+      // then
+      assert.throws(act, (error) => error instanceof DesignTreeError && error.message === "target not found: Q9");
+    });
   }
 
   return {
