@@ -17,7 +17,6 @@ const { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync
                                              
                                                                         
                                                  
-                                                 
                                                                       
 
                                               
@@ -39,6 +38,11 @@ const { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync
                                                                                             
                                                                                                     
                                                     
+
+                   
+                                                
+                                          
+                                                  
 
                
                                                 
@@ -333,11 +337,6 @@ const Graph = (() => {
           break;
         }
 
-        case "dismiss-follow-up": {
-          followUpNode(nodes, event.target).excluded = "not-applicable";
-          break;
-        }
-
         case "exclude-item": {
           parentNode(nodes, event.target).excluded = event.reason;
           break;
@@ -609,7 +608,7 @@ const Graph = (() => {
           { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
           { type: "add-follow-up", id: "F2", text: "f2", origin: "Q1" },
           { type: "promote-follow-up", target: "F1" },
-          { type: "dismiss-follow-up", target: "F2" },
+          { type: "exclude-item", target: "F2", reason: "not-applicable" },
         ]),
       );
 
@@ -710,7 +709,7 @@ const Graph = (() => {
       );
     });
 
-    test("a dismissed follow-up hides what hangs under it", () => {
+    test("an excluded follow-up hides what hangs under it", () => {
       // given
       const graph = build(
         Log.memoryLog([
@@ -719,7 +718,7 @@ const Graph = (() => {
           { type: "select-option", target: "Q1a" },
           { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
           { type: "add-follow-up", id: "F2", text: "f2", origin: "F1" },
-          { type: "dismiss-follow-up", target: "F1" },
+          { type: "exclude-item", target: "F1", reason: "not-applicable" },
         ]),
       );
 
@@ -750,7 +749,7 @@ const Graph = (() => {
       );
     });
 
-    test("tree leaves out off-path branches and dismissed follow-ups", () => {
+    test("tree leaves out off-path branches and excluded follow-ups", () => {
       // given
       const graph = build(
         Log.memoryLog([
@@ -760,7 +759,7 @@ const Graph = (() => {
           { type: "select-option", target: "Q1a" },
           { type: "add-question", id: "Q2", text: "q2", origin: "Q1b" },
           { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
-          { type: "dismiss-follow-up", target: "F1" },
+          { type: "exclude-item", target: "F1", reason: "not-applicable" },
         ]),
       );
 
@@ -1415,12 +1414,12 @@ const AddFollowUp = (() => {
       assert.deepEqual(log.read(), []);
     });
 
-    test("follow-up under a dismissed follow-up throws and appends nothing", () => {
+    test("follow-up under an excluded follow-up throws and appends nothing", () => {
       // given
       const events          = [
         { type: "add-question", id: "Q1", text: "q" },
         { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
-        { type: "dismiss-follow-up", target: "F1" },
+        { type: "exclude-item", target: "F1", reason: "not-applicable" },
       ];
       const log = Log.memoryLog([...events]);
 
@@ -1482,12 +1481,12 @@ const AddFollowUp = (() => {
       assert.deepEqual(log.read(), [{ type: "add-follow-up", id: "F1", text: "f" }]);
     });
 
-    test("a dismissed follow-up is not open", () => {
+    test("an excluded follow-up is not open", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q" },
         { type: "add-follow-up", id: "F1", text: "f", origin: "Q1" },
-        { type: "dismiss-follow-up", target: "F1" },
+        { type: "exclude-item", target: "F1", reason: "not-applicable" },
       ]);
 
       // when
@@ -1595,57 +1594,52 @@ const PromoteFollowUp = (() => {
   return { options, run, tests };
 })();
 
-const DismissFollowUp = (() => {
+const ExcludeItem = (() => {
   const options = {
     target: { type: "string" },
+    reason: { type: "string" },
   }         ;
 
-  function run(log     , config                     )               {
-    if (!config.target) throw new DesignTreeError("dismiss-follow-up requires --target");
+  const reasons                    = ["not-applicable", "deferred"];
 
-    const followUp = AddFollowUp.open(log, config.target);
+  function run(log     , config                                      )               {
+    const { target, reason } = config;
+    if (!target) throw new DesignTreeError("exclude-item requires --target");
+    if (!reason) throw new DesignTreeError("exclude-item requires --reason");
 
-    log.append({ type: "dismiss-follow-up", target: followUp.id });
+    const exclusionReason = reasons.find((each) => each === reason);
+    if (exclusionReason === undefined) {
+      throw new DesignTreeError(`reason must be ${reasons.join(" or ")}: ${reason}`);
+    }
 
-    return { id: followUp.id, text: followUp.text };
+    const node = Graph.build(log).nodes.get(target);
+    if (node === undefined) throw new DesignTreeError(`target not found: ${target}`);
+    if (node.excluded !== undefined) throw new DesignTreeError(`${target} is already excluded`);
+
+    log.append({ type: "exclude-item", target, reason: exclusionReason });
+
+    return excludedData(node);
   }
 
-  function tests() {
-    test("dismissing without a target throws and appends nothing", () => {
-      // given
-      const events          = [
-        { type: "add-question", id: "Q1", text: "q" },
-        { type: "add-follow-up", id: "F1", text: "f", origin: "Q1" },
-      ];
-      const log = Log.memoryLog([...events]);
+  function excludedData(node                                          )               {
+    switch (node.kind) {
+      case "question": {
+        const options = node.options
+          .filter((option) => option.excluded === undefined)
+          .map((option) => ({ id: option.id, text: option.text }));
 
-      // when
-      const act = () => run(log, {});
+        return { kind: "question", question: { id: node.id, text: node.text, options } };
+      }
 
-      // then
-      assert.throws(
-        act,
-        (error) => error instanceof DesignTreeError && error.message === "dismiss-follow-up requires --target",
-      );
-      assert.deepEqual(log.read(), events);
-    });
+      case "option":
+        return { kind: "option", option: { id: node.id, text: node.text } };
 
-    test("dismissing a follow-up records the dismissal", () => {
-      // given
-      const events          = [
-        { type: "add-question", id: "Q1", text: "q" },
-        { type: "add-follow-up", id: "F1", text: "f", origin: "Q1" },
-      ];
-      const log = Log.memoryLog([...events]);
-
-      // when
-      const followUp = run(log, { target: "F1" });
-
-      // then
-      assert.deepEqual(followUp, { id: "F1", text: "f" });
-      assert.deepEqual(log.read(), [...events, { type: "dismiss-follow-up", target: "F1" }]);
-    });
+      case "follow-up":
+        return { kind: "follow-up", followUp: { id: node.id, text: node.text } };
+    }
   }
+
+  function tests() {}
 
   return { options, run, tests };
 })();
@@ -1766,6 +1760,17 @@ const Xml = (() => {
 
   function followUp(data              )         {
     return `<follow-up><id>${data.id}</id><text>${escapeXml(data.text)}</text></follow-up>`;
+  }
+
+  function excluded(data              )         {
+    switch (data.kind) {
+      case "question":
+        return question(data.question);
+      case "option":
+        return option(data.option);
+      case "follow-up":
+        return followUp(data.followUp);
+    }
   }
 
   function next(data                      )         {
@@ -1999,7 +2004,7 @@ const Xml = (() => {
     });
   }
 
-  return { option, question, selection, followUp, next, tree, tests };
+  return { option, question, selection, followUp, excluded, next, tree, tests };
 })();
 
 const Cli = (() => {
@@ -2063,7 +2068,7 @@ const Cli = (() => {
     SelectOption.tests();
     AddFollowUp.tests();
     PromoteFollowUp.tests();
-    DismissFollowUp.tests();
+    ExcludeItem.tests();
     Next.tests();
     Tree.tests();
     Xml.tests();
@@ -2139,9 +2144,9 @@ const Cli = (() => {
         break;
       }
 
-      case "dismiss-follow-up": {
-        const config = readModeConfig(DismissFollowUp.options);
-        console.log(Xml.followUp(DismissFollowUp.run(log, config)));
+      case "exclude-item": {
+        const config = readModeConfig(ExcludeItem.options);
+        console.log(Xml.excluded(ExcludeItem.run(log, config)));
         break;
       }
       default:
