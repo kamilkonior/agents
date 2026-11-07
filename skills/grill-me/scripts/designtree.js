@@ -995,6 +995,33 @@ const Graph = (() => {
       ]);
     });
 
+    test("a superseding question takes the old question's slot and the old subtree leaves the tree", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-question", id: "Q2", text: "q2" },
+          { type: "add-question", id: "Q3", text: "q3" },
+          { type: "add-question", id: "Q4", text: "q4", origin: "Q2" },
+          { type: "add-question", id: "Q5", text: "q5" },
+          { type: "supersede-question", target: "Q2", question: "Q5" },
+        ]),
+      );
+
+      // when
+      const items = tree(graph);
+
+      // then
+      assert.deepEqual(
+        items.map((item) => item.id),
+        ["Q1", "Q5", "Q3"],
+      );
+      assert.deepEqual(
+        items.flatMap((item) => (item.kind === "follow-up" ? [] : item.children)),
+        [],
+      );
+    });
+
     test("tree nests the settled path, with promoted follow-ups in place", () => {
       // given
       const graph = build(
