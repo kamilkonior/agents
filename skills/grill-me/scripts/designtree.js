@@ -845,6 +845,29 @@ const Graph = (() => {
       assert.deepEqual(items, [{ kind: "open-question", id: "Q2", text: "q2", options: [], children: [] }]);
     });
 
+    test("an excluded follow-up is left out with its subtree", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+          { type: "select-option", target: "Q1a" },
+          { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
+          { type: "add-question", id: "Q2", text: "f1", origin: "F1" },
+          { type: "promote-follow-up", target: "F1" },
+          { type: "exclude-item", target: "F1", reason: "deferred" },
+        ]),
+      );
+
+      // when
+      const items = tree(graph);
+
+      // then
+      assert.deepEqual(items, [
+        { kind: "question", id: "Q1", text: "q1", answer: { id: "Q1a", text: "a" }, children: [] },
+      ]);
+    });
+
     test("tree nests the settled path, with promoted follow-ups in place", () => {
       // given
       const graph = build(
