@@ -57,7 +57,6 @@ type QuestionNode = {
   children: QuestionNode[];
   followUps: FollowUpNode[];
   answer?: OptionNode;
-  excluded?: ExclusionReason;
 };
 
 type OptionNode = {
@@ -67,7 +66,6 @@ type OptionNode = {
   question: QuestionNode;
   children: QuestionNode[];
   followUps: FollowUpNode[];
-  excluded?: ExclusionReason;
 };
 
 type FollowUpNode = {
@@ -78,13 +76,13 @@ type FollowUpNode = {
   status: "open" | "promoted";
   children: QuestionNode[];
   followUps: FollowUpNode[];
-  excluded?: ExclusionReason;
 };
 
 type Graph = {
   nodes: Map<string, QuestionNode | OptionNode | FollowUpNode>;
   roots: QuestionNode[];
   rootFollowUps: FollowUpNode[];
+  exclusions: Map<string, ExclusionReason>;
 };
 
 class DesignTreeError extends Error {}
@@ -260,18 +258,25 @@ const Graph = (() => {
     return node;
   }
 
-  function isExcluded(node: QuestionNode | OptionNode | FollowUpNode): boolean {
-    if (node.excluded !== undefined) return true;
+  function isExcluded(graph: Graph, node: QuestionNode | OptionNode | FollowUpNode): boolean {
+    if (graph.exclusions.has(node.id)) return true;
 
     const parent = node.kind === "option" ? node.question : node.parent;
 
-    return parent !== undefined && isExcluded(parent);
+    return parent !== undefined && isExcluded(graph, parent);
+  }
+
+  function liveOptions(graph: Graph, question: QuestionNode): OptionData[] {
+    return question.options
+      .filter((option) => !graph.exclusions.has(option.id))
+      .map((option) => ({ id: option.id, text: option.text }));
   }
 
   function build(log: Log): Graph {
     const nodes: Graph["nodes"] = new Map();
     const roots: QuestionNode[] = [];
     const rootFollowUps: FollowUpNode[] = [];
+    const exclusions: Graph["exclusions"] = new Map();
 
     for (const event of log.read()) {
       switch (event.type) {
@@ -346,20 +351,24 @@ const Graph = (() => {
         }
 
         case "exclude-item": {
-          parentNode(nodes, event.target).excluded = event.reason;
+          exclusions.set(parentNode(nodes, event.target).id, event.reason);
           break;
         }
       }
     }
 
-    return { nodes, roots, rootFollowUps };
+    return { nodes, roots, rootFollowUps, exclusions };
   }
 
   function tree(graph: Graph): TreeItem[] {
-    function question(node: QuestionNode): TreeItem[] {
-      if (node.excluded !== undefined) return [];
+    function live(node: QuestionNode | OptionNode | FollowUpNode): boolean {
+      return !graph.exclusions.has(node.id);
+    }
 
-      const answer = node.answer?.excluded === undefined ? node.answer : undefined;
+    function question(node: QuestionNode): TreeItem[] {
+      if (!live(node)) return [];
+
+      const answer = node.answer !== undefined && live(node.answer) ? node.answer : undefined;
 
       const children: TreeItem[] = [];
       if (answer !== undefined) {
@@ -368,11 +377,7 @@ const Graph = (() => {
       children.push(...node.children.flatMap(question), ...followUps(node));
 
       if (answer === undefined) {
-        const options = node.options
-          .filter((option) => option.excluded === undefined)
-          .map((option) => ({ id: option.id, text: option.text }));
-
-        return [{ kind: "open-question", id: node.id, text: node.text, options, children }];
+        return [{ kind: "open-question", id: node.id, text: node.text, options: liveOptions(graph, node), children }];
       }
 
       return [
@@ -385,7 +390,7 @@ const Graph = (() => {
     }
 
     function followUp(node: FollowUpNode): TreeItem[] {
-      if (node.excluded !== undefined) return [];
+      if (!live(node)) return [];
       if (node.status === "open") return [{ kind: "follow-up", id: node.id, text: node.text }];
 
       return [...node.children.flatMap(question), ...followUps(node)];
@@ -404,6 +409,24 @@ const Graph = (() => {
     }
 
     return tree(graph).flatMap(open);
+  }
+
+  function liveNode(log: Log, id: string, role: "origin" | "target"): QuestionNode | OptionNode | FollowUpNode {
+    const graph = build(log);
+
+    const node = graph.nodes.get(id);
+    if (node === undefined) throw new DesignTreeError(`${role} not found: ${id}`);
+    if (isExcluded(graph, node)) throw new DesignTreeError(`${role} is excluded: ${id}`);
+
+    return node;
+  }
+
+  function questionData(log: Log, id: string): QuestionData {
+    const graph = build(log);
+
+    const question = questionNode(graph.nodes, id);
+
+    return { id: question.id, text: question.text, options: liveOptions(graph, question) };
   }
 
   function tests() {
@@ -937,7 +960,13 @@ const Graph = (() => {
     });
   }
 
-  return { build, isExcluded, tree, frontier, tests };
+  return {
+    tree: (log: Log) => tree(build(log)),
+    frontier: (log: Log) => frontier(build(log)),
+    liveNode,
+    questionData,
+    tests,
+  };
 })();
 
 const AddQuestion = (() => {
@@ -948,11 +977,7 @@ const AddQuestion = (() => {
   } as const;
 
   function addQuestion(log: Log, text: string, origin?: string): string {
-    if (origin !== undefined) {
-      const parent = Graph.build(log).nodes.get(origin);
-      if (parent === undefined) throw new DesignTreeError(`origin not found: ${origin}`);
-      if (Graph.isExcluded(parent)) throw new DesignTreeError(`origin is excluded: ${origin}`);
-    }
+    if (origin !== undefined) Graph.liveNode(log, origin, "origin");
 
     const id = Log.nextId(log, "add-question", "Q");
     const event: Event = { type: "add-question", id, text };
@@ -1157,12 +1182,10 @@ const AddOption = (() => {
   function add(log: Log, text: string, origin: string): string {
     if (!text) throw new DesignTreeError("option requires a text");
 
-    const question = Graph.build(log).nodes.get(origin);
-    if (question === undefined) throw new DesignTreeError(`origin not found: ${origin}`);
+    const question = Graph.liveNode(log, origin, "origin");
     if (question.kind !== "question") {
       throw new DesignTreeError(`origin is not a question: ${origin}`);
     }
-    if (Graph.isExcluded(question)) throw new DesignTreeError(`origin is excluded: ${origin}`);
 
     const id = nextOptionId(log, origin);
 
@@ -1314,12 +1337,10 @@ const SelectOption = (() => {
   } as const;
 
   function select(log: Log, target: string): SelectionData {
-    const option = Graph.build(log).nodes.get(target);
-    if (option === undefined) throw new DesignTreeError(`target not found: ${target}`);
+    const option = Graph.liveNode(log, target, "target");
     if (option.kind !== "option") {
       throw new DesignTreeError(`target is not an option: ${target}`);
     }
-    if (Graph.isExcluded(option)) throw new DesignTreeError(`target is excluded: ${target}`);
 
     const question = option.question;
 
@@ -1428,11 +1449,7 @@ const AddFollowUp = (() => {
   function add(log: Log, text: string, origin?: string): string {
     if (!text) throw new DesignTreeError("follow-up requires a text");
 
-    if (origin !== undefined) {
-      const parent = Graph.build(log).nodes.get(origin);
-      if (parent === undefined) throw new DesignTreeError(`origin not found: ${origin}`);
-      if (Graph.isExcluded(parent)) throw new DesignTreeError(`origin is excluded: ${origin}`);
-    }
+    if (origin !== undefined) Graph.liveNode(log, origin, "origin");
 
     const id = Log.nextId(log, "add-follow-up", "F");
     const event: Event = { type: "add-follow-up", id, text };
@@ -1452,10 +1469,8 @@ const AddFollowUp = (() => {
   }
 
   function open(log: Log, id: string): FollowUpNode {
-    const node = Graph.build(log).nodes.get(id);
-    if (node === undefined) throw new DesignTreeError(`target not found: ${id}`);
+    const node = Graph.liveNode(log, id, "target");
     if (node.kind !== "follow-up") throw new DesignTreeError(`target is not a follow-up: ${id}`);
-    if (Graph.isExcluded(node)) throw new DesignTreeError(`target is excluded: ${id}`);
     if (node.status !== "open") throw new DesignTreeError(`follow-up ${id} is already ${node.status}`);
 
     return node;
@@ -1703,24 +1718,19 @@ const ExcludeItem = (() => {
       throw new DesignTreeError(`reason must be ${reasons.join(" or ")}: ${reason}`);
     }
 
-    const node = Graph.build(log).nodes.get(target);
-    if (node === undefined) throw new DesignTreeError(`target not found: ${target}`);
-    if (Graph.isExcluded(node)) throw new DesignTreeError(`target is excluded: ${target}`);
+    const node = Graph.liveNode(log, target, "target");
+
+    const excluded = excludedData(log, node);
 
     log.append({ type: "exclude-item", target, reason: exclusionReason });
 
-    return excludedData(node);
+    return excluded;
   }
 
-  function excludedData(node: QuestionNode | OptionNode | FollowUpNode): ExcludedData {
+  function excludedData(log: Log, node: QuestionNode | OptionNode | FollowUpNode): ExcludedData {
     switch (node.kind) {
-      case "question": {
-        const options = node.options
-          .filter((option) => option.excluded === undefined)
-          .map((option) => ({ id: option.id, text: option.text }));
-
-        return { kind: "question", question: { id: node.id, text: node.text, options } };
-      }
+      case "question":
+        return { kind: "question", question: Graph.questionData(log, node.id) };
 
       case "option":
         return { kind: "option", option: { id: node.id, text: node.text } };
@@ -1876,7 +1886,7 @@ const Next = (() => {
   const options = {} as const;
 
   function run(log: Log): NextData | undefined {
-    const node = Graph.frontier(Graph.build(log))[0];
+    const node = Graph.frontier(log)[0];
     if (node === undefined) return undefined;
 
     if (node.kind === "follow-up") {
@@ -1948,7 +1958,7 @@ const Tree = (() => {
   const options = {} as const;
 
   function run(log: Log): TreeItem[] {
-    return Graph.tree(Graph.build(log));
+    return Graph.tree(log);
   }
 
   function tests() {}
