@@ -1809,6 +1809,23 @@ const ExcludeItem = (() => {
       assert.throws(act, (error) => error instanceof DesignTreeError && error.message === "target is excluded: Q2");
       assert.deepEqual(log.read(), events);
     });
+
+    test("excluding an option records the exclusion and returns the option", () => {
+      // given
+      const events          = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const excluded = run(log, { target: "Q1a", reason: "deferred" });
+
+      // then
+      assert.deepEqual(excluded, { kind: "option", option: { id: "Q1a", text: "a" } });
+      assert.deepEqual(log.read(), [...events, { type: "exclude-item", target: "Q1a", reason: "deferred" }]);
+    });
   }
 
   return { options, run, tests };
