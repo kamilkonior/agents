@@ -35,7 +35,7 @@ Ids: questions are `Q1`, `Q2`…; options are their question's id plus a letter 
 - under an **option** when it only matters because that option was chosen;
 - under a **question** when it matters whatever the answer is;
 - under a **follow-up** when it only matters if that follow-up is pursued;
-- no origin for a question or follow-up about the topic as a whole.
+- no origin for a root: a question or follow-up that depends on nothing else in the tree.
 
 `--target` names the existing item an op acts on.
 
@@ -43,4 +43,4 @@ Ids: questions are `Q1`, `Q2`…; options are their question's id plus a letter 
 
 ## The log
 
-One log per topic, as a `.jsonl` file at a path the calling skill chooses. Calling the CLI again with the same path resumes the topic. Never mix two topics in one log, and never edit a log by hand: it is the source of truth, and the tree is rebuilt from it on every call.
+One log holds one tree, which can have any number of root questions. It is a `.jsonl` file at a path the calling skill chooses, and calling the CLI again with the same path resumes it. Never edit a log by hand: it is the source of truth, and the tree is rebuilt from it on every call.
