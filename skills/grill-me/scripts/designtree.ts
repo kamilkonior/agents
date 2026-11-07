@@ -1081,6 +1081,17 @@ const Graph = (() => {
       // then
       assert.throws(act, (error) => error instanceof DesignTreeError && error.message === "target not found: Q9");
     });
+
+    test("looking up a live item to restore throws not excluded", () => {
+      // given
+      const log = Log.memoryLog([{ type: "add-question", id: "Q1", text: "q" }]);
+
+      // when
+      const act = () => excludedNode(log, "Q1");
+
+      // then
+      assert.throws(act, (error) => error instanceof DesignTreeError && error.message === "target is not excluded: Q1");
+    });
   }
 
   return {
