@@ -18,7 +18,8 @@ type Event =
   | { type: "add-follow-up"; id: string; text: string; origin?: string }
   | { type: "promote-follow-up"; target: string }
   | { type: "exclude-item"; target: string; reason: ExclusionReason }
-  | { type: "restore-item"; target: string };
+  | { type: "restore-item"; target: string }
+  | { type: "supersede-question"; target: string; question: string };
 
 type IdEvent = Extract<Event, { id: string }>;
 
@@ -361,6 +362,19 @@ const Graph = (() => {
 
         case "restore-item": {
           exclusions.delete(parentNode(nodes, event.target).id);
+          break;
+        }
+
+        case "supersede-question": {
+          const old = questionNode(nodes, event.target);
+          const replacement = questionNode(nodes, event.question);
+          const siblings = old.parent === undefined ? roots : old.parent.children;
+          if (!siblings.includes(replacement)) {
+            throw new Error(`question ${replacement.id} does not hang where ${old.id} hangs`);
+          }
+
+          siblings.splice(siblings.indexOf(replacement), 1);
+          siblings.splice(siblings.indexOf(old), 1, replacement);
           break;
         }
 
@@ -1344,7 +1358,7 @@ const AddQuestion = (() => {
     });
   }
 
-  return { options, run, tests };
+  return { options, addQuestion, run, tests };
 })();
 
 const AddOption = (() => {
@@ -2023,6 +2037,34 @@ const RestoreItem = (() => {
   return { options, run, tests };
 })();
 
+const SupersedeQuestion = (() => {
+  const options = {
+    target: { type: "string" },
+    text: { type: "string" },
+  } as const;
+
+  function run(log: Log, config: { target?: string; text?: string }): QuestionData {
+    const { target, text } = config;
+    if (!target) throw new DesignTreeError("supersede-question requires --target");
+    if (!text) throw new DesignTreeError("supersede-question requires --text");
+
+    const old = Graph.liveNode(log, target, "target");
+    if (old.kind !== "question") throw new DesignTreeError(`target is not a question: ${target}`);
+
+    return Log.transaction(log, (staged) => {
+      const id = AddQuestion.addQuestion(staged, text, old.parent?.id);
+
+      staged.append({ type: "supersede-question", target, question: id });
+
+      return { id, text, options: [] };
+    });
+  }
+
+  function tests() {}
+
+  return { options, run, tests };
+})();
+
 const Next = (() => {
   const options = {} as const;
 
@@ -2460,6 +2502,7 @@ const Cli = (() => {
     PromoteFollowUp.tests();
     ExcludeItem.tests();
     RestoreItem.tests();
+    SupersedeQuestion.tests();
     Next.tests();
     Tree.tests();
     Xml.tests();
@@ -2544,6 +2587,12 @@ const Cli = (() => {
       case "restore-item": {
         const config = readModeConfig(RestoreItem.options);
         console.log(Xml.item(RestoreItem.run(log, config)));
+        break;
+      }
+
+      case "supersede-question": {
+        const config = readModeConfig(SupersedeQuestion.options);
+        console.log(Xml.question(SupersedeQuestion.run(log, config)));
         break;
       }
       default:
