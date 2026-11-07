@@ -1853,6 +1853,20 @@ const ExcludeItem = (() => {
         },
       });
     });
+
+    test("excluding a follow-up returns the follow-up", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-follow-up", id: "F1", text: "f", origin: "Q1" },
+      ]);
+
+      // when
+      const excluded = run(log, { target: "F1", reason: "deferred" });
+
+      // then
+      assert.deepEqual(excluded, { kind: "follow-up", followUp: { id: "F1", text: "f" } });
+    });
   }
 
   return { options, run, tests };
