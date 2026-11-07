@@ -23,7 +23,7 @@ Requires Node 20+. Every call needs `--log`. Results print as XML on stdout; err
 | `--op select-option --target OID` | answers a question; a later selection replaces an earlier one |
 | `--op add-follow-up --text T [--origin ID]` | records a candidate topic that isn't ready to be a question |
 | `--op promote-follow-up --target FID --option A --option B` | turns a follow-up into a question under it |
-| `--op dismiss-follow-up --target FID` | drops a follow-up and everything under it |
+| `--op exclude-item --target ID --reason R` | takes a question, option or follow-up and everything under it out of the design; `R` is `not-applicable`, or `deferred` to keep it as out of scope for later |
 | `--query next` | the one thing to ask now: `<next>` with a `<question>` or a `<follow-up>`, or an empty `<next></next>` when done |
 | `--query tree` | the settled design: answers on the chosen path, open questions with their options |
 
@@ -56,7 +56,7 @@ Use one log per session: `.grill-me/<topic>.jsonl` in the project root, where `<
    - The user isn't ready to decide: leave the question open and record what is blocking them as a follow-up under it.
 3. If it is a **follow-up**, ask the user whether it is worth deciding.
    - Yes: `promote-follow-up` it with at least two options you draft.
-   - No: `dismiss-follow-up` it.
+   - No: `exclude-item` it with `--reason not-applicable`.
 4. Record what the answer opened up, on your own, without asking first: new questions (at least two options each) or follow-ups, hung where they belong (see `--origin` above). Uncertain topics go in as follow-ups; the user decides each one when `next` reaches it.
 5. Repeat.
 
