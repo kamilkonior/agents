@@ -1763,6 +1763,23 @@ const ExcludeItem = (() => {
       assert.deepEqual(log.read(), events);
     });
 
+    test("excluding with an unknown reason throws and appends nothing", () => {
+      // given
+      const events          = [{ type: "add-question", id: "Q1", text: "q" }];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const act = () => run(log, { target: "Q1", reason: "later" });
+
+      // then
+      assert.throws(
+        act,
+        (error) =>
+          error instanceof DesignTreeError && error.message === "reason must be not-applicable or deferred: later",
+      );
+      assert.deepEqual(log.read(), events);
+    });
+
     test("excluding an item under an excluded option throws and appends nothing", () => {
       // given
       const events          = [
