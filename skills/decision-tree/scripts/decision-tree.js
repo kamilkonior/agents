@@ -312,6 +312,21 @@ const Log = (() => {
       assert.equal(ran, false);
     });
 
+    test("an abandoned lock is taken over and removed afterwards", (t) => {
+      // given
+      const dir = mkdtempSync(join(tmpdir(), "decision-tree-"));
+      t.after(() => rmSync(dir, { recursive: true }));
+      const path = join(dir, "decision-tree.jsonl");
+      appendFileSync(`${path}.lock`, "");
+
+      // when
+      const result = locked(path, () => "done", { waitMs: 0, abandonedMs: -1 });
+
+      // then
+      assert.equal(result, "done");
+      assert.equal(existsSync(`${path}.lock`), false);
+    });
+
     test("file log with a malformed line throws, naming the line", (t) => {
       // given
       const dir = mkdtempSync(join(tmpdir(), "decision-tree-"));
