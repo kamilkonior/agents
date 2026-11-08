@@ -1835,6 +1835,24 @@ const Graph = (() => {
       );
     });
 
+    test("an item excluded directly is not hidden by anything else", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "tag", target: "Q1", tags: ["t"] },
+        { type: "exclude", target: "Q1", reason: "deferred" },
+      ]);
+
+      // when
+      const items = withTag(log, "t", ["deferred"]);
+
+      // then
+      assert.deepEqual(
+        items.map((each) => each.hiddenBy),
+        [undefined],
+      );
+    });
+
     test("looking up an unknown id throws not found for its role", () => {
       // given
       const log = Log.memoryLog();
