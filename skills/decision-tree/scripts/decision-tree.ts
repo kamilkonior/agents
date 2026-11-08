@@ -1994,6 +1994,27 @@ const SelectOption = (() => {
       assert.deepEqual(log.read(), events);
     });
 
+    test("selecting options of two questions throws and appends nothing", () => {
+      // given
+      const events: Event[] = [
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-question", id: "Q2", text: "q2" },
+        { type: "add-option", id: "Q2a", text: "b", origin: "Q2" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const act = () => select(log, ["Q1a", "Q2a"]);
+
+      // then
+      assert.throws(
+        act,
+        (error) => error instanceof DecisionTreeError && error.message === "target is not an option of Q1: Q2a",
+      );
+      assert.deepEqual(log.read(), events);
+    });
+
     test("selecting an unknown option throws and appends nothing", () => {
       // given
       const log = Log.memoryLog();
