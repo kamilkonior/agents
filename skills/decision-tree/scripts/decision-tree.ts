@@ -1695,6 +1695,24 @@ const Graph = (() => {
       );
     });
 
+    test("a promoted follow-up counts as settled in the tag query", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-follow-up", id: "F1", text: "f" },
+        { type: "add-question", id: "Q1", text: "f", origin: "F1" },
+        { type: "promote-follow-up", target: "F1" },
+        { type: "tag", target: "F1", tags: ["t"] },
+      ]);
+
+      // when
+      const items = withTag(log, "t", ["settled"]);
+
+      // then
+      assert.deepEqual(items, [
+        { item: { kind: "follow-up", followUp: { id: "F1", text: "f" } }, tags: ["t"], state: "settled" },
+      ]);
+    });
+
     test("looking up an unknown id throws not found for its role", () => {
       // given
       const log = Log.memoryLog();
