@@ -5,7 +5,7 @@ const { dirname, join }: typeof import("node:path") = require("node:path");
 const { test }: typeof import("node:test") = require("node:test");
 const { parseArgs }: typeof import("node:util") = require("node:util");
 
-const { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } = fs;
+const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, rmSync, statSync } = fs;
 
 type ParseArgsOptionsConfig = import("node:util").ParseArgsOptionsConfig;
 
@@ -164,6 +164,50 @@ const Log = (() => {
     };
   }
 
+  function sleep(milliseconds: number): void {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
+  }
+
+  function isAbandoned(lock: string): boolean {
+    const stats = statSync(lock, { throwIfNoEntry: false });
+
+    return stats !== undefined && Date.now() - stats.mtimeMs > 30_000;
+  }
+
+  function acquire(lock: string): void {
+    const deadline = Date.now() + 5_000;
+
+    while (true) {
+      try {
+        closeSync(openSync(lock, "wx"));
+        return;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+      }
+
+      if (isAbandoned(lock)) {
+        rmSync(lock, { force: true });
+        continue;
+      }
+      if (Date.now() > deadline) throw new DecisionTreeError(`log is locked by another writer: ${lock}`);
+
+      sleep(10);
+    }
+  }
+
+  function locked<T>(path: string, work: () => T): T {
+    const lock = `${path}.lock`;
+    mkdirSync(dirname(path), { recursive: true });
+
+    acquire(lock);
+
+    try {
+      return work();
+    } finally {
+      rmSync(lock, { force: true });
+    }
+  }
+
   function nextId(log: Log, type: IdEvent["type"], prefix: string): string {
     const numbers = log
       .read()
@@ -301,7 +345,7 @@ const Log = (() => {
     });
   }
 
-  return { fileLog, memoryLog, nextId, transaction, tests };
+  return { fileLog, memoryLog, locked, nextId, transaction, tests };
 })();
 
 const Graph = (() => {
@@ -4402,7 +4446,7 @@ const Cli = (() => {
       return;
     }
 
-    runOp(log, mode.op);
+    Log.locked(mode.log, () => runOp(log, mode.op));
   }
 
   function runQuery(log: Log, query: string) {
