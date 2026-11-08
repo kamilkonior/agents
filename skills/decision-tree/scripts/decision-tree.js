@@ -1562,6 +1562,31 @@ const Graph = (() => {
       ]);
     });
 
+    test("the tag query returns only open on-path items with that tag", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "settled" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "add-question", id: "Q2", text: "open", origin: "Q1a" },
+        { type: "add-question", id: "Q3", text: "off-path", origin: "Q1b" },
+        { type: "add-question", id: "Q4", text: "other tag" },
+        { type: "tag", target: "Q1", tags: ["t"] },
+        { type: "tag", target: "Q2", tags: ["t"] },
+        { type: "tag", target: "Q3", tags: ["t"] },
+        { type: "tag", target: "Q4", tags: ["u"] },
+      ]);
+
+      // when
+      const items = openWithTag(log, "t");
+
+      // then
+      assert.deepEqual(items, [
+        { item: { kind: "question", question: { id: "Q2", text: "open", options: [] } }, tags: ["t"] },
+      ]);
+    });
+
     test("looking up an unknown id throws not found for its role", () => {
       // given
       const log = Log.memoryLog();
