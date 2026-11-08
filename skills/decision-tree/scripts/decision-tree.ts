@@ -3002,6 +3002,22 @@ const Tag = (() => {
       );
       assert.deepEqual(log.read(), events);
     });
+
+    test("tagging records the tags in one event and returns the item with them", () => {
+      // given
+      const events: Event[] = [{ type: "add-question", id: "Q1", text: "q" }];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const tagged = run(log, { target: "Q1", tag: ["a", "b"] });
+
+      // then
+      assert.deepEqual(tagged, {
+        item: { kind: "question", question: { id: "Q1", text: "q", options: [] } },
+        tags: ["a", "b"],
+      });
+      assert.deepEqual(log.read(), [...events, { type: "tag", target: "Q1", tags: ["a", "b"] }]);
+    });
   }
 
   return { options, checked, run, tests };
