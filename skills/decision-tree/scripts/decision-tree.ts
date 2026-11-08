@@ -80,9 +80,12 @@ type ListedItem = TaggedData & { state: ItemState; selected?: OptionData[]; note
 
 type SupersedeData = { question: QuestionData; superseded: SupersededItem[] };
 
-type NextData =
+type TrailStep = { kind: "question" | "option" | "follow-up"; id: string; text: string };
+
+type NextData = (
   | { kind: "question"; question: QuestionData }
-  | { kind: "follow-up"; followUp: FollowUpData };
+  | { kind: "follow-up"; followUp: FollowUpData }
+) & { trail?: TrailStep[] };
 
 type QuestionNode = {
   kind: "question";
@@ -738,6 +741,18 @@ const Graph = (() => {
     const items = node.kind === "question" ? question(node) : followUp(node);
 
     return items.flatMap(openItems);
+  }
+
+  function trail(log: Log, id: string): TrailStep[] {
+    const steps: TrailStep[] = [];
+
+    let current: QuestionNode | OptionNode | FollowUpNode | undefined = parentNode(build(log).nodes, id);
+    while (current !== undefined) {
+      current = current.kind === "option" ? current.question : current.parent;
+      if (current !== undefined) steps.unshift({ kind: current.kind, id: current.id, text: current.text });
+    }
+
+    return steps;
   }
 
   function hasOpen(log: Log, node: QuestionNode | FollowUpNode): boolean {
@@ -2167,6 +2182,7 @@ const Graph = (() => {
     frontier: (log: Log) => frontier(build(log)),
     superseded,
     hasOpen,
+    trail,
     liveNode,
     excludedNode,
     itemData,
@@ -3615,17 +3631,22 @@ const Items = (() => {
 })();
 
 const Next = (() => {
-  const options = {} as const;
+  const options = {
+    trail: { type: "boolean" },
+  } as const;
 
-  function run(log: Log): NextData | undefined {
+  function run(log: Log, config: { trail?: boolean } = {}): NextData | undefined {
     const node = Graph.frontier(log)[0];
     if (node === undefined) return undefined;
 
+    const steps = config.trail ? Graph.trail(log, node.id) : [];
+    const trail = steps.length === 0 ? {} : { trail: steps };
+
     if (node.kind === "follow-up") {
-      return { kind: "follow-up", followUp: { id: node.id, text: node.text } };
+      return { kind: "follow-up", followUp: { id: node.id, text: node.text }, ...trail };
     }
 
-    return { kind: "question", question: { id: node.id, text: node.text, options: node.options } };
+    return { kind: "question", question: { id: node.id, text: node.text, options: node.options }, ...trail };
   }
 
   function tests() {
@@ -3749,14 +3770,25 @@ const Xml = (() => {
 
   function next(data: NextData | undefined): string {
     if (data === undefined) return "<next></next>";
-    if (data.kind === "follow-up") return `<next>\n  ${followUp(data.followUp)}\n</next>`;
 
-    const body = question(data.question)
-      .split("\n")
-      .map((line) => `  ${line}`)
-      .join("\n");
+    const trail =
+      data.trail === undefined
+        ? []
+        : [
+            "  <trail>",
+            ...data.trail.map(
+              (step) => `    <${step.kind}><id>${step.id}</id><text>${escapeXml(step.text)}</text></${step.kind}>`,
+            ),
+            "  </trail>",
+          ];
+    const body =
+      data.kind === "follow-up"
+        ? [`  ${followUp(data.followUp)}`]
+        : question(data.question)
+            .split("\n")
+            .map((line) => `  ${line}`);
 
-    return `<next>\n${body}\n</next>`;
+    return ["<next>", ...trail, ...body, "</next>"].join("\n");
   }
 
   function treeLines(item: TreeItem): string[] {
@@ -4513,8 +4545,8 @@ const Cli = (() => {
   function runQuery(log: Log, query: string) {
     switch (query) {
       case "next": {
-        readModeConfig(Next.options);
-        console.log(Xml.next(Next.run(log)));
+        const config = readModeConfig(Next.options);
+        console.log(Xml.next(Next.run(log, config)));
         break;
       }
 
