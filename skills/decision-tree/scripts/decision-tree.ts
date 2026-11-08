@@ -17,10 +17,10 @@ type Event =
   | { type: "select-option"; targets: string[] }
   | { type: "add-follow-up"; id: string; text: string; origin?: string }
   | { type: "promote-follow-up"; target: string }
-  | { type: "exclude-item"; target: string; reason: ExclusionReason; note?: string }
-  | { type: "restore-item"; target: string }
+  | { type: "exclude"; target: string; reason: ExclusionReason; note?: string }
+  | { type: "restore"; target: string }
   | { type: "supersede-question"; target: string; question: string }
-  | { type: "focus-item"; target: string };
+  | { type: "focus"; target: string };
 
 type IdEvent = Extract<Event, { id: string }>;
 
@@ -400,14 +400,14 @@ const Graph = (() => {
           break;
         }
 
-        case "exclude-item": {
+        case "exclude": {
           const note = event.note === undefined ? {} : { note: event.note };
           const exclusion = { reason: event.reason, ...note };
           exclusions.set(parentNode(nodes, event.target).id, exclusion);
           break;
         }
 
-        case "restore-item": {
+        case "restore": {
           exclusions.delete(parentNode(nodes, event.target).id);
           break;
         }
@@ -427,7 +427,7 @@ const Graph = (() => {
           break;
         }
 
-        case "focus-item": {
+        case "focus": {
           const node = parentNode(nodes, event.target);
           if (node.kind === "option") throw new Error(`focus target ${node.id} is an option`);
 
@@ -857,7 +857,7 @@ const Graph = (() => {
           { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
           { type: "add-follow-up", id: "F2", text: "f2", origin: "Q1" },
           { type: "promote-follow-up", target: "F1" },
-          { type: "exclude-item", target: "F2", reason: "not-applicable" },
+          { type: "exclude", target: "F2", reason: "not-applicable" },
         ]),
       );
 
@@ -967,7 +967,7 @@ const Graph = (() => {
           { type: "select-option", targets: ["Q1a"] },
           { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
           { type: "add-follow-up", id: "F2", text: "f2", origin: "F1" },
-          { type: "exclude-item", target: "F1", reason: "not-applicable" },
+          { type: "exclude", target: "F1", reason: "not-applicable" },
         ]),
       );
 
@@ -1004,7 +1004,7 @@ const Graph = (() => {
         Log.memoryLog([
           { type: "add-question", id: "Q1", text: "q1" },
           { type: "add-question", id: "Q2", text: "q2" },
-          { type: "focus-item", target: "Q2" },
+          { type: "focus", target: "Q2" },
         ]),
       );
 
@@ -1025,7 +1025,7 @@ const Graph = (() => {
           { type: "add-question", id: "Q1", text: "q1" },
           { type: "add-question", id: "Q2", text: "q2" },
           { type: "add-option", id: "Q2a", text: "a", origin: "Q2" },
-          { type: "focus-item", target: "Q2" },
+          { type: "focus", target: "Q2" },
           { type: "select-option", targets: ["Q2a"] },
         ]),
       );
@@ -1046,7 +1046,7 @@ const Graph = (() => {
         Log.memoryLog([
           { type: "add-question", id: "Q1", text: "q1" },
           { type: "add-question", id: "Q2", text: "q2" },
-          { type: "focus-item", target: "Q2" },
+          { type: "focus", target: "Q2" },
           { type: "add-question", id: "Q3", text: "q3" },
           { type: "supersede-question", target: "Q2", question: "Q3" },
         ]),
@@ -1069,7 +1069,7 @@ const Graph = (() => {
           { type: "add-question", id: "Q1", text: "q1" },
           { type: "add-question", id: "Q2", text: "q2" },
           { type: "add-option", id: "Q2a", text: "a", origin: "Q2" },
-          { type: "focus-item", target: "Q2" },
+          { type: "focus", target: "Q2" },
           { type: "select-option", targets: ["Q2a"] },
           { type: "add-question", id: "Q3", text: "q3" },
           { type: "supersede-question", target: "Q2", question: "Q3" },
@@ -1093,7 +1093,7 @@ const Graph = (() => {
           { type: "add-question", id: "Q1", text: "q1" },
           { type: "add-question", id: "Q2", text: "q2" },
           { type: "add-option", id: "Q2a", text: "a", origin: "Q2" },
-          { type: "focus-item", target: "Q2" },
+          { type: "focus", target: "Q2" },
           { type: "select-option", targets: ["Q2a"] },
           { type: "add-follow-up", id: "F1", text: "f1", origin: "Q2" },
         ]),
@@ -1119,7 +1119,7 @@ const Graph = (() => {
           { type: "select-option", targets: ["Q1a"] },
           { type: "add-question", id: "Q2", text: "q2", origin: "Q1b" },
           { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
-          { type: "exclude-item", target: "F1", reason: "not-applicable" },
+          { type: "exclude", target: "F1", reason: "not-applicable" },
         ]),
       );
 
@@ -1142,7 +1142,7 @@ const Graph = (() => {
           { type: "select-option", targets: ["Q1a"] },
           { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
           { type: "add-option", id: "Q2a", text: "x", origin: "Q2" },
-          { type: "exclude-item", target: "Q1a", reason: "not-applicable" },
+          { type: "exclude", target: "Q1a", reason: "not-applicable" },
         ]),
       );
 
@@ -1163,7 +1163,7 @@ const Graph = (() => {
           { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
           { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
           { type: "add-option", id: "Q1c", text: "c", origin: "Q1" },
-          { type: "exclude-item", target: "Q1b", reason: "deferred" },
+          { type: "exclude", target: "Q1b", reason: "deferred" },
         ]),
       );
 
@@ -1193,7 +1193,7 @@ const Graph = (() => {
           { type: "add-question", id: "Q2", text: "q2" },
           { type: "add-question", id: "Q3", text: "q3", origin: "Q1" },
           { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
-          { type: "exclude-item", target: "Q1", reason: "not-applicable" },
+          { type: "exclude", target: "Q1", reason: "not-applicable" },
         ]),
       );
 
@@ -1214,7 +1214,7 @@ const Graph = (() => {
           { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
           { type: "add-question", id: "Q2", text: "f1", origin: "F1" },
           { type: "promote-follow-up", target: "F1" },
-          { type: "exclude-item", target: "F1", reason: "deferred" },
+          { type: "exclude", target: "F1", reason: "deferred" },
         ]),
       );
 
@@ -1270,7 +1270,7 @@ const Graph = (() => {
           { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
           { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
           { type: "select-option", targets: ["Q1a", "Q1b"] },
-          { type: "exclude-item", target: "Q1a", reason: "not-applicable" },
+          { type: "exclude", target: "Q1a", reason: "not-applicable" },
         ]),
       );
 
@@ -1292,8 +1292,8 @@ const Graph = (() => {
           { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
           { type: "select-option", targets: ["Q1a"] },
           { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
-          { type: "exclude-item", target: "Q1a", reason: "not-applicable" },
-          { type: "restore-item", target: "Q1a" },
+          { type: "exclude", target: "Q1a", reason: "not-applicable" },
+          { type: "restore", target: "Q1a" },
         ]),
       );
 
@@ -1375,8 +1375,8 @@ const Graph = (() => {
           { type: "select-option", targets: ["Q1a"] },
           { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
           { type: "add-question", id: "Q3", text: "q3", origin: "Q1a" },
-          { type: "exclude-item", target: "Q2", reason: "deferred" },
-          { type: "exclude-item", target: "Q3", reason: "not-applicable" },
+          { type: "exclude", target: "Q2", reason: "deferred" },
+          { type: "exclude", target: "Q3", reason: "not-applicable" },
         ]),
       );
 
@@ -1392,7 +1392,7 @@ const Graph = (() => {
       const graph = build(
         Log.memoryLog([
           { type: "add-question", id: "Q1", text: "q1" },
-          { type: "exclude-item", target: "Q1", reason: "deferred", note: "why" },
+          { type: "exclude", target: "Q1", reason: "deferred", note: "why" },
         ]),
       );
 
@@ -1409,7 +1409,7 @@ const Graph = (() => {
         Log.memoryLog([
           { type: "add-question", id: "Q1", text: "q1" },
           { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-          { type: "exclude-item", target: "Q1a", reason: "deferred" },
+          { type: "exclude", target: "Q1a", reason: "deferred" },
           { type: "add-question", id: "Q2", text: "q2" },
           { type: "supersede-question", target: "Q1", question: "Q2" },
         ]),
@@ -1498,7 +1498,7 @@ const Graph = (() => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q" },
-        { type: "exclude-item", target: "Q1", reason: "deferred" },
+        { type: "exclude", target: "Q1", reason: "deferred" },
       ]);
 
       // when
@@ -1514,7 +1514,7 @@ const Graph = (() => {
         { type: "add-question", id: "Q1", text: "q1" },
         { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
         { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
-        { type: "exclude-item", target: "Q1a", reason: "not-applicable" },
+        { type: "exclude", target: "Q1a", reason: "not-applicable" },
       ]);
 
       // when
@@ -1569,7 +1569,7 @@ const Graph = (() => {
         { type: "add-question", id: "Q1", text: "q1" },
         { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
         { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
-        { type: "exclude-item", target: "Q1a", reason: "not-applicable" },
+        { type: "exclude", target: "Q1a", reason: "not-applicable" },
       ]);
 
       // when
@@ -1588,7 +1588,7 @@ const Graph = (() => {
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q" },
         { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-        { type: "exclude-item", target: "Q1a", reason: "deferred" },
+        { type: "exclude", target: "Q1a", reason: "deferred" },
       ]);
 
       // when
@@ -1643,7 +1643,7 @@ const Graph = (() => {
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q1" },
         { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-        { type: "exclude-item", target: "Q1a", reason: "deferred" },
+        { type: "exclude", target: "Q1a", reason: "deferred" },
         { type: "add-question", id: "Q2", text: "q2" },
         { type: "supersede-question", target: "Q1", question: "Q2" },
       ]);
@@ -2212,7 +2212,7 @@ const AddFollowUp = (() => {
       const events: Event[] = [
         { type: "add-question", id: "Q1", text: "q" },
         { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
-        { type: "exclude-item", target: "F1", reason: "not-applicable" },
+        { type: "exclude", target: "F1", reason: "not-applicable" },
       ];
       const log = Log.memoryLog([...events]);
 
@@ -2279,7 +2279,7 @@ const AddFollowUp = (() => {
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q" },
         { type: "add-follow-up", id: "F1", text: "f", origin: "Q1" },
-        { type: "exclude-item", target: "F1", reason: "not-applicable" },
+        { type: "exclude", target: "F1", reason: "not-applicable" },
       ]);
 
       // when
@@ -2398,9 +2398,9 @@ const ExcludeItem = (() => {
 
   function run(log: Log, config: { target?: string; reason?: string; note?: string }): ItemData {
     const { target, reason, note } = config;
-    if (!target) throw new DecisionTreeError("exclude-item requires --target");
-    if (!reason) throw new DecisionTreeError("exclude-item requires --reason");
-    if (note === "") throw new DecisionTreeError("exclude-item --note requires a text");
+    if (!target) throw new DecisionTreeError("exclude requires --target");
+    if (!reason) throw new DecisionTreeError("exclude requires --reason");
+    if (note === "") throw new DecisionTreeError("exclude --note requires a text");
 
     const exclusionReason = reasons.find((each) => each === reason);
     if (exclusionReason === undefined) {
@@ -2411,7 +2411,7 @@ const ExcludeItem = (() => {
 
     const excluded = Graph.itemData(log, node);
 
-    const event: Event = { type: "exclude-item", target, reason: exclusionReason };
+    const event: Event = { type: "exclude", target, reason: exclusionReason };
     if (note !== undefined) event.note = note;
 
     log.append(event);
@@ -2431,7 +2431,7 @@ const ExcludeItem = (() => {
       // then
       assert.throws(
         act,
-        (error) => error instanceof DecisionTreeError && error.message === "exclude-item requires --target",
+        (error) => error instanceof DecisionTreeError && error.message === "exclude requires --target",
       );
       assert.deepEqual(log.read(), events);
     });
@@ -2447,7 +2447,7 @@ const ExcludeItem = (() => {
       // then
       assert.throws(
         act,
-        (error) => error instanceof DecisionTreeError && error.message === "exclude-item requires --reason",
+        (error) => error instanceof DecisionTreeError && error.message === "exclude requires --reason",
       );
       assert.deepEqual(log.read(), events);
     });
@@ -2463,7 +2463,7 @@ const ExcludeItem = (() => {
       // then
       assert.throws(
         act,
-        (error) => error instanceof DecisionTreeError && error.message === "exclude-item --note requires a text",
+        (error) => error instanceof DecisionTreeError && error.message === "exclude --note requires a text",
       );
       assert.deepEqual(log.read(), events);
     });
@@ -2511,7 +2511,7 @@ const ExcludeItem = (() => {
 
       // then
       assert.deepEqual(excluded, { kind: "option", option: { id: "Q1a", text: "a" } });
-      assert.deepEqual(log.read(), [...events, { type: "exclude-item", target: "Q1a", reason: "deferred" }]);
+      assert.deepEqual(log.read(), [...events, { type: "exclude", target: "Q1a", reason: "deferred" }]);
     });
 
     test("excluding with a note records the note", () => {
@@ -2525,7 +2525,7 @@ const ExcludeItem = (() => {
       // then
       assert.deepEqual(log.read(), [
         ...events,
-        { type: "exclude-item", target: "Q1", reason: "not-applicable", note: "why" },
+        { type: "exclude", target: "Q1", reason: "not-applicable", note: "why" },
       ]);
     });
 
@@ -2536,7 +2536,7 @@ const ExcludeItem = (() => {
         { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
         { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
         { type: "add-option", id: "Q1c", text: "c", origin: "Q1" },
-        { type: "exclude-item", target: "Q1b", reason: "not-applicable" },
+        { type: "exclude", target: "Q1b", reason: "not-applicable" },
       ]);
 
       // when
@@ -2581,13 +2581,13 @@ const RestoreItem = (() => {
 
   function run(log: Log, config: { target?: string }): ItemData {
     const target = config.target;
-    if (!target) throw new DecisionTreeError("restore-item requires --target");
+    if (!target) throw new DecisionTreeError("restore requires --target");
 
     const node = Graph.excludedNode(log, target);
 
     const restored = Graph.itemData(log, node);
 
-    log.append({ type: "restore-item", target });
+    log.append({ type: "restore", target });
 
     return restored;
   }
@@ -2604,7 +2604,7 @@ const RestoreItem = (() => {
       // then
       assert.throws(
         act,
-        (error) => error instanceof DecisionTreeError && error.message === "restore-item requires --target",
+        (error) => error instanceof DecisionTreeError && error.message === "restore requires --target",
       );
       assert.deepEqual(log.read(), events);
     });
@@ -2614,7 +2614,7 @@ const RestoreItem = (() => {
       const events: Event[] = [
         { type: "add-question", id: "Q1", text: "q" },
         { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-        { type: "exclude-item", target: "Q1a", reason: "deferred" },
+        { type: "exclude", target: "Q1a", reason: "deferred" },
       ];
       const log = Log.memoryLog([...events]);
 
@@ -2623,7 +2623,7 @@ const RestoreItem = (() => {
 
       // then
       assert.deepEqual(restored, { kind: "option", option: { id: "Q1a", text: "a" } });
-      assert.deepEqual(log.read(), [...events, { type: "restore-item", target: "Q1a" }]);
+      assert.deepEqual(log.read(), [...events, { type: "restore", target: "Q1a" }]);
     });
   }
 
@@ -2773,12 +2773,12 @@ const FocusItem = (() => {
 
   function run(log: Log, config: { target?: string }): ItemData {
     const target = config.target;
-    if (!target) throw new DecisionTreeError("focus-item requires --target");
+    if (!target) throw new DecisionTreeError("focus requires --target");
 
     const node = Graph.liveNode(log, target, "target");
     if (node.kind === "option") throw new DecisionTreeError(`target is not a question or follow-up: ${target}`);
 
-    log.append({ type: "focus-item", target });
+    log.append({ type: "focus", target });
 
     return Graph.itemData(log, node);
   }
@@ -2795,7 +2795,7 @@ const FocusItem = (() => {
       // then
       assert.throws(
         act,
-        (error) => error instanceof DecisionTreeError && error.message === "focus-item requires --target",
+        (error) => error instanceof DecisionTreeError && error.message === "focus requires --target",
       );
       assert.deepEqual(log.read(), events);
     });
@@ -2829,7 +2829,7 @@ const FocusItem = (() => {
 
       // then
       assert.deepEqual(focused, { kind: "question", question: { id: "Q1", text: "q", options: [] } });
-      assert.deepEqual(log.read(), [...events, { type: "focus-item", target: "Q1" }]);
+      assert.deepEqual(log.read(), [...events, { type: "focus", target: "Q1" }]);
     });
   }
 
@@ -3525,19 +3525,19 @@ const Cli = (() => {
         break;
       }
 
-      case "exclude-item": {
+      case "exclude": {
         const config = readModeConfig(ExcludeItem.options);
         console.log(Xml.item(ExcludeItem.run(log, config)));
         break;
       }
 
-      case "restore-item": {
+      case "restore": {
         const config = readModeConfig(RestoreItem.options);
         console.log(Xml.item(RestoreItem.run(log, config)));
         break;
       }
 
-      case "focus-item": {
+      case "focus": {
         const config = readModeConfig(FocusItem.options);
         console.log(Xml.item(FocusItem.run(log, config)));
         break;
