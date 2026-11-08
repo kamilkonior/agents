@@ -3677,6 +3677,17 @@ const Items = (() => {
       );
     });
 
+    test("an explicit state still filters a target", () => {
+      // given
+      const log = Log.memoryLog([{ type: "add-question", id: "Q1", text: "q" }]);
+
+      // when
+      const items = run(log, { target: "Q1", state: ["deferred"] });
+
+      // then
+      assert.deepEqual(items, []);
+    });
+
     test("querying with an unknown state throws", () => {
       // given
       const log = Log.memoryLog([{ type: "add-question", id: "Q1", text: "q" }]);
