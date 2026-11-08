@@ -3423,6 +3423,17 @@ const Cli = (() => {
         (error) => error instanceof DecisionTreeError && error.message === "--target given more than once",
       );
     });
+
+    test("a multiple flag given twice keeps both values", () => {
+      // given
+      const args = ["--target", "Q1", "--target", "Q2"];
+
+      // when
+      const config = readModeConfig({ target: { type: "string", multiple: true } }         , args);
+
+      // then
+      assert.deepEqual(config.target, ["Q1", "Q2"]);
+    });
   }
 
   function runTests() {
