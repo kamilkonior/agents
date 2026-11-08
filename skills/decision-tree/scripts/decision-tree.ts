@@ -4314,6 +4314,17 @@ const Cli = (() => {
       assert.deepEqual(mode, { kind: "query", query: "next", log: "b.jsonl" });
     });
 
+    test("a blank flag value throws", () => {
+      // given
+      const args = ["--text", "   "];
+
+      // when
+      const act = () => readModeConfig({ text: { type: "string" } } as const, args);
+
+      // then
+      assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "--text must not be blank");
+    });
+
     test("a single-value flag given twice throws", () => {
       // given
       const args = ["--target", "Q1", "--target", "Q2"];
