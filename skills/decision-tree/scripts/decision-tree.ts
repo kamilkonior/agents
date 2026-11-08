@@ -2016,6 +2016,17 @@ const Graph = (() => {
       ]);
     });
 
+    test("a root item has an empty trail", () => {
+      // given
+      const log = Log.memoryLog([{ type: "add-question", id: "Q1", text: "q1" }]);
+
+      // when
+      const steps = trail(log, "Q1");
+
+      // then
+      assert.deepEqual(steps, []);
+    });
+
     test("looking up an unknown id throws not found for its role", () => {
       // given
       const log = Log.memoryLog();
