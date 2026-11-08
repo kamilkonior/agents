@@ -3467,6 +3467,25 @@ const Focus = (() => {
       assert.deepEqual(log.read(), events);
     });
 
+    test("focusing a question under an open follow-up names that follow-up", () => {
+      // given
+      const events: Event[] = [
+        { type: "add-follow-up", id: "F1", text: "f" },
+        { type: "add-question", id: "Q1", text: "q", origin: "F1" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const act = () => run(log, { target: "Q1" });
+
+      // then
+      assert.throws(
+        act,
+        (error) => error instanceof DecisionTreeError && error.message === "Q1 is off-path, hidden by F1",
+      );
+      assert.deepEqual(log.read(), events);
+    });
+
     test("focusing an option throws and appends nothing", () => {
       // given
       const events: Event[] = [
