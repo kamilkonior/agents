@@ -971,6 +971,26 @@ const Graph = (() => {
       );
     });
 
+    test("a focus puts only its subtree's open items on the frontier", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-question", id: "Q2", text: "q2" },
+          { type: "focus-item", target: "Q2" },
+        ]),
+      );
+
+      // when
+      const open = frontier(graph);
+
+      // then
+      assert.deepEqual(
+        open.map((node) => node.id),
+        ["Q2"],
+      );
+    });
+
     test("tree leaves out off-path branches and excluded follow-ups", () => {
       // given
       const graph = build(
