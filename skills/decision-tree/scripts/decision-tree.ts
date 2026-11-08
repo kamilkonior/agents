@@ -2387,7 +2387,7 @@ const PromoteFollowUp = (() => {
   return { options, run, tests };
 })();
 
-const ExcludeItem = (() => {
+const Exclude = (() => {
   const options = {
     target: { type: "string" },
     reason: { type: "string" },
@@ -2574,7 +2574,7 @@ const ExcludeItem = (() => {
   return { options, run, tests };
 })();
 
-const RestoreItem = (() => {
+const Restore = (() => {
   const options = {
     target: { type: "string" },
   } as const;
@@ -2766,7 +2766,7 @@ const SupersedeQuestion = (() => {
   return { options, run, tests };
 })();
 
-const FocusItem = (() => {
+const Focus = (() => {
   const options = {
     target: { type: "string" },
   } as const;
@@ -3445,10 +3445,10 @@ const Cli = (() => {
     SelectOption.tests();
     AddFollowUp.tests();
     PromoteFollowUp.tests();
-    ExcludeItem.tests();
-    RestoreItem.tests();
+    Exclude.tests();
+    Restore.tests();
     SupersedeQuestion.tests();
-    FocusItem.tests();
+    Focus.tests();
     Next.tests();
     Tree.tests();
     Xml.tests();
@@ -3526,20 +3526,20 @@ const Cli = (() => {
       }
 
       case "exclude": {
-        const config = readModeConfig(ExcludeItem.options);
-        console.log(Xml.item(ExcludeItem.run(log, config)));
+        const config = readModeConfig(Exclude.options);
+        console.log(Xml.item(Exclude.run(log, config)));
         break;
       }
 
       case "restore": {
-        const config = readModeConfig(RestoreItem.options);
-        console.log(Xml.item(RestoreItem.run(log, config)));
+        const config = readModeConfig(Restore.options);
+        console.log(Xml.item(Restore.run(log, config)));
         break;
       }
 
       case "focus": {
-        const config = readModeConfig(FocusItem.options);
-        console.log(Xml.item(FocusItem.run(log, config)));
+        const config = readModeConfig(Focus.options);
+        console.log(Xml.item(Focus.run(log, config)));
         break;
       }
 
