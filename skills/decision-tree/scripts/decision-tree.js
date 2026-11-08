@@ -823,6 +823,26 @@ const Graph = (() => {
     return cause === node ? undefined : cause?.id;
   }
 
+  function reachedNodes(graph       )                                   {
+    const { question, followUp, reached } = project(graph);
+
+    graph.roots.forEach(question);
+    graph.rootFollowUps.forEach(followUp);
+
+    return reached;
+  }
+
+  function rejectOffPath(log     , node                             )       {
+    const graph = build(log);
+
+    const current = parentNode(graph.nodes, node.id);
+    if (current.kind === "option") throw new Error(`option ${node.id} has no path of its own`);
+    if (reachedNodes(graph).has(current)) return;
+
+    const cause = offPathCause(graph, current);
+    throw new DecisionTreeError(`${node.id} is off-path, hidden by ${cause?.id}`);
+  }
+
   function listed(log     , tag                    , states             , target         )               {
     const graph = build(log);
 
@@ -832,9 +852,7 @@ const Graph = (() => {
       if (wanted.kind === "option") throw new DecisionTreeError(`target is not a question or follow-up: ${target}`);
     }
 
-    const { question, followUp, reached } = project(graph);
-    graph.roots.forEach(question);
-    graph.rootFollowUps.forEach(followUp);
+    const reached = reachedNodes(graph);
 
     const nodes = [...new Set([...reached, ...graph.nodes.values()])];
 
@@ -2218,6 +2236,7 @@ const Graph = (() => {
     frontier: (log     ) => frontier(build(log)),
     superseded,
     hasOpen,
+    rejectOffPath,
     trail,
     liveNode,
     excludedNode,
@@ -2574,6 +2593,8 @@ const SelectOption = (() => {
     const question = selected[0].question;
     const stray = selected.find((option) => option.question.id !== question.id);
     if (stray !== undefined) throw new DecisionTreeError(`target is not an option of ${question.id}: ${stray.id}`);
+
+    Graph.rejectOffPath(log, question);
 
     log.append({ type: "select-option", targets });
 
@@ -3359,6 +3380,7 @@ const Focus = (() => {
 
     const node = Graph.liveNode(log, target, "target");
     if (node.kind === "option") throw new DecisionTreeError(`target is not a question or follow-up: ${target}`);
+    Graph.rejectOffPath(log, node);
     if (!Graph.hasOpen(log, node)) throw new DecisionTreeError(`nothing open under ${target}`);
 
     log.append({ type: "focus", target });
