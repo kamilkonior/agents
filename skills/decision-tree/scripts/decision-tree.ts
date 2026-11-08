@@ -17,7 +17,7 @@ type Event =
   | { type: "select-option"; target: string }
   | { type: "add-follow-up"; id: string; text: string; origin?: string }
   | { type: "promote-follow-up"; target: string }
-  | { type: "exclude-item"; target: string; reason: ExclusionReason }
+  | { type: "exclude-item"; target: string; reason: ExclusionReason; note?: string }
   | { type: "restore-item"; target: string }
   | { type: "supersede-question"; target: string; question: string }
   | { type: "focus-item"; target: string };
@@ -51,6 +51,7 @@ type DeferredItem = {
   kind: "question" | "option" | "follow-up";
   id: string;
   text: string;
+  note?: string;
   hungUnder?: { id: string; text: string };
 };
 
@@ -107,7 +108,7 @@ type Graph = {
   nodes: Map<string, QuestionNode | OptionNode | FollowUpNode>;
   roots: QuestionNode[];
   rootFollowUps: FollowUpNode[];
-  exclusions: Map<string, ExclusionReason>;
+  exclusions: Map<string, { reason: ExclusionReason; note?: string }>;
   focus?: { node: QuestionNode | FollowUpNode; ended: boolean };
 };
 
@@ -397,7 +398,9 @@ const Graph = (() => {
         }
 
         case "exclude-item": {
-          exclusions.set(parentNode(nodes, event.target).id, event.reason);
+          const note = event.note === undefined ? {} : { note: event.note };
+          const exclusion = { reason: event.reason, ...note };
+          exclusions.set(parentNode(nodes, event.target).id, exclusion);
           break;
         }
 
@@ -451,11 +454,13 @@ const Graph = (() => {
     }
 
     function noteDeferred(node: QuestionNode | OptionNode | FollowUpNode): void {
-      if (graph.exclusions.get(node.id) !== "deferred") return;
+      const exclusion = graph.exclusions.get(node.id);
+      if (exclusion?.reason !== "deferred") return;
 
       const parent = node.kind === "option" ? node.question : node.parent;
+      const note = exclusion.note === undefined ? {} : { note: exclusion.note };
       const hungUnder = parent === undefined ? {} : { hungUnder: { id: parent.id, text: parent.text } };
-      deferred.push({ kind: node.kind, id: node.id, text: node.text, ...hungUnder });
+      deferred.push({ kind: node.kind, id: node.id, text: node.text, ...note, ...hungUnder });
     }
 
     function question(node: QuestionNode): TreeItem[] {
@@ -2226,14 +2231,16 @@ const ExcludeItem = (() => {
   const options = {
     target: { type: "string" },
     reason: { type: "string" },
+    note: { type: "string" },
   } as const;
 
   const reasons: ExclusionReason[] = ["not-applicable", "deferred"];
 
-  function run(log: Log, config: { target?: string; reason?: string }): ItemData {
-    const { target, reason } = config;
+  function run(log: Log, config: { target?: string; reason?: string; note?: string }): ItemData {
+    const { target, reason, note } = config;
     if (!target) throw new DecisionTreeError("exclude-item requires --target");
     if (!reason) throw new DecisionTreeError("exclude-item requires --reason");
+    if (note === "") throw new DecisionTreeError("exclude-item --note requires a text");
 
     const exclusionReason = reasons.find((each) => each === reason);
     if (exclusionReason === undefined) {
@@ -2244,7 +2251,10 @@ const ExcludeItem = (() => {
 
     const excluded = Graph.itemData(log, node);
 
-    log.append({ type: "exclude-item", target, reason: exclusionReason });
+    const event: Event = { type: "exclude-item", target, reason: exclusionReason };
+    if (note !== undefined) event.note = note;
+
+    log.append(event);
 
     return excluded;
   }
@@ -2795,7 +2805,9 @@ const Xml = (() => {
         ? ""
         : `<hung-under><id>${item.hungUnder.id}</id><text>${escapeXml(item.hungUnder.text)}</text></hung-under>`;
 
-    return `<${item.kind}><id>${item.id}</id><text>${escapeXml(item.text)}</text>${hungUnder}</${item.kind}>`;
+    const note = item.note === undefined ? "" : `<note>${escapeXml(item.note)}</note>`;
+
+    return `<${item.kind}><id>${item.id}</id><text>${escapeXml(item.text)}</text>${note}${hungUnder}</${item.kind}>`;
   }
 
   function tree(items: TreeItem[], deferred: DeferredItem[] = []): string {
