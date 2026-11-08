@@ -1587,6 +1587,24 @@ const Graph = (() => {
       ]);
     });
 
+    test("the tag query is not limited by an active focus", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-question", id: "Q2", text: "q2" },
+        { type: "tag", target: "Q1", tags: ["t"] },
+        { type: "focus", target: "Q2" },
+      ]);
+
+      // when
+      const items = openWithTag(log, "t");
+
+      // then
+      assert.deepEqual(items, [
+        { item: { kind: "question", question: { id: "Q1", text: "q1", options: [] } }, tags: ["t"] },
+      ]);
+    });
+
     test("looking up an unknown id throws not found for its role", () => {
       // given
       const log = Log.memoryLog();
