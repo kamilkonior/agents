@@ -3533,6 +3533,34 @@ const Xml = (() => {
       ]);
     });
 
+    test("tagged items render multi-line with their tags last, escaped", () => {
+      // given
+      const items: TaggedData[] = [
+        { item: { kind: "question", question: { id: "Q1", text: "q", options: [] } }, tags: ["a<b", "c"] },
+        { item: { kind: "follow-up", followUp: { id: "F1", text: "f" } }, tags: [] },
+      ];
+
+      // when
+      const xml = tagged(items);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<tagged>",
+        "  <question>",
+        "    <id>Q1</id>",
+        "    <text>q</text>",
+        "    <options></options>",
+        "    <tags><tag>a&lt;b</tag><tag>c</tag></tags>",
+        "  </question>",
+        "  <follow-up>",
+        "    <id>F1</id>",
+        "    <text>f</text>",
+        "    <tags></tags>",
+        "  </follow-up>",
+        "</tagged>",
+      ]);
+    });
+
     test("an empty tree renders an empty tree element", () => {
       // given
       const items: TreeItem[] = [];
