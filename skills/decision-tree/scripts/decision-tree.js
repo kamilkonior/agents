@@ -2601,6 +2601,36 @@ const Xml = (() => {
       assert.equal(xml, "<follow-up><id>F1</id><text>f</text></follow-up>");
     });
 
+    test("supersede renders the new question and the superseded subtree nested inside", () => {
+      // given
+      const data                = {
+        question: { id: "Q3", text: "q3", options: [] },
+        superseded: [{ kind: "open-question", id: "Q1", text: "q1", options: [], children: [] }],
+      };
+
+      // when
+      const xml = supersede(data);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<supersede>",
+        "  <question>",
+        "    <id>Q3</id>",
+        "    <text>q3</text>",
+        "    <options></options>",
+        "  </question>",
+        "  <superseded>",
+        "    <question>",
+        "      <id>Q1</id>",
+        "      <text>q1</text>",
+        "      <open>",
+        "      </open>",
+        "    </question>",
+        "  </superseded>",
+        "</supersede>",
+      ]);
+    });
+
     test("an empty tree renders an empty tree element", () => {
       // given
       const items             = [];
