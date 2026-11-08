@@ -3420,12 +3420,13 @@ const Cli = (() => {
       throw new DecisionTreeError("--query requires a value");
     }
 
-    if (log === undefined) throw new DecisionTreeError("missing --log");
-    if (typeof log !== "string") throw new DecisionTreeError("--log requires a value");
+    const logPath = log ?? (process.env.DECISION_TREE_LOG || undefined);
+    if (logPath === undefined) throw new DecisionTreeError("missing --log or DECISION_TREE_LOG");
+    if (typeof logPath !== "string") throw new DecisionTreeError("--log requires a value");
 
-    if (typeof query === "string") return { kind: "query", query, log };
+    if (typeof query === "string") return { kind: "query", query, log: logPath };
 
-    return { kind: "op", op: op          , log };
+    return { kind: "op", op: op          , log: logPath };
   }
 
   function readModeConfig                                  (modeOptions   , args           ) {

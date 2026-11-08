@@ -14,7 +14,7 @@ node <this skill's directory>/scripts/decision-tree.js --log <path> --op <op> [f
 node <this skill's directory>/scripts/decision-tree.js --log <path> --query <query>
 ```
 
-`--op` writes and `--query` only reads. Every call needs `--log`. Requires Node 20+.
+`--op` writes and `--query` only reads. Every call needs `--log` or the `DECISION_TREE_LOG` environment variable; `--log` wins when both are set. Requires Node 20+.
 
 Results print as XML on stdout. A failed call prints one line on stderr, exits with code 1 and writes nothing, so it is always safe to fix the call and run it again.
 
