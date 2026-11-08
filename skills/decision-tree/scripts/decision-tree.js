@@ -69,10 +69,14 @@ const { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync
      
                                                     
 
+                                                                                            
+
                    
                                                                                                      
                  
   
+
+                                                                                  
 
                                                                               
 
@@ -495,6 +499,7 @@ const Graph = (() => {
 
   function project(graph       ) {
     const deferred                 = [];
+    const reached = new Set                             ();
 
     function live(node                                          )          {
       return !graph.exclusions.has(node.id);
@@ -516,6 +521,7 @@ const Graph = (() => {
         return [];
       }
 
+      reached.add(node);
       node.options.filter((option) => !live(option)).forEach(noteDeferred);
 
       const selected = node.options.filter((option) => node.selected.includes(option) && live(option));
@@ -546,12 +552,14 @@ const Graph = (() => {
         noteDeferred(node);
         return [];
       }
+
+      reached.add(node);
       if (node.status === "open") return [{ kind: "follow-up", id: node.id, text: node.text }];
 
       return [...node.children.flatMap(question), ...followUps(node)];
     }
 
-    return { question, followUp, deferred };
+    return { question, followUp, deferred, reached };
   }
 
   function walk(graph       )           {
@@ -634,18 +642,42 @@ const Graph = (() => {
     return taggedData(graph, node);
   }
 
-  function openWithTag(log     , tag        )               {
+  function liveSelected(graph       , node              )               {
+    return node.options.filter((option) => node.selected.includes(option) && !graph.exclusions.has(option.id));
+  }
+
+  function itemState(graph       , node                             , reached              )            {
+    if (frozenBy(node) !== undefined) return "frozen";
+
+    const excluding = excludedBy(graph, node);
+    if (excluding !== undefined) return graph.exclusions.get(excluding.id)?.reason ?? "not-applicable";
+
+    if (!reached.has(node)) return "off-path";
+    if (node.kind === "follow-up") return node.status === "open" ? "open" : "settled";
+
+    return liveSelected(graph, node).length === 0 ? "open" : "settled";
+  }
+
+  function withTag(log     , tag        , states             )                    {
     const graph = build(log);
 
-    return tree(graph)
-      .flatMap(openItems)
-      .filter((item) => graph.tags.get(item.id)?.has(tag))
-      .map((item) => {
-        const node = parentNode(graph.nodes, item.id);
-        if (node.kind === "option") throw new Error(`option ${item.id} is on the frontier`);
+    const { question, followUp, reached } = project(graph);
+    graph.roots.forEach(question);
+    graph.rootFollowUps.forEach(followUp);
 
-        return taggedData(graph, node);
-      });
+    const nodes = [...new Set([...reached, ...graph.nodes.values()])];
+
+    return nodes.flatMap((node) => {
+      if (node.kind === "option" || !graph.tags.get(node.id)?.has(tag)) return [];
+
+      const state = itemState(graph, node, reached);
+      if (!states.includes(state)) return [];
+
+      const selected = node.kind === "question" ? liveSelected(graph, node) : [];
+      const selectedData = selected.length === 0 ? {} : { selected: selected.map(({ id, text }) => ({ id, text })) };
+
+      return [{ ...taggedData(graph, node), state, ...selectedData }];
+    });
   }
 
   function liveNode(log     , id        , role                     )                                           {
@@ -1579,11 +1611,11 @@ const Graph = (() => {
       ]);
 
       // when
-      const items = openWithTag(log, "t");
+      const items = withTag(log, "t", ["open"]);
 
       // then
       assert.deepEqual(items, [
-        { item: { kind: "question", question: { id: "Q2", text: "open", options: [] } }, tags: ["t"] },
+        { item: { kind: "question", question: { id: "Q2", text: "open", options: [] } }, tags: ["t"], state: "open" },
       ]);
     });
 
@@ -1597,11 +1629,11 @@ const Graph = (() => {
       ]);
 
       // when
-      const items = openWithTag(log, "t");
+      const items = withTag(log, "t", ["open"]);
 
       // then
       assert.deepEqual(items, [
-        { item: { kind: "question", question: { id: "Q1", text: "q1", options: [] } }, tags: ["t"] },
+        { item: { kind: "question", question: { id: "Q1", text: "q1", options: [] } }, tags: ["t"], state: "open" },
       ]);
     });
 
@@ -1792,7 +1824,7 @@ const Graph = (() => {
     excludedNode,
     itemData,
     taggedItem,
-    openWithTag,
+    withTag,
     tests,
   };
 })();
@@ -3123,12 +3155,24 @@ const Untag = (() => {
 const Tags = (() => {
   const options = {
     tag: { type: "string" },
+    state: { type: "string", multiple: true },
   }         ;
 
-  function run(log     , config                  )               {
+  const states              = ["open", "settled", "off-path", "deferred", "not-applicable", "frozen"];
+
+  function chosenStates(given           = ["open"])              {
+    const unknown = given.find((state) => state !== "all" && !states.some((each) => each === state));
+    if (unknown !== undefined) {
+      throw new DecisionTreeError(`state must be ${states.join(", ")} or all: ${unknown}`);
+    }
+
+    return given.includes("all") ? states : states.filter((state) => given.includes(state));
+  }
+
+  function run(log     , config                                    )                    {
     if (!config.tag) throw new DecisionTreeError("tags requires --tag");
 
-    return Graph.openWithTag(log, config.tag);
+    return Graph.withTag(log, config.tag, chosenStates(config.state));
   }
 
   function tests() {
@@ -3535,9 +3579,13 @@ const Xml = (() => {
 
     test("tagged items render multi-line with their tags last, escaped", () => {
       // given
-      const items               = [
-        { item: { kind: "question", question: { id: "Q1", text: "q", options: [] } }, tags: ["a<b", "c"] },
-        { item: { kind: "follow-up", followUp: { id: "F1", text: "f" } }, tags: [] },
+      const items                    = [
+        {
+          item: { kind: "question", question: { id: "Q1", text: "q", options: [] } },
+          tags: ["a<b", "c"],
+          state: "open",
+        },
+        { item: { kind: "follow-up", followUp: { id: "F1", text: "f" } }, tags: [], state: "open" },
       ];
 
       // when
@@ -3546,13 +3594,13 @@ const Xml = (() => {
       // then
       assert.deepEqual(xml.split("\n"), [
         "<tagged>",
-        "  <question>",
+        '  <question state="open">',
         "    <id>Q1</id>",
         "    <text>q</text>",
         "    <options></options>",
         "    <tags><tag>a&lt;b</tag><tag>c</tag></tags>",
         "  </question>",
-        "  <follow-up>",
+        '  <follow-up state="open">',
         "    <id>F1</id>",
         "    <text>f</text>",
         "    <tags></tags>",
@@ -3692,26 +3740,31 @@ const Xml = (() => {
     });
   }
 
-  function taggedLines(data            )           {
+  function taggedLines(data                                       )           {
     const tags = data.tags.map((tag) => `<tag>${escapeXml(tag)}</tag>`).join("");
     const line = `  <tags>${tags}</tags>`;
+    const state = data.state === undefined ? "" : ` state="${data.state}"`;
 
     if (data.item.kind === "question") {
       const lines = question(data.item.question).split("\n");
+      const selected =
+        data.selected === undefined
+          ? []
+          : ["  <selected>", ...data.selected.map((each) => `    ${option(each)}`), "  </selected>"];
 
-      return [...lines.slice(0, -1), line, "</question>"];
+      return [`<question${state}>`, ...lines.slice(1, -1), ...selected, line, "</question>"];
     }
 
     const { id, text } = data.item.followUp;
 
-    return ["<follow-up>", `  <id>${id}</id>`, `  <text>${escapeXml(text)}</text>`, line, "</follow-up>"];
+    return [`<follow-up${state}>`, `  <id>${id}</id>`, `  <text>${escapeXml(text)}</text>`, line, "</follow-up>"];
   }
 
   function taggedItem(data            )         {
     return taggedLines(data).join("\n");
   }
 
-  function tagged(items              )         {
+  function tagged(items                   )         {
     if (items.length === 0) return "<tagged></tagged>";
 
     return ["<tagged>", ...items.flatMap(taggedLines).map((line) => `  ${line}`), "</tagged>"].join("\n");
