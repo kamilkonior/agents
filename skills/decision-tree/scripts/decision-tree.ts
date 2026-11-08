@@ -46,6 +46,8 @@ type ItemData =
   | { kind: "option"; option: OptionData }
   | { kind: "follow-up"; followUp: FollowUpData };
 
+type SupersedeData = { question: QuestionData; superseded: TreeItem[] };
+
 type NextData =
   | { kind: "question"; question: QuestionData }
   | { kind: "follow-up"; followUp: FollowUpData };
@@ -399,7 +401,7 @@ const Graph = (() => {
     return { nodes, roots, rootFollowUps, exclusions };
   }
 
-  function tree(graph: Graph): TreeItem[] {
+  function project(graph: Graph) {
     function live(node: QuestionNode | OptionNode | FollowUpNode): boolean {
       return !graph.exclusions.has(node.id);
     }
@@ -435,7 +437,19 @@ const Graph = (() => {
       return [...node.children.flatMap(question), ...followUps(node)];
     }
 
+    return { question, followUp };
+  }
+
+  function tree(graph: Graph): TreeItem[] {
+    const { question, followUp } = project(graph);
+
     return [...graph.roots.flatMap(question), ...graph.rootFollowUps.flatMap(followUp)];
+  }
+
+  function subtree(log: Log, id: string): TreeItem[] {
+    const graph = build(log);
+
+    return project(graph).question(questionNode(graph.nodes, id));
   }
 
   function frontier(graph: Graph): Exclude<TreeItem, { kind: "question" }>[] {
@@ -1277,6 +1291,7 @@ const Graph = (() => {
   return {
     tree: (log: Log) => tree(build(log)),
     frontier: (log: Log) => frontier(build(log)),
+    subtree,
     liveNode,
     excludedNode,
     itemData,
@@ -2144,7 +2159,7 @@ const SupersedeQuestion = (() => {
     text: { type: "string" },
   } as const;
 
-  function run(log: Log, config: { target?: string; text?: string }): QuestionData {
+  function run(log: Log, config: { target?: string; text?: string }): SupersedeData {
     const { target, text } = config;
     if (!target) throw new DecisionTreeError("supersede-question requires --target");
     if (!text) throw new DecisionTreeError("supersede-question requires --text");
@@ -2152,12 +2167,14 @@ const SupersedeQuestion = (() => {
     const old = Graph.liveNode(log, target, "target");
     if (old.kind !== "question") throw new DecisionTreeError(`target is not a question: ${target}`);
 
+    const superseded = Graph.subtree(log, target);
+
     return Log.transaction(log, (staged) => {
       const id = AddQuestion.addQuestion(staged, text, old.parent?.id);
 
       staged.append({ type: "supersede-question", target, question: id });
 
-      return { id, text, options: [] };
+      return { question: { id, text, options: [] }, superseded };
     });
   }
 
@@ -2220,10 +2237,10 @@ const SupersedeQuestion = (() => {
       const log = Log.memoryLog([...events]);
 
       // when
-      const question = run(log, { target: "Q2", text: "q3" });
+      const supersede = run(log, { target: "Q2", text: "q3" });
 
       // then
-      assert.deepEqual(question, { id: "Q3", text: "q3", options: [] });
+      assert.deepEqual(supersede.question, { id: "Q3", text: "q3", options: [] });
       assert.deepEqual(log.read(), [
         ...events,
         { type: "add-question", id: "Q3", text: "q3", origin: "Q1a" },
@@ -2376,25 +2393,36 @@ const Xml = (() => {
     return `<next>\n${body}\n</next>`;
   }
 
+  function treeLines(item: TreeItem): string[] {
+    if (item.kind === "follow-up") return [followUp(item)];
+
+    const head = [`  <id>${item.id}</id>`, `  <text>${escapeXml(item.text)}</text>`];
+    const state =
+      item.kind === "question"
+        ? [`  <answer><id>${item.answer.id}</id><text>${escapeXml(item.answer.text)}</text></answer>`]
+        : ["  <open>", ...item.options.map((each) => `    ${option(each)}`), "  </open>"];
+    const children = item.children.flatMap(treeLines).map((line) => `  ${line}`);
+
+    return ["<question>", ...head, ...state, ...children, "</question>"];
+  }
+
   function tree(items: TreeItem[]): string {
     if (items.length === 0) return "<tree></tree>";
 
-    function lines(item: TreeItem): string[] {
-      if (item.kind === "follow-up") return [followUp(item)];
-
-      const head = [`  <id>${item.id}</id>`, `  <text>${escapeXml(item.text)}</text>`];
-      const state =
-        item.kind === "question"
-          ? [`  <answer><id>${item.answer.id}</id><text>${escapeXml(item.answer.text)}</text></answer>`]
-          : ["  <open>", ...item.options.map((each) => `    ${option(each)}`), "  </open>"];
-      const children = item.children.flatMap(lines).map((line) => `  ${line}`);
-
-      return ["<question>", ...head, ...state, ...children, "</question>"];
-    }
-
-    const body = items.flatMap(lines).map((line) => `  ${line}`);
+    const body = items.flatMap(treeLines).map((line) => `  ${line}`);
 
     return ["<tree>", ...body, "</tree>"].join("\n");
+  }
+
+  function supersede(data: SupersedeData): string {
+    const replacement = question(data.question)
+      .split("\n")
+      .map((line) => `  ${line}`);
+    const superseded = data.superseded.flatMap(treeLines).map((line) => `    ${line}`);
+
+    return ["<supersede>", ...replacement, "  <superseded>", ...superseded, "  </superseded>", "</supersede>"].join(
+      "\n",
+    );
   }
 
   function tests() {
@@ -2606,7 +2634,7 @@ const Xml = (() => {
     });
   }
 
-  return { option, question, selection, followUp, item, next, tree, tests };
+  return { option, question, selection, followUp, item, next, tree, supersede, tests };
 })();
 
 const Cli = (() => {
@@ -2762,7 +2790,7 @@ const Cli = (() => {
 
       case "supersede-question": {
         const config = readModeConfig(SupersedeQuestion.options);
-        console.log(Xml.question(SupersedeQuestion.run(log, config)));
+        console.log(Xml.supersede(SupersedeQuestion.run(log, config)));
         break;
       }
       default:
