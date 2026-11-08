@@ -1036,6 +1036,30 @@ const Graph = (() => {
       );
     });
 
+    test("an ended focus does not move to the question that supersedes its question", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-question", id: "Q2", text: "q2" },
+          { type: "add-option", id: "Q2a", text: "a", origin: "Q2" },
+          { type: "focus-item", target: "Q2" },
+          { type: "select-option", target: "Q2a" },
+          { type: "add-question", id: "Q3", text: "q3" },
+          { type: "supersede-question", target: "Q2", question: "Q3" },
+        ]),
+      );
+
+      // when
+      const open = frontier(graph);
+
+      // then
+      assert.deepEqual(
+        open.map((node) => node.id),
+        ["Q1", "Q3"],
+      );
+    });
+
     test("an ended focus does not return when new work appears under it", () => {
       // given
       const graph = build(
