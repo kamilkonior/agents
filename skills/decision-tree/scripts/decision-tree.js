@@ -19,7 +19,8 @@ const { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync
                                                  
                                                                      
                                             
-                                                                     
+                                                                    
+                                           
 
                                               
 
@@ -107,6 +108,7 @@ const { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync
                         
                                 
                                            
+                                                                
   
 
 class DecisionTreeError extends Error {}
@@ -285,21 +287,28 @@ const Graph = (() => {
     return parent === undefined ? undefined : excludedBy(graph, parent);
   }
 
-  function rejectFrozen(node                                          )       {
+  function frozenBy(node                                          )                           {
     let current                                                       = node;
     while (current !== undefined) {
-      if (current.kind === "question" && current.supersededBy !== undefined) {
-        const replacement = current.supersededBy.id;
-        if (current === node) {
-          throw new DecisionTreeError(`${node.id} is frozen, as it was superseded by ${replacement}`);
-        }
-        throw new DecisionTreeError(
-          `${node.id} is frozen, as its ancestor ${current.id} was superseded by ${replacement}`,
-        );
-      }
+      if (current.kind === "question" && current.supersededBy !== undefined) return current;
 
       current = current.kind === "option" ? current.question : current.parent;
     }
+
+    return undefined;
+  }
+
+  function rejectFrozen(node                                          )       {
+    const superseded = frozenBy(node);
+    if (superseded === undefined || superseded.supersededBy === undefined) return;
+
+    const replacement = superseded.supersededBy.id;
+    if (superseded === node) {
+      throw new DecisionTreeError(`${node.id} is frozen, as it was superseded by ${replacement}`);
+    }
+    throw new DecisionTreeError(
+      `${node.id} is frozen, as its ancestor ${superseded.id} was superseded by ${replacement}`,
+    );
   }
 
   function liveOptions(graph       , question              )               {
@@ -313,6 +322,7 @@ const Graph = (() => {
     const roots                 = [];
     const rootFollowUps                 = [];
     const exclusions                      = new Map();
+    const graph        = { nodes, roots, rootFollowUps, exclusions };
 
     for (const event of log.read()) {
       switch (event.type) {
@@ -410,14 +420,26 @@ const Graph = (() => {
           break;
         }
 
+        case "focus-item": {
+          const node = parentNode(nodes, event.target);
+          if (node.kind === "option") throw new Error(`focus target ${node.id} is an option`);
+
+          graph.focus = { node, ended: false };
+          break;
+        }
+
         default: {
           const unknown        = event;
           throw new DecisionTreeError(`unknown event type: ${(unknown                    ).type}`);
         }
       }
+
+      if (graph.focus !== undefined && !graph.focus.ended && focusOpen(graph, graph.focus.node).length === 0) {
+        graph.focus.ended = true;
+      }
     }
 
-    return { nodes, roots, rootFollowUps, exclusions };
+    return graph;
   }
 
   function project(graph       ) {
@@ -515,16 +537,27 @@ const Graph = (() => {
     return subtree(log, id).map(withOptions);
   }
 
+  function openItems(item          )                                            {
+    if (item.kind === "follow-up") return [item];
+
+    const below = item.children.flatMap(openItems);
+
+    return item.kind === "open-question" ? [item, ...below] : below;
+  }
+
+  function focusOpen(graph       , node                             )                                            {
+    if (frozenBy(node) !== undefined) return [];
+
+    const { question, followUp } = project(graph);
+    const items = node.kind === "question" ? question(node) : followUp(node);
+
+    return items.flatMap(openItems);
+  }
+
   function frontier(graph       )                                            {
-    function open(item          )                                            {
-      if (item.kind === "follow-up") return [item];
+    if (graph.focus !== undefined && !graph.focus.ended) return focusOpen(graph, graph.focus.node);
 
-      const below = item.children.flatMap(open);
-
-      return item.kind === "open-question" ? [item, ...below] : below;
-    }
-
-    return tree(graph).flatMap(open);
+    return tree(graph).flatMap(openItems);
   }
 
   function liveNode(log     , id        , role                     )                                           {
@@ -2420,6 +2453,28 @@ const SupersedeQuestion = (() => {
   return { options, run, tests };
 })();
 
+const FocusItem = (() => {
+  const options = {
+    target: { type: "string" },
+  }         ;
+
+  function run(log     , config                     )           {
+    const target = config.target;
+    if (!target) throw new DecisionTreeError("focus-item requires --target");
+
+    const node = Graph.liveNode(log, target, "target");
+    if (node.kind === "option") throw new DecisionTreeError(`target is not a question or follow-up: ${target}`);
+
+    log.append({ type: "focus-item", target });
+
+    return Graph.itemData(log, node);
+  }
+
+  function tests() {}
+
+  return { options, run, tests };
+})();
+
 const Next = (() => {
   const options = {}         ;
 
@@ -2962,6 +3017,7 @@ const Cli = (() => {
     ExcludeItem.tests();
     RestoreItem.tests();
     SupersedeQuestion.tests();
+    FocusItem.tests();
     Next.tests();
     Tree.tests();
     Xml.tests();
@@ -3047,6 +3103,12 @@ const Cli = (() => {
       case "restore-item": {
         const config = readModeConfig(RestoreItem.options);
         console.log(Xml.item(RestoreItem.run(log, config)));
+        break;
+      }
+
+      case "focus-item": {
+        const config = readModeConfig(FocusItem.options);
+        console.log(Xml.item(FocusItem.run(log, config)));
         break;
       }
 
