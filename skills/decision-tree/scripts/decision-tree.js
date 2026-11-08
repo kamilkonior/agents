@@ -1310,6 +1310,22 @@ const Graph = (() => {
       assert.deepEqual(deferred, [{ kind: "question", id: "Q2", text: "q2", hungUnder: { id: "Q1a", text: "a" } }]);
     });
 
+    test("the walk carries a deferred item's note", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "exclude-item", target: "Q1", reason: "deferred", note: "why" },
+        ]),
+      );
+
+      // when
+      const { deferred } = walk(graph);
+
+      // then
+      assert.deepEqual(deferred, [{ kind: "question", id: "Q1", text: "q1", note: "why" }]);
+    });
+
     test("the walk does not list deferred items under a superseded question", () => {
       // given
       const graph = build(
