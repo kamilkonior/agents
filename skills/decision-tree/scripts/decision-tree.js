@@ -1845,7 +1845,7 @@ const AddQuestion = (() => {
     });
   }
 
-  return { options, addQuestion, run, tests };
+  return { options, run, tests };
 })();
 
 const AddOption = (() => {
@@ -2634,9 +2634,10 @@ const SupersedeQuestion = (() => {
   const options = {
     target: { type: "string" },
     text: { type: "string" },
+    option: { type: "string", multiple: true },
   }         ;
 
-  function run(log     , config                                    )                {
+  function run(log     , config                                                       )                {
     const { target, text } = config;
     if (!target) throw new DecisionTreeError("supersede-question requires --target");
     if (!text) throw new DecisionTreeError("supersede-question requires --text");
@@ -2647,11 +2648,11 @@ const SupersedeQuestion = (() => {
     const superseded = Graph.superseded(log, target);
 
     return Log.transaction(log, (staged) => {
-      const id = AddQuestion.addQuestion(staged, text, old.parent?.id);
+      const question = AddQuestion.run(staged, { text, origin: old.parent?.id, option: config.option });
 
-      staged.append({ type: "supersede-question", target, question: id });
+      staged.append({ type: "supersede-question", target, question: question.id });
 
-      return { question: { id, text, options: [] }, superseded };
+      return { question, superseded };
     });
   }
 
