@@ -635,6 +635,10 @@ const Graph = (() => {
     return items.flatMap(openItems);
   }
 
+  function hasOpen(log     , node                             )          {
+    return focusOpen(build(log), node).length > 0;
+  }
+
   function frontier(graph       )                                            {
     if (graph.focus !== undefined && !graph.focus.ended) return focusOpen(graph, graph.focus.node);
 
@@ -2057,6 +2061,7 @@ const Graph = (() => {
     walk: (log     ) => walk(build(log)),
     frontier: (log     ) => frontier(build(log)),
     superseded,
+    hasOpen,
     liveNode,
     excludedNode,
     itemData,
@@ -3197,6 +3202,7 @@ const Focus = (() => {
 
     const node = Graph.liveNode(log, target, "target");
     if (node.kind === "option") throw new DecisionTreeError(`target is not a question or follow-up: ${target}`);
+    if (!Graph.hasOpen(log, node)) throw new DecisionTreeError(`nothing open under ${target}`);
 
     log.append({ type: "focus", target });
 
