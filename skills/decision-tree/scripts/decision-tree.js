@@ -366,9 +366,7 @@ const Graph = (() => {
         }
 
         case "select-option": {
-          if (event.targets === undefined) {
-            throw new DecisionTreeError("select-option event has no targets: this log was written by an older version");
-          }
+          if (event.targets === undefined) throw new DecisionTreeError("select-option event has no targets");
 
           const options = event.targets.map((id) => optionNode(nodes, id));
           options[0].question.selected = options;
@@ -629,6 +627,24 @@ const Graph = (() => {
       assert.throws(
         act,
         (error) => error instanceof DecisionTreeError && error.message === "unknown event type: dismiss-follow-up",
+      );
+    });
+
+    test("a select-option event without targets throws", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "select-option", target: "Q1a" }                    ,
+      ]);
+
+      // when
+      const act = () => build(log);
+
+      // then
+      assert.throws(
+        act,
+        (error) => error instanceof DecisionTreeError && error.message === "select-option event has no targets",
       );
     });
 
