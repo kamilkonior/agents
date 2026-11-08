@@ -76,7 +76,7 @@ type TaggedData = {
   tags: string[];
 };
 
-type TaggedQueryItem = TaggedData & { state: ItemState; selected?: OptionData[]; note?: string; hiddenBy?: string };
+type ListedItem = TaggedData & { state: ItemState; selected?: OptionData[]; note?: string; hiddenBy?: string };
 
 type SupersedeData = { question: QuestionData; superseded: SupersededItem[] };
 
@@ -679,7 +679,7 @@ const Graph = (() => {
     return cause === node ? undefined : cause?.id;
   }
 
-  function withTag(log: Log, tag: string, states: ItemState[]): TaggedQueryItem[] {
+  function listed(log: Log, tag: string | undefined, states: ItemState[]): ListedItem[] {
     const graph = build(log);
 
     const { question, followUp, reached } = project(graph);
@@ -689,7 +689,8 @@ const Graph = (() => {
     const nodes = [...new Set([...reached, ...graph.nodes.values()])];
 
     return nodes.flatMap((node) => {
-      if (node.kind === "option" || !graph.tags.get(node.id)?.has(tag)) return [];
+      if (node.kind === "option") return [];
+      if (tag !== undefined && !graph.tags.get(node.id)?.has(tag)) return [];
 
       const state = itemState(graph, node, reached);
       if (!states.includes(state)) return [];
@@ -1637,7 +1638,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const items = withTag(log, "t", ["open"]);
+      const items = listed(log, "t", ["open"]);
 
       // then
       assert.deepEqual(items, [
@@ -1655,7 +1656,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const items = withTag(log, "t", ["open"]);
+      const items = listed(log, "t", ["open"]);
 
       // then
       assert.deepEqual(items, [
@@ -1686,7 +1687,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const items = withTag(log, "t", ["settled", "off-path", "deferred", "not-applicable", "frozen"]);
+      const items = listed(log, "t", ["settled", "off-path", "deferred", "not-applicable", "frozen"]);
 
       // then
       assert.deepEqual(
@@ -1712,7 +1713,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const items = withTag(log, "t", ["settled"]);
+      const items = listed(log, "t", ["settled"]);
 
       // then
       assert.deepEqual(
@@ -1731,7 +1732,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const items = withTag(log, "t", ["settled"]);
+      const items = listed(log, "t", ["settled"]);
 
       // then
       assert.deepEqual(items, [
@@ -1748,7 +1749,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const items = withTag(log, "t", ["not-applicable"]);
+      const items = listed(log, "t", ["not-applicable"]);
 
       // then
       assert.deepEqual(
@@ -1767,7 +1768,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const items = withTag(log, "t", ["deferred"]);
+      const items = listed(log, "t", ["deferred"]);
 
       // then
       assert.deepEqual(
@@ -1787,7 +1788,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const items = withTag(log, "t", ["frozen"]);
+      const items = listed(log, "t", ["frozen"]);
 
       // then
       assert.deepEqual(
@@ -1808,7 +1809,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const items = withTag(log, "t", ["off-path"]);
+      const items = listed(log, "t", ["off-path"]);
 
       // then
       assert.deepEqual(
@@ -1826,7 +1827,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const items = withTag(log, "t", ["off-path"]);
+      const items = listed(log, "t", ["off-path"]);
 
       // then
       assert.deepEqual(
@@ -1844,7 +1845,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const items = withTag(log, "t", ["deferred"]);
+      const items = listed(log, "t", ["deferred"]);
 
       // then
       assert.deepEqual(
@@ -2040,7 +2041,7 @@ const Graph = (() => {
     excludedNode,
     itemData,
     taggedItem,
-    withTag,
+    listed,
     tests,
   };
 })();
@@ -3368,7 +3369,7 @@ const Untag = (() => {
   return { options, run, tests };
 })();
 
-const Tags = (() => {
+const Items = (() => {
   const options = {
     tag: { type: "string" },
     state: { type: "string", multiple: true },
@@ -3385,10 +3386,10 @@ const Tags = (() => {
     return given.includes("all") ? states : states.filter((state) => given.includes(state));
   }
 
-  function run(log: Log, config: { tag?: string; state?: string[] }): TaggedQueryItem[] {
-    if (!config.tag) throw new DecisionTreeError("tags requires --tag");
+  function run(log: Log, config: { tag?: string; state?: string[] }): ListedItem[] {
+    if (config.tag === "") throw new DecisionTreeError("items --tag requires a text");
 
-    return Graph.withTag(log, config.tag, chosenStates(config.state));
+    return Graph.listed(log, config.tag, chosenStates(config.state));
   }
 
   function tests() {
@@ -3429,15 +3430,22 @@ const Tags = (() => {
       );
     });
 
-    test("querying without a tag throws", () => {
+    test("querying without a tag returns tagged and untagged items", () => {
       // given
-      const log = Log.memoryLog([{ type: "add-question", id: "Q1", text: "q" }]);
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "tagged" },
+        { type: "add-question", id: "Q2", text: "untagged" },
+        { type: "tag", target: "Q1", tags: ["t"] },
+      ]);
 
       // when
-      const act = () => run(log, {});
+      const items = run(log, {});
 
       // then
-      assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "tags requires --tag");
+      assert.deepEqual(
+        items.map((each) => (each.item.kind === "question" ? each.item.question.id : "")),
+        ["Q1", "Q2"],
+      );
     });
   }
 
@@ -3832,7 +3840,7 @@ const Xml = (() => {
 
     test("tagged items render multi-line with their tags last, escaped", () => {
       // given
-      const items: TaggedQueryItem[] = [
+      const list: ListedItem[] = [
         {
           item: { kind: "question", question: { id: "Q1", text: "q", options: [] } },
           tags: ["a<b", "c"],
@@ -3842,11 +3850,11 @@ const Xml = (() => {
       ];
 
       // when
-      const xml = tagged(items);
+      const xml = items(list);
 
       // then
       assert.deepEqual(xml.split("\n"), [
-        "<tagged>",
+        "<items>",
         '  <question state="open">',
         "    <id>Q1</id>",
         "    <text>q</text>",
@@ -3858,7 +3866,7 @@ const Xml = (() => {
         "    <text>f</text>",
         "    <tags></tags>",
         "  </follow-up>",
-        "</tagged>",
+        "</items>",
       ]);
     });
 
@@ -3866,7 +3874,7 @@ const Xml = (() => {
       // given
       const a = { id: "Q1a", text: "a" };
       const b = { id: "Q1b", text: "b" };
-      const items: TaggedQueryItem[] = [
+      const list: ListedItem[] = [
         {
           item: { kind: "question", question: { id: "Q1", text: "q", options: [a, b] } },
           tags: ["t"],
@@ -3876,11 +3884,11 @@ const Xml = (() => {
       ];
 
       // when
-      const xml = tagged(items);
+      const xml = items(list);
 
       // then
       assert.deepEqual(xml.split("\n"), [
-        "<tagged>",
+        "<items>",
         '  <question state="settled">',
         "    <id>Q1</id>",
         "    <text>q</text>",
@@ -3893,13 +3901,13 @@ const Xml = (() => {
         "    </selected>",
         "    <tags><tag>t</tag></tags>",
         "  </question>",
-        "</tagged>",
+        "</items>",
       ]);
     });
 
     test("a tagged item renders its note, escaped, before its tags", () => {
       // given
-      const items: TaggedQueryItem[] = [
+      const list: ListedItem[] = [
         {
           item: { kind: "follow-up", followUp: { id: "F1", text: "f" } },
           tags: ["t"],
@@ -3909,24 +3917,24 @@ const Xml = (() => {
       ];
 
       // when
-      const xml = tagged(items);
+      const xml = items(list);
 
       // then
       assert.deepEqual(xml.split("\n"), [
-        "<tagged>",
+        "<items>",
         '  <follow-up state="deferred">',
         "    <id>F1</id>",
         "    <text>f</text>",
         "    <note>a &lt; b</note>",
         "    <tags><tag>t</tag></tags>",
         "  </follow-up>",
-        "</tagged>",
+        "</items>",
       ]);
     });
 
     test("a tagged item renders what hides it before its tags", () => {
       // given
-      const items: TaggedQueryItem[] = [
+      const list: ListedItem[] = [
         {
           item: { kind: "follow-up", followUp: { id: "F1", text: "f" } },
           tags: ["t"],
@@ -3936,18 +3944,18 @@ const Xml = (() => {
       ];
 
       // when
-      const xml = tagged(items);
+      const xml = items(list);
 
       // then
       assert.deepEqual(xml.split("\n"), [
-        "<tagged>",
+        "<items>",
         '  <follow-up state="frozen">',
         "    <id>F1</id>",
         "    <text>f</text>",
         "    <hidden-by><id>Q1</id></hidden-by>",
         "    <tags><tag>t</tag></tags>",
         "  </follow-up>",
-        "</tagged>",
+        "</items>",
       ]);
     });
 
@@ -4082,7 +4090,7 @@ const Xml = (() => {
     });
   }
 
-  function taggedLines(data: TaggedData & Partial<TaggedQueryItem>): string[] {
+  function taggedLines(data: TaggedData & Partial<ListedItem>): string[] {
     const tags = data.tags.map((tag) => `<tag>${escapeXml(tag)}</tag>`).join("");
     const line = `  <tags>${tags}</tags>`;
     const state = data.state === undefined ? "" : ` state="${data.state}"`;
@@ -4116,13 +4124,13 @@ const Xml = (() => {
     return taggedLines(data).join("\n");
   }
 
-  function tagged(items: TaggedQueryItem[]): string {
-    if (items.length === 0) return "<tagged></tagged>";
+  function items(list: ListedItem[]): string {
+    if (list.length === 0) return "<items></items>";
 
-    return ["<tagged>", ...items.flatMap(taggedLines).map((line) => `  ${line}`), "</tagged>"].join("\n");
+    return ["<items>", ...list.flatMap(taggedLines).map((line) => `  ${line}`), "</items>"].join("\n");
   }
 
-  return { option, question, selection, followUp, item, next, tree, supersede, taggedItem, tagged, tests };
+  return { option, question, selection, followUp, item, next, tree, supersede, taggedItem, items, tests };
 })();
 
 const Cli = (() => {
@@ -4285,7 +4293,7 @@ const Cli = (() => {
     Focus.tests();
     Tag.tests();
     Untag.tests();
-    Tags.tests();
+    Items.tests();
     Next.tests();
     Tree.tests();
     Xml.tests();
@@ -4325,9 +4333,9 @@ const Cli = (() => {
         break;
       }
 
-      case "tags": {
-        const config = readModeConfig(Tags.options);
-        console.log(Xml.tagged(Tags.run(log, config)));
+      case "items": {
+        const config = readModeConfig(Items.options);
+        console.log(Xml.items(Items.run(log, config)));
         break;
       }
 
