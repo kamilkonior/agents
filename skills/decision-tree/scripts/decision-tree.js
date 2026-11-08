@@ -2726,6 +2726,32 @@ const SupersedeQuestion = (() => {
       ]);
     });
 
+    test("superseding with options gives them to the new question before recording the supersede", () => {
+      // given
+      const events          = [{ type: "add-question", id: "Q1", text: "q1" }];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const supersede = run(log, { target: "Q1", text: "q2", option: ["x", "y"] });
+
+      // then
+      assert.deepEqual(supersede.question, {
+        id: "Q2",
+        text: "q2",
+        options: [
+          { id: "Q2a", text: "x" },
+          { id: "Q2b", text: "y" },
+        ],
+      });
+      assert.deepEqual(log.read(), [
+        ...events,
+        { type: "add-question", id: "Q2", text: "q2" },
+        { type: "add-option", id: "Q2a", text: "x", origin: "Q2" },
+        { type: "add-option", id: "Q2b", text: "y", origin: "Q2" },
+        { type: "supersede-question", target: "Q1", question: "Q2" },
+      ]);
+    });
+
     test("superseding a question returns the old subtree with every option and the selected one marked", () => {
       // given
       const log = Log.memoryLog([
