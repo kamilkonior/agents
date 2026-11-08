@@ -3631,6 +3631,17 @@ const Items = (() => {
       );
     });
 
+    test("querying an unknown target throws", () => {
+      // given
+      const log = Log.memoryLog();
+
+      // when
+      const act = () => run(log, { target: "Q9" });
+
+      // then
+      assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "target not found: Q9");
+    });
+
     test("querying with an unknown state throws", () => {
       // given
       const log = Log.memoryLog([{ type: "add-question", id: "Q1", text: "q" }]);
