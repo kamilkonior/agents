@@ -28,7 +28,7 @@ const { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync
 
             
                   
-                             
+                                   
   
 
                                                
@@ -145,9 +145,9 @@ const Log = (() => {
           .flatMap((line, index) => (line === "" ? [] : [parseLine(line, index + 1, path)]));
       },
 
-      append(event) {
+      append(...events) {
         mkdirSync(dirname(path), { recursive: true });
-        appendFileSync(path, JSON.stringify(event) + "\n");
+        appendFileSync(path, events.map((event) => JSON.stringify(event) + "\n").join(""));
       },
     };
   }
@@ -158,8 +158,8 @@ const Log = (() => {
         return [...events];
       },
 
-      append(event) {
-        events.push(event);
+      append(...added) {
+        events.push(...added);
       },
     };
   }
@@ -179,7 +179,7 @@ const Log = (() => {
 
     const result = work(staged);
 
-    for (const event of staged.read().slice(existing.length)) log.append(event);
+    log.append(...staged.read().slice(existing.length));
 
     return result;
   }
