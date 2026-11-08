@@ -3088,7 +3088,18 @@ const Tags = (() => {
     return Graph.openWithTag(log, config.tag);
   }
 
-  function tests() {}
+  function tests() {
+    test("querying without a tag throws", () => {
+      // given
+      const log = Log.memoryLog([{ type: "add-question", id: "Q1", text: "q" }]);
+
+      // when
+      const act = () => run(log, {});
+
+      // then
+      assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "tags requires --tag");
+    });
+  }
 
   return { options, run, tests };
 })();
