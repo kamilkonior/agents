@@ -74,7 +74,7 @@ Some behaviour worth expecting:
 |---|---|
 | `--query next` | the one thing to handle now |
 | `--query tree` | the settled tree, open questions and deferred items |
-| `--query tags --tag T` | the open items on the chosen path that carry `T`, whether or not a focus is active; prints `<tagged>` |
+| `--query tags --tag T [--state S]…` | items carrying `T`, each marked with its state; `S` is `open` (the default), `settled`, `off-path`, `deferred`, `not-applicable`, `frozen` or `all`; a focus doesn't limit it; prints `<tagged>` |
 
 ## Output
 
