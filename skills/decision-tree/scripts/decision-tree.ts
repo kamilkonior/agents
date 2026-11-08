@@ -46,6 +46,15 @@ type ItemData =
   | { kind: "option"; option: OptionData }
   | { kind: "follow-up"; followUp: FollowUpData };
 
+type DeferredItem = {
+  kind: "question" | "option" | "follow-up";
+  id: string;
+  text: string;
+  hungUnder?: { id: string; text: string };
+};
+
+type TreeData = { items: TreeItem[]; deferred: DeferredItem[] };
+
 type SupersededItem =
   | {
       kind: "question";
@@ -412,12 +421,27 @@ const Graph = (() => {
   }
 
   function project(graph: Graph) {
+    const deferred: DeferredItem[] = [];
+
     function live(node: QuestionNode | OptionNode | FollowUpNode): boolean {
       return !graph.exclusions.has(node.id);
     }
 
+    function noteDeferred(node: QuestionNode | OptionNode | FollowUpNode): void {
+      if (graph.exclusions.get(node.id) !== "deferred") return;
+
+      const parent = node.kind === "option" ? node.question : node.parent;
+      const hungUnder = parent === undefined ? {} : { hungUnder: { id: parent.id, text: parent.text } };
+      deferred.push({ kind: node.kind, id: node.id, text: node.text, ...hungUnder });
+    }
+
     function question(node: QuestionNode): TreeItem[] {
-      if (!live(node)) return [];
+      if (!live(node)) {
+        noteDeferred(node);
+        return [];
+      }
+
+      node.options.filter((option) => !live(option)).forEach(noteDeferred);
 
       const answer = node.answer !== undefined && live(node.answer) ? node.answer : undefined;
 
@@ -428,7 +452,9 @@ const Graph = (() => {
       children.push(...node.children.flatMap(question), ...followUps(node));
 
       if (answer === undefined) {
-        return [{ kind: "open-question", id: node.id, text: node.text, options: liveOptions(graph, node), children }];
+        const options = liveOptions(graph, node);
+
+        return [{ kind: "open-question", id: node.id, text: node.text, options, children }];
       }
 
       return [
@@ -441,19 +467,28 @@ const Graph = (() => {
     }
 
     function followUp(node: FollowUpNode): TreeItem[] {
-      if (!live(node)) return [];
+      if (!live(node)) {
+        noteDeferred(node);
+        return [];
+      }
       if (node.status === "open") return [{ kind: "follow-up", id: node.id, text: node.text }];
 
       return [...node.children.flatMap(question), ...followUps(node)];
     }
 
-    return { question, followUp };
+    return { question, followUp, deferred };
+  }
+
+  function walk(graph: Graph): TreeData {
+    const { question, followUp, deferred } = project(graph);
+
+    const items = [...graph.roots.flatMap(question), ...graph.rootFollowUps.flatMap(followUp)];
+
+    return { items, deferred };
   }
 
   function tree(graph: Graph): TreeItem[] {
-    const { question, followUp } = project(graph);
-
-    return [...graph.roots.flatMap(question), ...graph.rootFollowUps.flatMap(followUp)];
+    return walk(graph).items;
   }
 
   function subtree(log: Log, id: string): TreeItem[] {
@@ -1345,6 +1380,7 @@ const Graph = (() => {
 
   return {
     tree: (log: Log) => tree(build(log)),
+    walk: (log: Log) => walk(build(log)),
     frontier: (log: Log) => frontier(build(log)),
     superseded,
     liveNode,
@@ -2419,8 +2455,8 @@ const Next = (() => {
 const Tree = (() => {
   const options = {} as const;
 
-  function run(log: Log): TreeItem[] {
-    return Graph.tree(log);
+  function run(log: Log): TreeData {
+    return Graph.walk(log);
   }
 
   function tests() {}
@@ -2498,12 +2534,25 @@ const Xml = (() => {
     return ["<question>", ...head, ...state, ...children, "</question>"];
   }
 
-  function tree(items: TreeItem[]): string {
-    if (items.length === 0) return "<tree></tree>";
+  function deferredLine(item: DeferredItem): string {
+    const hungUnder =
+      item.hungUnder === undefined
+        ? ""
+        : `<hung-under><id>${item.hungUnder.id}</id><text>${escapeXml(item.hungUnder.text)}</text></hung-under>`;
+
+    return `<${item.kind}><id>${item.id}</id><text>${escapeXml(item.text)}</text>${hungUnder}</${item.kind}>`;
+  }
+
+  function tree(items: TreeItem[], deferred: DeferredItem[] = []): string {
+    if (items.length === 0 && deferred.length === 0) return "<tree></tree>";
 
     const body = items.flatMap(treeLines).map((line) => `  ${line}`);
+    const out =
+      deferred.length === 0
+        ? []
+        : ["  <deferred>", ...deferred.map((each) => `    ${deferredLine(each)}`), "  </deferred>"];
 
-    return ["<tree>", ...body, "</tree>"].join("\n");
+    return ["<tree>", ...body, ...out, "</tree>"].join("\n");
   }
 
   function supersededLines(item: SupersededItem): string[] {
@@ -2890,7 +2939,8 @@ const Cli = (() => {
 
       case "tree": {
         readModeConfig(Tree.options);
-        console.log(Xml.tree(Tree.run(log)));
+        const { items, deferred } = Tree.run(log);
+        console.log(Xml.tree(items, deferred));
         break;
       }
 
