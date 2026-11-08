@@ -155,6 +155,40 @@ Some behaviour worth expecting:
 </supersede>
 ```
 
+`--query tags --tag auth --state open --state deferred` lists matching items flat, in walk order, each with its state. An item excluded directly has its `<note>`; an item hidden by another names it in `<hidden-by>`, which is the item to act on:
+
+```xml
+<tagged>
+  <question state="open">
+    <id>Q1</id>
+    <text>Which provider?</text>
+    <options>
+      <option><id>Q1a</id><text>Okta</text></option>
+      <option><id>Q1b</id><text>Entra</text></option>
+    </options>
+    <tags><tag>auth</tag></tags>
+  </question>
+  <question state="deferred">
+    <id>Q2</id>
+    <text>MFA for admins?</text>
+    <options>
+      <option><id>Q2a</id><text>yes</text></option>
+    </options>
+    <note>Legal is deciding</note>
+    <tags><tag>auth</tag></tags>
+  </question>
+  <question state="deferred">
+    <id>Q3</id>
+    <text>MFA provider?</text>
+    <options>
+      <option><id>Q3a</id><text>Duo</text></option>
+    </options>
+    <hidden-by><id>Q2</id></hidden-by>
+    <tags><tag>auth</tag></tags>
+  </question>
+</tagged>
+```
+
 ## Usage patterns
 
 **The loop.** Run `--query next`, handle what it returns, record the result, and repeat until it prints `<next></next>`. Let `next` choose the order: it finishes the current branch, raises follow-ups on the way back up, and leaves other topics for later, so the decisions that depend on each other stay together.
