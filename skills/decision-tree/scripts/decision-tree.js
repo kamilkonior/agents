@@ -1675,6 +1675,26 @@ const Graph = (() => {
       );
     });
 
+    test("a settled tagged question carries what was selected", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "tag", target: "Q1", tags: ["t"] },
+      ]);
+
+      // when
+      const items = withTag(log, "t", ["settled"]);
+
+      // then
+      assert.deepEqual(
+        items.map((each) => each.selected),
+        [[{ id: "Q1a", text: "a" }]],
+      );
+    });
+
     test("looking up an unknown id throws not found for its role", () => {
       // given
       const log = Log.memoryLog();
