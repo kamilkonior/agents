@@ -3722,6 +3722,41 @@ const Xml = (() => {
       ]);
     });
 
+    test("a settled tagged question renders its state, options, selection and tags", () => {
+      // given
+      const a = { id: "Q1a", text: "a" };
+      const b = { id: "Q1b", text: "b" };
+      const items: TaggedQueryItem[] = [
+        {
+          item: { kind: "question", question: { id: "Q1", text: "q", options: [a, b] } },
+          tags: ["t"],
+          state: "settled",
+          selected: [a],
+        },
+      ];
+
+      // when
+      const xml = tagged(items);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<tagged>",
+        '  <question state="settled">',
+        "    <id>Q1</id>",
+        "    <text>q</text>",
+        "    <options>",
+        "      <option><id>Q1a</id><text>a</text></option>",
+        "      <option><id>Q1b</id><text>b</text></option>",
+        "    </options>",
+        "    <selected>",
+        "      <option><id>Q1a</id><text>a</text></option>",
+        "    </selected>",
+        "    <tags><tag>t</tag></tags>",
+        "  </question>",
+        "</tagged>",
+      ]);
+    });
+
     test("an empty tree renders an empty tree element", () => {
       // given
       const items: TreeItem[] = [];
