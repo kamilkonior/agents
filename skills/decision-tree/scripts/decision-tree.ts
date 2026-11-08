@@ -219,6 +219,26 @@ const Log = (() => {
       assert.deepEqual(log.read(), [question, option]);
     });
 
+    test("transaction writes its events in a single append", () => {
+      // given
+      const question: Event = { type: "add-question", id: "Q1", text: "q" };
+      const option: Event = { type: "add-option", id: "Q1a", text: "a", origin: "Q1" };
+      const appends: Event[][] = [];
+      const log: Log = {
+        read: () => [],
+        append: (...events) => appends.push(events),
+      };
+
+      // when
+      transaction(log, (staged) => {
+        staged.append(question);
+        staged.append(option);
+      });
+
+      // then
+      assert.deepEqual(appends, [[question, option]]);
+    });
+
     test("file log with a malformed line throws, naming the line", (t) => {
       // given
       const dir = mkdtempSync(join(tmpdir(), "decision-tree-"));
