@@ -3037,7 +3037,23 @@ const Untag = (() => {
     return Graph.taggedItem(log, target);
   }
 
-  function tests() {}
+  function tests() {
+    test("removing a tag the item does not have throws and appends nothing", () => {
+      // given
+      const events          = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "tag", target: "Q1", tags: ["a"] },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const act = () => run(log, { target: "Q1", tag: ["b"] });
+
+      // then
+      assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "Q1 has no tag: b");
+      assert.deepEqual(log.read(), events);
+    });
+  }
 
   return { options, run, tests };
 })();
