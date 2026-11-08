@@ -207,6 +207,23 @@ const Log = (() => {
       assert.deepEqual(log.read(), [question, option]);
     });
 
+    test("file log with a malformed line throws, naming the line", (t) => {
+      // given
+      const dir = mkdtempSync(join(tmpdir(), "decision-tree-"));
+      t.after(() => rmSync(dir, { recursive: true }));
+      const path = join(dir, "decision-tree.jsonl");
+      appendFileSync(path, '{"type":"add-question","id":"Q1","text":"q"}\n{"type":"add-opt\n');
+
+      // when
+      const act = () => fileLog(path).read();
+
+      // then
+      assert.throws(
+        act,
+        (error) => error instanceof DecisionTreeError && error.message === `log line 2 is not valid JSON: ${path}`,
+      );
+    });
+
     test("file log without a file reads as empty", (t) => {
       // given
       const dir = mkdtempSync(join(tmpdir(), "decision-tree-"));
