@@ -1,47 +1,184 @@
 ---
 name: decision-tree
-description: A CLI that records decisions as a tree in an append-only event log, with questions, options, answers and follow-ups, and says what to decide next. Use when a skill or task needs a persistent, resumable record of open and settled decisions, such as an interview, a design review or a planning session. Other skills call this CLI instead of keeping decisions in conversation text.
+description: A CLI memory for decisions. Records questions, options, selections and follow-ups as a tree in an append-only log, and answers what to decide next and what is already settled. Use it whenever decisions need to outlive the conversation or be worked through in order, such as an interview, a design review, a planning session or a long list of open questions, even if the user only says "keep track of this" or "where were we?". Other skills call this CLI instead of tracking decisions in conversation text.
 ---
 
 # Decision tree
 
-A memory for decisions. Each question, its options, the chosen answer and every follow-up go into an event log. The CLI validates every write, keeps the tree in order and answers two queries: what to decide next, and what has been settled. It stores and orders the tree; how to run the conversation belongs to the skill that calls it.
+A memory for decisions. The CLI stores each question, option, selection and follow-up, validates every write, and keeps the tree in order. It has no opinion on how a conversation should go: that belongs to you, or to the skill calling it.
 
-## The CLI
+## Running it
 
 ```
 node <this skill's directory>/scripts/decision-tree.js --log <path> --op <op> [flags]
 node <this skill's directory>/scripts/decision-tree.js --log <path> --query <query>
 ```
 
-Requires Node 20+. Every call needs `--log`. Results print as XML on stdout; errors print as one line on stderr with exit code 1 and write nothing.
+`--op` writes and `--query` only reads. Every call needs `--log`. Requires Node 20+.
 
-| Command | Does |
-|---|---|
-| `--op add-question --text T [--option A]… [--origin ID]` | adds a question, with any number of options; prints `<question>` |
-| `--op add-option --origin QID --text T` | adds one more option to a question |
-| `--op select-option --target OID [--target OID]…` | answers a question with one or more of its options; a later selection replaces the whole earlier one |
-| `--op add-follow-up --text T [--origin ID]` | records a candidate topic that isn't ready to be a question |
-| `--op promote-follow-up --target FID [--option A]…` | turns a follow-up into a question under it |
-| `--op exclude --target ID --reason R [--note N]` | takes a question, option or follow-up and everything under it out of the tree; `R` is `not-applicable`, or `deferred` to keep it as out of scope for later; `N` records why |
-| `--op restore --target ID` | brings an excluded item back with everything under it; an item hidden only by an excluded ancestor cannot be restored on its own |
-| `--op supersede-question --target QID --text T [--option A]…` | replaces a question with a reworded one in its place; the old question and everything under it leave the tree and are frozen: ops on them fail; prints `<supersede>` with the new question and the old subtree, listing every option with the selected ones marked, as context for rebuilding what still holds |
-| `--op focus --target ID` | puts a question or follow-up at the head of `next`: its subtree is worked through first; only the latest focus counts, it ends for good once its subtree has no open items, moves to the replacement when its question is superseded, and ends when it is excluded |
-| `--query next` | the one thing to decide now: `<next>` with a `<question>` or a `<follow-up>`, or an empty `<next></next>` when done |
-| `--query tree` | the settled tree: answers on the chosen path, open questions with their options, then a `<deferred>` section listing items excluded as `deferred`, each with its note and where it hung |
+Results print as XML on stdout. A failed call prints one line on stderr, exits with code 1 and writes nothing, so it is always safe to fix the call and run it again.
 
-Ids: questions are `Q1`, `Q2`…; options are their question's id plus a letter (`Q1a`, `Q1b`…); follow-ups are `F1`, `F2`….
+## The model
 
-`--origin` says where something hangs:
-- under an **option** when it only matters because that option was chosen;
-- under a **question** when it matters whatever the answer is;
+- A **question** is something to decide. It can have any number of **options**.
+- A question is settled once one or more of its options are **selected**.
+- A **follow-up** is a topic worth raising that isn't ready to be a question. It stays a follow-up until it is promoted or excluded.
+- Ids are `Q1`, `Q2`… for questions, `F1`, `F2`… for follow-ups, and the question's id plus a letter for options (`Q1a`, `Q1b`…), up to 26 per question. Ids are never reused, so an id you saw earlier still means the same item.
+
+`--origin` says where a new item hangs. The place matters, because it decides when the item comes up:
+
+- under an **option** when it only matters if that option is selected; it stays hidden otherwise;
+- under a **question** when it matters whatever the selection is;
 - under a **follow-up** when it only matters if that follow-up is pursued;
-- no origin for a root: a question or follow-up that depends on nothing else in the tree.
+- no origin for a root: something that depends on nothing else in the tree.
 
 `--target` names the existing item an op acts on.
 
-`next` orders the work: it finishes the current branch first, raises follow-ups on the way back up, and leaves other topics for later. A focus, while active, comes before all of that.
+Some behaviour worth expecting:
+
+- If every selected option is excluded, the question opens again. Restoring the option brings the selection back, unless a newer selection replaced it. A question never falls back to an earlier selection.
+- A focus ends for good once its subtree has nothing open, even if new work appears there later. Excluding the focused item ends the focus too, and restoring it doesn't bring the focus back. Superseding the focused question moves the focus to the replacement.
+
+## Commands
+
+| Build | |
+|---|---|
+| `--op add-question --text T [--option A]… [--origin ID]` | adds a question; prints `<question>` |
+| `--op add-option --origin QID --text T` | adds one more option to a question; prints `<option>` |
+| `--op add-follow-up --text T [--origin ID]` | records a topic that isn't ready to be a question; prints `<follow-up>` |
+
+| Decide | |
+|---|---|
+| `--op select-option --target OID [--target OID]…` | selects one or more options of one question; a later selection replaces the whole earlier one; prints `<selection>` |
+| `--op promote-follow-up --target FID [--option A]…` | turns a follow-up into a question under it; prints `<question>` |
+
+| Change | |
+|---|---|
+| `--op supersede-question --target QID --text T [--option A]…` | replaces a question with a reworded one in its place; the old question and everything under it are frozen; prints `<supersede>` |
+
+| Remove | |
+|---|---|
+| `--op exclude --target ID --reason R [--note N]` | takes a question, option or follow-up and everything under it out of the tree; `R` is `deferred` (kept for later, listed in `tree`) or `not-applicable` (dropped); `N` records why |
+| `--op restore --target ID` | brings an excluded item back with everything under it |
+
+| Order | |
+|---|---|
+| `--op focus --target ID` | puts a question or follow-up at the head of `next` until its subtree has nothing open |
+
+| Read | |
+|---|---|
+| `--query next` | the one thing to handle now |
+| `--query tree` | the settled tree, open questions and deferred items |
+
+## Output
+
+`--query next` prints one open item, or nothing when the tree is done:
+
+```xml
+<next>
+  <question>
+    <id>Q2</id>
+    <text>Which database?</text>
+    <options>
+      <option><id>Q2a</id><text>SQLite</text></option>
+      <option><id>Q2b</id><text>Postgres</text></option>
+    </options>
+  </question>
+</next>
+```
+
+```xml
+<next>
+  <follow-up><id>F1</id><text>Audit needs?</text></follow-up>
+</next>
+```
+
+```xml
+<next></next>
+```
+
+`--query tree` nests the settled path. A settled question has `<selected>`; an open one has `<options>`. Deferred items come last, with their note and where they hung:
+
+```xml
+<tree>
+  <question>
+    <id>Q1</id>
+    <text>Where do events live?</text>
+    <selected>
+      <option><id>Q1b</id><text>a database</text></option>
+    </selected>
+    <question>
+      <id>Q2</id>
+      <text>Which database?</text>
+      <options>
+        <option><id>Q2a</id><text>SQLite</text></option>
+        <option><id>Q2b</id><text>Postgres</text></option>
+      </options>
+    </question>
+  </question>
+  <deferred>
+    <question><id>Q3</id><text>Multi-region?</text><note>Legal is deciding</note><hung-under><id>Q1b</id><text>a database</text></hung-under></question>
+  </deferred>
+</tree>
+```
+
+`supersede-question` prints the new question and the old subtree. In the old subtree every question lists all its options, with the selected ones marked, so rejected options can be reconsidered:
+
+```xml
+<supersede>
+  <question>
+    <id>Q4</id>
+    <text>Where do events live, given several writers?</text>
+    <options></options>
+  </question>
+  <superseded>
+    <question>
+      <id>Q1</id>
+      <text>Where do events live?</text>
+      <options>
+        <option><id>Q1a</id><text>files</text></option>
+        <option selected="true"><id>Q1b</id><text>a database</text></option>
+      </options>
+    </question>
+  </superseded>
+</supersede>
+```
+
+## Usage patterns
+
+**The loop.** Run `--query next`, handle what it returns, record the result, and repeat until it prints `<next></next>`. Let `next` choose the order: it finishes the current branch, raises follow-ups on the way back up, and leaves other topics for later, so the decisions that depend on each other stay together.
+
+**Seed a tree.** Add one root question per independent topic. Add a follow-up for anything worth raising that has no options yet. Keep adding as you learn; new items take their place in the walk.
+
+**Record a decision.** `select-option` the option, or several at once. If the decision isn't among the options, `add-option` it first, then select it.
+
+**Record what a decision opened up.** Add the new questions or follow-ups under the option that caused them, so they disappear if the selection changes.
+
+**Not ready to decide.** Leave the question open and add a follow-up under it describing what's blocking it.
+
+**Handle a follow-up.** To pursue it, `promote-follow-up`, then treat it as any question. Otherwise `exclude` it.
+
+**Change a selection.** `select-option` again. The old option's subtree goes off the path and comes back if that option is selected again.
+
+**The premise of a question changed.** Don't patch the answers: `supersede-question` it with the corrected wording, because everything under it was decided under the old premise. Pass any options that clearly still apply. Use the printed `<superseded>` subtree to rebuild what still holds under the new question with the normal ops. Whatever isn't rebuilt stays behind in the frozen record.
+
+**Park or drop something.** `exclude` with `--reason deferred` to keep it listed for later, or `--reason not-applicable` to drop it. Add `--note` when the reason is worth remembering.
+
+**Revisit something excluded.** `restore` the item that was excluded; everything under it comes back as it was.
+
+**Work on one topic first.** `focus` it. Only the latest focus counts. `next` stays inside its subtree until nothing is open there, then returns to the normal walk.
+
+**Finish.** When `next` is empty, `--query tree` is the record of what was decided, and `<deferred>` is what was left for later.
+
+## What the CLI refuses
+
+A refusal means the tree is protecting a rule, so read the message and change the call rather than retrying it.
+
+- **Excluded items** and anything under them can't be changed until they are restored. Restore the item the exclusion was recorded on: an item hidden only by an excluded ancestor can't be restored on its own.
+- **Frozen items**, meaning a superseded question and everything under it, can never be changed. Work on the replacement instead.
+- **Selections** must be live options of one question, each named once.
+- **Flags** must be known to the op, and a flag can only be repeated where the table shows `…`.
 
 ## The log
 
-One log holds one tree, which can have any number of root questions. It is a `.jsonl` file at a path the calling skill chooses, and calling the CLI again with the same path resumes it. Never edit a log by hand: it is the source of truth, and the tree is rebuilt from it on every call.
+A log is a `.jsonl` file at a path you choose, and it holds one tree with any number of roots. Calling the CLI with the same path resumes it. Don't edit a log by hand: it is the source of truth, and the tree is rebuilt from it on every call.
