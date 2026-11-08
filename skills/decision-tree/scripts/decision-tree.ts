@@ -3021,15 +3021,21 @@ const Xml = (() => {
     return ["<question>", ...head, ...state, ...children, "</question>"];
   }
 
-  function deferredLine(item: DeferredItem): string {
+  function deferredLines(item: DeferredItem): string[] {
+    const note = item.note === undefined ? [] : [`  <note>${escapeXml(item.note)}</note>`];
     const hungUnder =
       item.hungUnder === undefined
-        ? ""
-        : `<hung-under><id>${item.hungUnder.id}</id><text>${escapeXml(item.hungUnder.text)}</text></hung-under>`;
+        ? []
+        : [`  <hung-under><id>${item.hungUnder.id}</id><text>${escapeXml(item.hungUnder.text)}</text></hung-under>`];
 
-    const note = item.note === undefined ? "" : `<note>${escapeXml(item.note)}</note>`;
-
-    return `<${item.kind}><id>${item.id}</id><text>${escapeXml(item.text)}</text>${note}${hungUnder}</${item.kind}>`;
+    return [
+      `<${item.kind}>`,
+      `  <id>${item.id}</id>`,
+      `  <text>${escapeXml(item.text)}</text>`,
+      ...note,
+      ...hungUnder,
+      `</${item.kind}>`,
+    ];
   }
 
   function tree(items: TreeItem[], deferred: DeferredItem[] = []): string {
@@ -3039,7 +3045,7 @@ const Xml = (() => {
     const out =
       deferred.length === 0
         ? []
-        : ["  <deferred>", ...deferred.map((each) => `    ${deferredLine(each)}`), "  </deferred>"];
+        : ["  <deferred>", ...deferred.flatMap(deferredLines).map((line) => `    ${line}`), "  </deferred>"];
 
     return ["<tree>", ...body, ...out, "</tree>"].join("\n");
   }
@@ -3267,8 +3273,12 @@ const Xml = (() => {
       assert.deepEqual(xml.split("\n"), [
         "<tree>",
         "  <deferred>",
-        "    <question><id>Q2</id><text>q2</text><note>a &lt; b</note>" +
-          "<hung-under><id>Q1a</id><text>a</text></hung-under></question>",
+        "    <question>",
+        "      <id>Q2</id>",
+        "      <text>q2</text>",
+        "      <note>a &lt; b</note>",
+        "      <hung-under><id>Q1a</id><text>a</text></hung-under>",
+        "    </question>",
         "  </deferred>",
         "</tree>",
       ]);
@@ -3285,7 +3295,11 @@ const Xml = (() => {
       assert.deepEqual(xml.split("\n"), [
         "<tree>",
         "  <deferred>",
-        "    <question><id>Q2</id><text>q2</text><hung-under><id>Q1a</id><text>a</text></hung-under></question>",
+        "    <question>",
+        "      <id>Q2</id>",
+        "      <text>q2</text>",
+        "      <hung-under><id>Q1a</id><text>a</text></hung-under>",
+        "    </question>",
         "  </deferred>",
         "</tree>",
       ]);

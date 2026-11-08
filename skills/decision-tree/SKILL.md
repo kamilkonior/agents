@@ -117,7 +117,12 @@ Some behaviour worth expecting:
     </question>
   </question>
   <deferred>
-    <question><id>Q3</id><text>Multi-region?</text><note>Legal is deciding</note><hung-under><id>Q1b</id><text>a database</text></hung-under></question>
+    <question>
+      <id>Q3</id>
+      <text>Multi-region?</text>
+      <note>Legal is deciding</note>
+      <hung-under><id>Q1b</id><text>a database</text></hung-under>
+    </question>
   </deferred>
 </tree>
 ```
