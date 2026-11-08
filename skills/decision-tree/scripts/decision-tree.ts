@@ -3659,6 +3659,24 @@ const Items = (() => {
       );
     });
 
+    test("querying a target finds it in any state", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-question", id: "Q2", text: "other" },
+        { type: "exclude", target: "Q1", reason: "deferred" },
+      ]);
+
+      // when
+      const items = run(log, { target: "Q1" });
+
+      // then
+      assert.deepEqual(
+        items.map((each) => each.state),
+        ["deferred"],
+      );
+    });
+
     test("querying with an unknown state throws", () => {
       // given
       const log = Log.memoryLog([{ type: "add-question", id: "Q1", text: "q" }]);
