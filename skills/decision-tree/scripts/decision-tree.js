@@ -2471,6 +2471,22 @@ const FocusItem = (() => {
   }
 
   function tests() {
+    test("focusing without a target throws and appends nothing", () => {
+      // given
+      const events          = [{ type: "add-question", id: "Q1", text: "q" }];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const act = () => run(log, {});
+
+      // then
+      assert.throws(
+        act,
+        (error) => error instanceof DecisionTreeError && error.message === "focus-item requires --target",
+      );
+      assert.deepEqual(log.read(), events);
+    });
+
     test("focusing an option throws and appends nothing", () => {
       // given
       const events          = [
