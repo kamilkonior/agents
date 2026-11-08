@@ -18,11 +18,11 @@ Requires Node 20+. Every call needs `--log`. Results print as XML on stdout; err
 
 | Command | Does |
 |---|---|
-| `--op add-question --text T --option A --option B [--origin ID]` | adds a question with at least two options; prints `<question>` |
+| `--op add-question --text T [--option A]… [--origin ID]` | adds a question, with any number of options; prints `<question>` |
 | `--op add-option --origin QID --text T` | adds one more option to a question |
 | `--op select-option --target OID` | answers a question; a later selection replaces an earlier one |
 | `--op add-follow-up --text T [--origin ID]` | records a candidate topic that isn't ready to be a question |
-| `--op promote-follow-up --target FID --option A --option B` | turns a follow-up into a question under it |
+| `--op promote-follow-up --target FID [--option A]…` | turns a follow-up into a question under it |
 | `--op exclude-item --target ID --reason R [--note N]` | takes a question, option or follow-up and everything under it out of the tree; `R` is `not-applicable`, or `deferred` to keep it as out of scope for later; `N` records why |
 | `--op restore-item --target ID` | brings an excluded item back with everything under it; an item hidden only by an excluded ancestor cannot be restored on its own |
 | `--op supersede-question --target QID --text T` | replaces a question with a reworded one in its place, without options; the old question and everything under it leave the tree and are frozen: ops on them fail; prints `<supersede>` with the new question and the old subtree, listing every option with the chosen one marked, as context for rebuilding what still holds |

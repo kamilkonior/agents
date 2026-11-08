@@ -1621,9 +1621,6 @@ const AddQuestion = (() => {
   )               {
     const text = config.text;
     if (!text) throw new DecisionTreeError("add-question requires --text");
-    if ((config.option ?? []).length < 2) {
-      throw new DecisionTreeError("a question requires at least two options");
-    }
 
     return Log.transaction(log, (staged) => {
       const id = addQuestion(staged, text, config.origin);
@@ -1707,16 +1704,16 @@ const AddQuestion = (() => {
       assert.deepEqual(log.read(), []);
     });
 
-    test("question with a single option throws and appends nothing", () => {
+    test("question without options is stored with no options", () => {
       // given
       const log = Log.memoryLog();
 
       // when
-      const act = () => run(log, { text: "q", option: ["a"] });
+      const question = run(log, { text: "q" });
 
       // then
-      assert.throws(act, DecisionTreeError);
-      assert.deepEqual(log.read(), []);
+      assert.deepEqual(question, { id: "Q1", text: "q", options: [] });
+      assert.deepEqual(log.read(), [{ type: "add-question", id: "Q1", text: "q" }]);
     });
 
     test("question with options stores the question, then its options under it", () => {
@@ -2785,14 +2782,18 @@ const Xml = (() => {
     return `<option><id>${data.id}</id><text>${escapeXml(data.text)}</text></option>`;
   }
 
-  function question(data              )         {
-    const options = data.options.map((each) => `    ${option(each)}\n`).join("");
+  function optionsLines(options              )           {
+    if (options.length === 0) return ["  <options></options>"];
 
+    return ["  <options>", ...options.map((each) => `    ${option(each)}`), "  </options>"];
+  }
+
+  function question(data              )         {
     return [
       "<question>",
       `  <id>${data.id}</id>`,
       `  <text>${escapeXml(data.text)}</text>`,
-      data.options.length === 0 ? "  <options></options>" : `  <options>\n${options}  </options>`,
+      ...optionsLines(data.options),
       "</question>",
     ].join("\n");
   }
@@ -2840,7 +2841,7 @@ const Xml = (() => {
     const state =
       item.kind === "question"
         ? [`  <answer><id>${item.answer.id}</id><text>${escapeXml(item.answer.text)}</text></answer>`]
-        : ["  <open>", ...item.options.map((each) => `    ${option(each)}`), "  </open>"];
+        : optionsLines(item.options);
     const children = item.children.flatMap(treeLines).map((line) => `  ${line}`);
 
     return ["<question>", ...head, ...state, ...children, "</question>"];
@@ -3154,10 +3155,10 @@ const Xml = (() => {
           "    <question>",
           "      <id>Q2</id>",
           "      <text>q2</text>",
-          "      <open>",
+          "      <options>",
           "        <option><id>Q2a</id><text>x</text></option>",
           "        <option><id>Q2b</id><text>y</text></option>",
-          "      </open>",
+          "      </options>",
           "    </question>",
           "  </question>",
           "</tree>",
