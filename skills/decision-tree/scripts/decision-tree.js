@@ -1817,6 +1817,24 @@ const Graph = (() => {
       );
     });
 
+    test("a tagged item under an open follow-up is hidden by that follow-up", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-follow-up", id: "F1", text: "f" },
+        { type: "add-question", id: "Q1", text: "q", origin: "F1" },
+        { type: "tag", target: "Q1", tags: ["t"] },
+      ]);
+
+      // when
+      const items = withTag(log, "t", ["off-path"]);
+
+      // then
+      assert.deepEqual(
+        items.map((each) => each.hiddenBy),
+        ["F1"],
+      );
+    });
+
     test("looking up an unknown id throws not found for its role", () => {
       // given
       const log = Log.memoryLog();
