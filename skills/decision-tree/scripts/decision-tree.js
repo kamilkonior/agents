@@ -3414,6 +3414,20 @@ const Items = (() => {
       );
     });
 
+    test("querying with an empty tag throws", () => {
+      // given
+      const log = Log.memoryLog([{ type: "add-question", id: "Q1", text: "q" }]);
+
+      // when
+      const act = () => run(log, { tag: "" });
+
+      // then
+      assert.throws(
+        act,
+        (error) => error instanceof DecisionTreeError && error.message === "items --tag requires a text",
+      );
+    });
+
     test("querying with an unknown state throws", () => {
       // given
       const log = Log.memoryLog([{ type: "add-question", id: "Q1", text: "q" }]);
