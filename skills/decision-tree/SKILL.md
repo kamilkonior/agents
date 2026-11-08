@@ -74,7 +74,7 @@ Some behaviour worth expecting:
 |---|---|
 | `--query next` | the one thing to handle now |
 | `--query tree` | the settled tree, open questions and deferred items |
-| `--query tags --tag T [--state S]…` | items carrying `T`, each marked with its state; `S` is `open` (the default), `settled`, `off-path`, `deferred`, `not-applicable`, `frozen` or `all`; an item excluded directly shows its `<note>`, and an item hidden by another names it in `<hidden-by>`; a focus doesn't limit it; prints `<tagged>` |
+| `--query items [--tag T] [--state S]…` | a flat list of questions and follow-ups, each marked with its state; `T` keeps only items with that tag; `S` is `open` (the default), `settled`, `off-path`, `deferred`, `not-applicable`, `frozen` or `all`; an item excluded directly shows its `<note>`, and an item hidden by another names it in `<hidden-by>`; a focus doesn't limit it; prints `<items>` |
 
 ## Output
 
@@ -155,10 +155,10 @@ Some behaviour worth expecting:
 </supersede>
 ```
 
-`--query tags --tag auth --state open --state deferred` lists matching items flat, in walk order, each with its state. An item excluded directly has its `<note>`; an item hidden by another names it in `<hidden-by>`, which is the item to act on:
+`--query items --tag auth --state open --state deferred` lists matching items flat, in walk order, each with its state. An item excluded directly has its `<note>`; an item hidden by another names it in `<hidden-by>`, which is the item to act on:
 
 ```xml
-<tagged>
+<items>
   <question state="open">
     <id>Q1</id>
     <text>Which provider?</text>
@@ -186,7 +186,7 @@ Some behaviour worth expecting:
     <hidden-by><id>Q2</id></hidden-by>
     <tags><tag>auth</tag></tags>
   </question>
-</tagged>
+</items>
 ```
 
 ## Usage patterns
@@ -213,7 +213,7 @@ Some behaviour worth expecting:
 
 **Work on one topic first.** `focus` it. Only the latest focus counts. `next` stays inside its subtree until nothing is open there, then returns to the normal walk.
 
-**Find work by topic.** `tag` questions and follow-ups as they come up, list the open ones with `--query tags --tag T`, and `focus` the one to work through first.
+**Find work by topic.** `tag` questions and follow-ups as they come up, list the open ones with `--query items --tag T`, and `focus` the one to work through first.
 
 **Finish.** When `next` is empty, `--query tree` is the record of what was decided, and `<deferred>` is what was left for later.
 
