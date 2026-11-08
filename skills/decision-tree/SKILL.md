@@ -72,7 +72,7 @@ Some behaviour worth expecting:
 
 | Read | |
 |---|---|
-| `--query next` | the one thing to handle now |
+| `--query next [--trail]` | the one thing to handle now; `--trail` adds the path from the root down to it |
 | `--query tree` | the settled tree, open questions and deferred items |
 | `--query items [--tag T] [--state S]…` | a flat list of questions and follow-ups, each marked with its state; `T` keeps only items with that tag; `S` is `open` (the default), `settled`, `off-path`, `deferred`, `not-applicable`, `frozen` or `all`; an item excluded directly shows its `<note>`, and an item hidden by another names it in `<hidden-by>`; a focus doesn't limit it; prints `<items>` |
 
@@ -191,7 +191,7 @@ Some behaviour worth expecting:
 
 ## Usage patterns
 
-**The loop.** Run `--query next`, handle what it returns, record the result, and repeat until it prints `<next></next>`. Let `next` choose the order: it finishes the current branch, raises follow-ups on the way back up, and leaves other topics for later, so the decisions that depend on each other stay together.
+**The loop.** Run `--query next`, handle what it returns, record the result, and repeat until it prints `<next></next>`. Let `next` choose the order: it finishes the current branch, raises follow-ups on the way back up, and leaves other topics for later, so the decisions that depend on each other stay together. When resuming, or when handed a single item, use `--query next --trail` to see what led to it.
 
 **Seed a tree.** Add one root question per independent topic. Add a follow-up for anything worth raising that has no options yet. Keep adding as you learn; new items take their place in the walk.
 
