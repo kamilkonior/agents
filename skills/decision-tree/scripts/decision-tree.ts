@@ -46,7 +46,17 @@ type ItemData =
   | { kind: "option"; option: OptionData }
   | { kind: "follow-up"; followUp: FollowUpData };
 
-type SupersedeData = { question: QuestionData; superseded: TreeItem[] };
+type SupersededItem =
+  | {
+      kind: "question";
+      id: string;
+      text: string;
+      options: (OptionData & { chosen: boolean })[];
+      children: SupersededItem[];
+    }
+  | { kind: "follow-up"; id: string; text: string };
+
+type SupersedeData = { question: QuestionData; superseded: SupersededItem[] };
 
 type NextData =
   | { kind: "question"; question: QuestionData }
@@ -450,6 +460,24 @@ const Graph = (() => {
     const graph = build(log);
 
     return project(graph).question(questionNode(graph.nodes, id));
+  }
+
+  function superseded(log: Log, id: string): SupersededItem[] {
+    const graph = build(log);
+
+    function withOptions(item: TreeItem): SupersededItem {
+      if (item.kind === "follow-up") return item;
+
+      const chosen = item.kind === "question" ? item.answer.id : undefined;
+      const options = liveOptions(graph, questionNode(graph.nodes, item.id)).map((option) => ({
+        ...option,
+        chosen: option.id === chosen,
+      }));
+
+      return { kind: "question", id: item.id, text: item.text, options, children: item.children.map(withOptions) };
+    }
+
+    return subtree(log, id).map(withOptions);
   }
 
   function frontier(graph: Graph): Exclude<TreeItem, { kind: "question" }>[] {
@@ -1318,7 +1346,7 @@ const Graph = (() => {
   return {
     tree: (log: Log) => tree(build(log)),
     frontier: (log: Log) => frontier(build(log)),
-    subtree,
+    superseded,
     liveNode,
     excludedNode,
     itemData,
@@ -2194,7 +2222,7 @@ const SupersedeQuestion = (() => {
     const old = Graph.liveNode(log, target, "target");
     if (old.kind !== "question") throw new DecisionTreeError(`target is not a question: ${target}`);
 
-    const superseded = Graph.subtree(log, target);
+    const superseded = Graph.superseded(log, target);
 
     return Log.transaction(log, (staged) => {
       const id = AddQuestion.addQuestion(staged, text, old.parent?.id);
@@ -2275,13 +2303,15 @@ const SupersedeQuestion = (() => {
       ]);
     });
 
-    test("superseding a question returns the old question's subtree", () => {
+    test("superseding a question returns the old subtree with every option and the chosen one marked", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q1" },
         { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
         { type: "select-option", target: "Q1a" },
         { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+        { type: "add-option", id: "Q2a", text: "x", origin: "Q2" },
       ]);
 
       // when
@@ -2293,8 +2323,19 @@ const SupersedeQuestion = (() => {
           kind: "question",
           id: "Q1",
           text: "q1",
-          answer: { id: "Q1a", text: "a" },
-          children: [{ kind: "open-question", id: "Q2", text: "q2", options: [], children: [] }],
+          options: [
+            { id: "Q1a", text: "a", chosen: true },
+            { id: "Q1b", text: "b", chosen: false },
+          ],
+          children: [
+            {
+              kind: "question",
+              id: "Q2",
+              text: "q2",
+              options: [{ id: "Q2a", text: "x", chosen: false }],
+              children: [],
+            },
+          ],
         },
       ]);
     });
@@ -2465,11 +2506,31 @@ const Xml = (() => {
     return ["<tree>", ...body, "</tree>"].join("\n");
   }
 
+  function supersededLines(item: SupersededItem): string[] {
+    if (item.kind === "follow-up") return [followUp(item)];
+
+    const options = item.options.map((each) =>
+      each.chosen ? `    ${option(each).replace("<option>", '<option chosen="true">')}` : `    ${option(each)}`,
+    );
+    const children = item.children.flatMap(supersededLines).map((line) => `  ${line}`);
+
+    return [
+      "<question>",
+      `  <id>${item.id}</id>`,
+      `  <text>${escapeXml(item.text)}</text>`,
+      "  <options>",
+      ...options,
+      "  </options>",
+      ...children,
+      "</question>",
+    ];
+  }
+
   function supersede(data: SupersedeData): string {
     const replacement = question(data.question)
       .split("\n")
       .map((line) => `  ${line}`);
-    const superseded = data.superseded.flatMap(treeLines).map((line) => `    ${line}`);
+    const superseded = data.superseded.flatMap(supersededLines).map((line) => `    ${line}`);
 
     return ["<supersede>", ...replacement, "  <superseded>", ...superseded, "  </superseded>", "</supersede>"].join(
       "\n",
@@ -2601,11 +2662,22 @@ const Xml = (() => {
       assert.equal(xml, "<follow-up><id>F1</id><text>f</text></follow-up>");
     });
 
-    test("supersede renders the new question and the superseded subtree nested inside", () => {
+    test("supersede renders the superseded question with every option, the chosen one marked", () => {
       // given
       const data: SupersedeData = {
         question: { id: "Q3", text: "q3", options: [] },
-        superseded: [{ kind: "open-question", id: "Q1", text: "q1", options: [], children: [] }],
+        superseded: [
+          {
+            kind: "question",
+            id: "Q1",
+            text: "q1",
+            options: [
+              { id: "Q1a", text: "a", chosen: true },
+              { id: "Q1b", text: "b", chosen: false },
+            ],
+            children: [],
+          },
+        ],
       };
 
       // when
@@ -2623,8 +2695,10 @@ const Xml = (() => {
         "    <question>",
         "      <id>Q1</id>",
         "      <text>q1</text>",
-        "      <open>",
-        "      </open>",
+        "      <options>",
+        '        <option chosen="true"><id>Q1a</id><text>a</text></option>',
+        "        <option><id>Q1b</id><text>b</text></option>",
+        "      </options>",
         "    </question>",
         "  </superseded>",
         "</supersede>",
