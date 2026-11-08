@@ -2663,6 +2663,29 @@ const SelectOption = (() => {
       assert.deepEqual(log.read(), events);
     });
 
+    test("selecting an option of an off-path question throws and appends nothing", () => {
+      // given
+      const events: Event[] = [
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1b" },
+        { type: "add-option", id: "Q2a", text: "x", origin: "Q2" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const act = () => select(log, ["Q2a"]);
+
+      // then
+      assert.throws(
+        act,
+        (error) => error instanceof DecisionTreeError && error.message === "Q2 is off-path, hidden by Q1b",
+      );
+      assert.deepEqual(log.read(), events);
+    });
+
     test("selecting an unknown option throws and appends nothing", () => {
       // given
       const log = Log.memoryLog();
