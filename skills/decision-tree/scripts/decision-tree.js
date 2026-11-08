@@ -4203,6 +4203,32 @@ const Xml = (() => {
       ]);
     });
 
+    test("next renders the trail before the item, one line per step", () => {
+      // given
+      const data           = {
+        kind: "follow-up",
+        followUp: { id: "F1", text: "f" },
+        trail: [
+          { kind: "question", id: "Q1", text: "a < b" },
+          { kind: "option", id: "Q1a", text: "a" },
+        ],
+      };
+
+      // when
+      const xml = next(data);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<next>",
+        "  <trail>",
+        "    <question><id>Q1</id><text>a &lt; b</text></question>",
+        "    <option><id>Q1a</id><text>a</text></option>",
+        "  </trail>",
+        "  <follow-up><id>F1</id><text>f</text></follow-up>",
+        "</next>",
+      ]);
+    });
+
     test("an empty tree renders an empty tree element", () => {
       // given
       const items             = [];
