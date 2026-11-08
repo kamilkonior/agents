@@ -3480,6 +3480,17 @@ const Cli = (() => {
       );
     });
 
+    test("the log path comes from DECISION_TREE_LOG when there is no --log", () => {
+      // given
+      const args = ["--query", "next"];
+
+      // when
+      const mode = readMode(args, { DECISION_TREE_LOG: "a.jsonl" });
+
+      // then
+      assert.deepEqual(mode, { kind: "query", query: "next", log: "a.jsonl" });
+    });
+
     test("a single-value flag given twice throws", () => {
       // given
       const args = ["--target", "Q1", "--target", "Q2"];
