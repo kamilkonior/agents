@@ -4255,6 +4255,11 @@ const Cli = (() => {
       seen.add(token.name);
     }
 
+    for (const [name, value] of Object.entries(parsed.values)) {
+      const blank = [value].flat().some((each) => typeof each === "string" && each.trim() === "");
+      if (blank) throw new DecisionTreeError(`--${name} must not be blank`);
+    }
+
     return parsed.values;
   }
 
