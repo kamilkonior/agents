@@ -3679,6 +3679,27 @@ const Next = (() => {
   }
 
   function tests() {
+    test("next carries a trail only when asked", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+      ]);
+
+      // when
+      const without = run(log);
+      const withTrail = run(log, { trail: true });
+
+      // then
+      assert.equal(without?.trail, undefined);
+      assert.deepEqual(withTrail?.trail, [
+        { kind: "question", id: "Q1", text: "q1" },
+        { kind: "option", id: "Q1a", text: "a" },
+      ]);
+    });
+
     test("next on an empty log is nothing", () => {
       // given
       const log = Log.memoryLog();
