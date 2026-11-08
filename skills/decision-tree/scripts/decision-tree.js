@@ -168,14 +168,16 @@ const Log = (() => {
     Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
   }
 
-  function isAbandoned(lock        )          {
+  const lockLimits = { waitMs: 5_000, abandonedMs: 30_000 };
+
+  function isAbandoned(lock        , abandonedMs        )          {
     const stats = statSync(lock, { throwIfNoEntry: false });
 
-    return stats !== undefined && Date.now() - stats.mtimeMs > 30_000;
+    return stats !== undefined && Date.now() - stats.mtimeMs > abandonedMs;
   }
 
-  function acquire(lock        )       {
-    const deadline = Date.now() + 5_000;
+  function acquire(lock        , limits                   )       {
+    const deadline = Date.now() + limits.waitMs;
 
     while (true) {
       try {
@@ -185,7 +187,7 @@ const Log = (() => {
         if ((error                         ).code !== "EEXIST") throw error;
       }
 
-      if (isAbandoned(lock)) {
+      if (isAbandoned(lock, limits.abandonedMs)) {
         rmSync(lock, { force: true });
         continue;
       }
@@ -195,11 +197,11 @@ const Log = (() => {
     }
   }
 
-  function locked   (path        , work         )    {
+  function locked   (path        , work         , limits = lockLimits)    {
     const lock = `${path}.lock`;
     mkdirSync(dirname(path), { recursive: true });
 
-    acquire(lock);
+    acquire(lock, limits);
 
     try {
       return work();
@@ -281,6 +283,33 @@ const Log = (() => {
 
       // then
       assert.deepEqual(appends, [[question, option]]);
+    });
+
+    test("a lock held by another writer throws and does not run the work", (t) => {
+      // given
+      const dir = mkdtempSync(join(tmpdir(), "decision-tree-"));
+      t.after(() => rmSync(dir, { recursive: true }));
+      const path = join(dir, "decision-tree.jsonl");
+      appendFileSync(`${path}.lock`, "");
+      let ran = false;
+
+      // when
+      const act = () =>
+        locked(
+          path,
+          () => {
+            ran = true;
+          },
+          { waitMs: 0, abandonedMs: 60_000 },
+        );
+
+      // then
+      assert.throws(
+        act,
+        (error) =>
+          error instanceof DecisionTreeError && error.message === `log is locked by another writer: ${path}.lock`,
+      );
+      assert.equal(ran, false);
     });
 
     test("file log with a malformed line throws, naming the line", (t) => {
