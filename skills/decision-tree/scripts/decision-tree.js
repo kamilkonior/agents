@@ -1978,6 +1978,22 @@ const SelectOption = (() => {
       assert.deepEqual(log.read(), []);
     });
 
+    test("selecting the same option twice throws and appends nothing", () => {
+      // given
+      const events          = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const act = () => select(log, ["Q1a", "Q1a"]);
+
+      // then
+      assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "target is repeated: Q1a");
+      assert.deepEqual(log.read(), events);
+    });
+
     test("selecting an unknown option throws and appends nothing", () => {
       // given
       const log = Log.memoryLog();
