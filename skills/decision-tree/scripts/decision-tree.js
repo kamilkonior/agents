@@ -20,7 +20,9 @@ const { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync
                                                                                
                                        
                                                                     
-                                      
+                                     
+                                                   
+                                                      
 
                                               
 
@@ -67,6 +69,11 @@ const { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync
      
                                                     
 
+                   
+                                                                                                     
+                 
+  
+
                                                                               
 
                
@@ -109,6 +116,7 @@ const { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync
                         
                                 
                                                                       
+                                 
                                                                 
   
 
@@ -347,7 +355,7 @@ const Graph = (() => {
     const roots                 = [];
     const rootFollowUps                 = [];
     const exclusions                      = new Map();
-    const graph        = { nodes, roots, rootFollowUps, exclusions };
+    const graph        = { nodes, roots, rootFollowUps, exclusions, tags: new Map() };
 
     for (const event of log.read()) {
       switch (event.type) {
@@ -448,6 +456,18 @@ const Graph = (() => {
           siblings.splice(siblings.indexOf(old), 1, replacement);
           old.supersededBy = replacement;
           if (graph.focus?.node === old && !graph.focus.ended) graph.focus.node = replacement;
+          break;
+        }
+
+        case "tag": {
+          const tags = graph.tags.get(event.target) ?? new Set        ();
+          event.tags.forEach((tag) => tags.add(tag));
+          graph.tags.set(parentNode(nodes, event.target).id, tags);
+          break;
+        }
+
+        case "untag": {
+          event.tags.forEach((tag) => graph.tags.get(event.target)?.delete(tag));
           break;
         }
 
@@ -591,6 +611,41 @@ const Graph = (() => {
     if (graph.focus !== undefined && !graph.focus.ended) return focusOpen(graph, graph.focus.node);
 
     return tree(graph).flatMap(openItems);
+  }
+
+  function taggedData(graph       , node                             )             {
+    const tags = [...(graph.tags.get(node.id) ?? [])];
+
+    if (node.kind === "follow-up") {
+      return { item: { kind: "follow-up", followUp: { id: node.id, text: node.text } }, tags };
+    }
+
+    const question = { id: node.id, text: node.text, options: liveOptions(graph, node) };
+
+    return { item: { kind: "question", question }, tags };
+  }
+
+  function taggedItem(log     , id        )             {
+    const graph = build(log);
+
+    const node = parentNode(graph.nodes, id);
+    if (node.kind === "option") throw new Error(`option ${id} cannot be tagged`);
+
+    return taggedData(graph, node);
+  }
+
+  function openWithTag(log     , tag        )               {
+    const graph = build(log);
+
+    return tree(graph)
+      .flatMap(openItems)
+      .filter((item) => graph.tags.get(item.id)?.has(tag))
+      .map((item) => {
+        const node = parentNode(graph.nodes, item.id);
+        if (node.kind === "option") throw new Error(`option ${item.id} is on the frontier`);
+
+        return taggedData(graph, node);
+      });
   }
 
   function liveNode(log     , id        , role                     )                                           {
@@ -1693,6 +1748,8 @@ const Graph = (() => {
     liveNode,
     excludedNode,
     itemData,
+    taggedItem,
+    openWithTag,
     tests,
   };
 })();
@@ -2887,6 +2944,72 @@ const Focus = (() => {
   return { options, run, tests };
 })();
 
+const Tag = (() => {
+  const options = {
+    target: { type: "string" },
+    tag: { type: "string", multiple: true },
+  }         ;
+
+  function checked(log     , op        , config                                     ) {
+    const { target, tag: tags } = config;
+    if (!target) throw new DecisionTreeError(`${op} requires --target`);
+    if (!tags) throw new DecisionTreeError(`${op} requires --tag`);
+    if (tags.includes("")) throw new DecisionTreeError(`${op} --tag requires a text`);
+
+    const node = Graph.liveNode(log, target, "target");
+    if (node.kind === "option") throw new DecisionTreeError(`target is not a question or follow-up: ${target}`);
+
+    return { target, tags };
+  }
+
+  function run(log     , config                                     )             {
+    const { target, tags } = checked(log, "tag", config);
+
+    log.append({ type: "tag", target, tags });
+
+    return Graph.taggedItem(log, target);
+  }
+
+  function tests() {}
+
+  return { options, checked, run, tests };
+})();
+
+const Untag = (() => {
+  const options = Tag.options;
+
+  function run(log     , config                                     )             {
+    const { target, tags } = Tag.checked(log, "untag", config);
+
+    const missing = tags.find((tag) => !Graph.taggedItem(log, target).tags.includes(tag));
+    if (missing !== undefined) throw new DecisionTreeError(`${target} has no tag: ${missing}`);
+
+    log.append({ type: "untag", target, tags });
+
+    return Graph.taggedItem(log, target);
+  }
+
+  function tests() {}
+
+  return { options, run, tests };
+})();
+
+const Tags = (() => {
+  const options = {
+    tag: { type: "string" },
+  }         ;
+
+  function run(log     , config                  )               {
+    if (!config.tag) throw new DecisionTreeError("tags requires --tag");
+
+    return Graph.openWithTag(log, config.tag);
+  }
+
+  function tests() {}
+
+  return { options, run, tests };
+})();
+
 const Next = (() => {
   const options = {}         ;
 
@@ -3404,7 +3527,32 @@ const Xml = (() => {
     });
   }
 
-  return { option, question, selection, followUp, item, next, tree, supersede, tests };
+  function taggedLines(data            )           {
+    const tags = data.tags.map((tag) => `<tag>${escapeXml(tag)}</tag>`).join("");
+    const line = `  <tags>${tags}</tags>`;
+
+    if (data.item.kind === "question") {
+      const lines = question(data.item.question).split("\n");
+
+      return [...lines.slice(0, -1), line, "</question>"];
+    }
+
+    const { id, text } = data.item.followUp;
+
+    return ["<follow-up>", `  <id>${id}</id>`, `  <text>${escapeXml(text)}</text>`, line, "</follow-up>"];
+  }
+
+  function taggedItem(data            )         {
+    return taggedLines(data).join("\n");
+  }
+
+  function tagged(items              )         {
+    if (items.length === 0) return "<tagged></tagged>";
+
+    return ["<tagged>", ...items.flatMap(taggedLines).map((line) => `  ${line}`), "</tagged>"].join("\n");
+  }
+
+  return { option, question, selection, followUp, item, next, tree, supersede, taggedItem, tagged, tests };
 })();
 
 const Cli = (() => {
@@ -3565,6 +3713,9 @@ const Cli = (() => {
     Restore.tests();
     SupersedeQuestion.tests();
     Focus.tests();
+    Tag.tests();
+    Untag.tests();
+    Tags.tests();
     Next.tests();
     Tree.tests();
     Xml.tests();
@@ -3601,6 +3752,12 @@ const Cli = (() => {
         readModeConfig(Tree.options);
         const { items, deferred } = Tree.run(log);
         console.log(Xml.tree(items, deferred));
+        break;
+      }
+
+      case "tags": {
+        const config = readModeConfig(Tags.options);
+        console.log(Xml.tagged(Tags.run(log, config)));
         break;
       }
 
@@ -3650,6 +3807,18 @@ const Cli = (() => {
       case "restore": {
         const config = readModeConfig(Restore.options);
         console.log(Xml.item(Restore.run(log, config)));
+        break;
+      }
+
+      case "tag": {
+        const config = readModeConfig(Tag.options);
+        console.log(Xml.taggedItem(Tag.run(log, config)));
+        break;
+      }
+
+      case "untag": {
+        const config = readModeConfig(Untag.options);
+        console.log(Xml.taggedItem(Untag.run(log, config)));
         break;
       }
 
