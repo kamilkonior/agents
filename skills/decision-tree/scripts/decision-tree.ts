@@ -1049,6 +1049,33 @@ const Graph = (() => {
       );
     });
 
+    test("a subtree renders one question with its settled path only", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", target: "Q1a" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+        { type: "add-question", id: "Q3", text: "q3", origin: "Q1b" },
+        { type: "add-question", id: "Q4", text: "q4" },
+      ]);
+
+      // when
+      const items = subtree(log, "Q1");
+
+      // then
+      assert.deepEqual(items, [
+        {
+          kind: "question",
+          id: "Q1",
+          text: "q1",
+          answer: { id: "Q1a", text: "a" },
+          children: [{ kind: "open-question", id: "Q2", text: "q2", options: [], children: [] }],
+        },
+      ]);
+    });
+
     test("tree nests the settled path, with promoted follow-ups in place", () => {
       // given
       const graph = build(
