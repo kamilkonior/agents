@@ -417,6 +417,7 @@ const Graph = (() => {
           siblings.splice(siblings.indexOf(replacement), 1);
           siblings.splice(siblings.indexOf(old), 1, replacement);
           old.supersededBy = replacement;
+          if (graph.focus?.node === old && !graph.focus.ended) graph.focus.node = replacement;
           break;
         }
 
