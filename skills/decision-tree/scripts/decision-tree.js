@@ -3176,6 +3176,22 @@ const Tags = (() => {
   }
 
   function tests() {
+    test("querying with an unknown state throws", () => {
+      // given
+      const log = Log.memoryLog([{ type: "add-question", id: "Q1", text: "q" }]);
+
+      // when
+      const act = () => run(log, { tag: "t", state: ["hidden"] });
+
+      // then
+      assert.throws(
+        act,
+        (error) =>
+          error instanceof DecisionTreeError &&
+          error.message === "state must be open, settled, off-path, deferred, not-applicable, frozen or all: hidden",
+      );
+    });
+
     test("querying without a tag throws", () => {
       // given
       const log = Log.memoryLog([{ type: "add-question", id: "Q1", text: "q" }]);
