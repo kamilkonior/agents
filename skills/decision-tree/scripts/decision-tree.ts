@@ -3398,8 +3398,8 @@ const Cli = (() => {
     | { kind: "op"; op: string; log: string }
     | { kind: "query"; query: string; log: string };
 
-  function readMode(): Mode {
-    const { op, query, test, log } = parseArgs({ options: cliOptions, strict: false }).values;
+  function readMode(args?: string[], env: NodeJS.ProcessEnv = process.env): Mode {
+    const { op, query, test, log } = parseArgs({ options: cliOptions, strict: false, args }).values;
 
     const given = [op, query, test].filter((value) => value !== undefined);
     if (given.length > 1) {
@@ -3420,7 +3420,7 @@ const Cli = (() => {
       throw new DecisionTreeError("--query requires a value");
     }
 
-    const logPath = log ?? (process.env.DECISION_TREE_LOG || undefined);
+    const logPath = log ?? (env.DECISION_TREE_LOG || undefined);
     if (logPath === undefined) throw new DecisionTreeError("missing --log or DECISION_TREE_LOG");
     if (typeof logPath !== "string") throw new DecisionTreeError("--log requires a value");
 
@@ -3452,6 +3452,20 @@ const Cli = (() => {
   }
 
   function tests() {
+    test("a command without a log path throws", () => {
+      // given
+      const args = ["--query", "next"];
+
+      // when
+      const act = () => readMode(args, {});
+
+      // then
+      assert.throws(
+        act,
+        (error) => error instanceof DecisionTreeError && error.message === "missing --log or DECISION_TREE_LOG",
+      );
+    });
+
     test("a single-value flag given twice throws", () => {
       // given
       const args = ["--target", "Q1", "--target", "Q2"];
