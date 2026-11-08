@@ -23,12 +23,12 @@ Requires Node 20+. Every call needs `--log`. Results print as XML on stdout; err
 | `--op select-option --target OID` | answers a question; a later selection replaces an earlier one |
 | `--op add-follow-up --text T [--origin ID]` | records a candidate topic that isn't ready to be a question |
 | `--op promote-follow-up --target FID --option A --option B` | turns a follow-up into a question under it |
-| `--op exclude-item --target ID --reason R` | takes a question, option or follow-up and everything under it out of the tree; `R` is `not-applicable`, or `deferred` to keep it as out of scope for later |
+| `--op exclude-item --target ID --reason R [--note N]` | takes a question, option or follow-up and everything under it out of the tree; `R` is `not-applicable`, or `deferred` to keep it as out of scope for later; `N` records why |
 | `--op restore-item --target ID` | brings an excluded item back with everything under it; an item hidden only by an excluded ancestor cannot be restored on its own |
 | `--op supersede-question --target QID --text T` | replaces a question with a reworded one in its place, without options; the old question and everything under it leave the tree and are frozen: ops on them fail; prints `<supersede>` with the new question and the old subtree, listing every option with the chosen one marked, as context for rebuilding what still holds |
 | `--op focus-item --target ID` | puts a question or follow-up at the head of `next`: its subtree is worked through first; only the latest focus counts, it ends for good once its subtree has no open items, moves to the replacement when its question is superseded, and ends when it is excluded |
 | `--query next` | the one thing to decide now: `<next>` with a `<question>` or a `<follow-up>`, or an empty `<next></next>` when done |
-| `--query tree` | the settled tree: answers on the chosen path, open questions with their options, then a `<deferred>` section listing items excluded as `deferred`, each with where it hung |
+| `--query tree` | the settled tree: answers on the chosen path, open questions with their options, then a `<deferred>` section listing items excluded as `deferred`, each with its note and where it hung |
 
 Ids: questions are `Q1`, `Q2`…; options are their question's id plus a letter (`Q1a`, `Q1b`…); follow-ups are `F1`, `F2`….
 

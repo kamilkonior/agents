@@ -38,7 +38,7 @@ Use one log per session: `.grill-me/<topic>.jsonl` in the project root, where `<
    - The user says the question doesn't belong to this design: `exclude-item` it, `deferred` or `not-applicable` as in step 3.
 3. If it is a **follow-up**, ask the user whether it is worth deciding.
    - Yes: `promote-follow-up` it with at least two options you draft.
-   - No: `exclude-item` it, with `--reason deferred` if the user wants it later or out of this design's scope, and `--reason not-applicable` if it doesn't matter.
+   - No: `exclude-item` it, with `--reason deferred` if the user wants it later or out of this design's scope, and `--reason not-applicable` if it doesn't matter. If the user gave a reason, pass it as `--note`.
 4. Record what the answer opened up, on your own, without asking first: new questions (at least two options each) or follow-ups, hung where they belong (see `--origin` in the decision-tree skill). Uncertain topics go in as follow-ups; the user decides each one when `next` reaches it.
 5. When an answer shows that an earlier question was asked wrongly (its premise changed), `supersede-question` it with the corrected wording. Show the user the `<superseded>` subtree it prints, ask which of those decisions still hold, including whether an option rejected before is now the better fit, and rebuild them under the new question with the normal ops: options with `add-option`, answers with `select-option`, nested questions with `add-question`. Anything that no longer applies is simply not rebuilt.
 6. When the user wants to revisit something excluded, `restore-item` it; it comes back with everything under it.
