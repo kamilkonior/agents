@@ -1139,6 +1139,27 @@ const Graph = (() => {
       ]);
     });
 
+    test("the walk lists deferred items with where they hung, but not not-applicable ones", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+          { type: "select-option", target: "Q1a" },
+          { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+          { type: "add-question", id: "Q3", text: "q3", origin: "Q1a" },
+          { type: "exclude-item", target: "Q2", reason: "deferred" },
+          { type: "exclude-item", target: "Q3", reason: "not-applicable" },
+        ]),
+      );
+
+      // when
+      const { deferred } = walk(graph);
+
+      // then
+      assert.deepEqual(deferred, [{ kind: "question", id: "Q2", text: "q2", hungUnder: { id: "Q1a", text: "a" } }]);
+    });
+
     test("tree nests the settled path, with promoted follow-ups in place", () => {
       // given
       const graph = build(
