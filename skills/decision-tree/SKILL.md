@@ -74,7 +74,7 @@ Some behaviour worth expecting:
 |---|---|
 | `--query next [--trail]` | the one thing to handle now; `--trail` adds the path from the root down to it |
 | `--query tree` | the settled tree, open questions and deferred items |
-| `--query items [--tag T] [--state S]…` | a flat list of questions and follow-ups, each marked with its state; `T` keeps only items with that tag; `S` is `open` (the default), `settled`, `off-path`, `deferred`, `not-applicable`, `frozen` or `all`; an item excluded directly shows its `<note>`, and an item hidden by another names it in `<hidden-by>`; a focus doesn't limit it; prints `<items>` |
+| `--query items [--tag T] [--target ID] [--state S]…` | a flat list of questions and follow-ups, each marked with its state; `T` keeps only items with that tag; `ID` finds one item, in any state unless `S` is given; `S` is `open` (the default), `settled`, `off-path`, `deferred`, `not-applicable`, `frozen` or `all`; an item excluded directly shows its `<note>`, and an item hidden by another names it in `<hidden-by>`; a focus doesn't limit it; prints `<items>` |
 
 ## Output
 
@@ -188,6 +188,8 @@ Some behaviour worth expecting:
   </question>
 </items>
 ```
+
+A `<hidden-by>` id can be looked up with `--target`; if it names an option, look up its question, whose id is the option's id without the letter.
 
 ## Usage patterns
 
