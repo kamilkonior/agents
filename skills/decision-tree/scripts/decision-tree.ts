@@ -1998,6 +1998,24 @@ const Graph = (() => {
       );
     });
 
+    test("a trail lists the ancestors from the root down, with the options on the way", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+      ]);
+
+      // when
+      const steps = trail(log, "Q2");
+
+      // then
+      assert.deepEqual(steps, [
+        { kind: "question", id: "Q1", text: "q1" },
+        { kind: "option", id: "Q1a", text: "a" },
+      ]);
+    });
+
     test("looking up an unknown id throws not found for its role", () => {
       // given
       const log = Log.memoryLog();
