@@ -991,6 +991,28 @@ const Graph = (() => {
       );
     });
 
+    test("an exhausted focus gives the frontier back to the normal walk", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-question", id: "Q2", text: "q2" },
+          { type: "add-option", id: "Q2a", text: "a", origin: "Q2" },
+          { type: "focus-item", target: "Q2" },
+          { type: "select-option", target: "Q2a" },
+        ]),
+      );
+
+      // when
+      const open = frontier(graph);
+
+      // then
+      assert.deepEqual(
+        open.map((node) => node.id),
+        ["Q1"],
+      );
+    });
+
     test("tree leaves out off-path branches and excluded follow-ups", () => {
       // given
       const graph = build(
