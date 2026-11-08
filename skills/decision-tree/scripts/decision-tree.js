@@ -1637,6 +1637,44 @@ const Graph = (() => {
       ]);
     });
 
+    test("the tag query reports each item's state", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "settled" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "add-question", id: "Q2", text: "off-path", origin: "Q1b" },
+        { type: "add-question", id: "Q3", text: "deferred" },
+        { type: "add-question", id: "Q4", text: "not-applicable" },
+        { type: "add-question", id: "Q5", text: "frozen" },
+        { type: "add-question", id: "Q6", text: "replacement" },
+        { type: "supersede-question", target: "Q5", question: "Q6" },
+        { type: "exclude", target: "Q3", reason: "deferred" },
+        { type: "exclude", target: "Q4", reason: "not-applicable" },
+        { type: "tag", target: "Q1", tags: ["t"] },
+        { type: "tag", target: "Q2", tags: ["t"] },
+        { type: "tag", target: "Q3", tags: ["t"] },
+        { type: "tag", target: "Q4", tags: ["t"] },
+        { type: "tag", target: "Q5", tags: ["t"] },
+      ]);
+
+      // when
+      const items = withTag(log, "t", ["settled", "off-path", "deferred", "not-applicable", "frozen"]);
+
+      // then
+      assert.deepEqual(
+        items.map((each) => [each.item.kind === "question" ? each.item.question.id : "", each.state]),
+        [
+          ["Q1", "settled"],
+          ["Q2", "off-path"],
+          ["Q3", "deferred"],
+          ["Q4", "not-applicable"],
+          ["Q5", "frozen"],
+        ],
+      );
+    });
+
     test("looking up an unknown id throws not found for its role", () => {
       // given
       const log = Log.memoryLog();
