@@ -3466,6 +3466,20 @@ const Cli = (() => {
       );
     });
 
+    test("an empty DECISION_TREE_LOG counts as no log path", () => {
+      // given
+      const args = ["--query", "next"];
+
+      // when
+      const act = () => readMode(args, { DECISION_TREE_LOG: "" });
+
+      // then
+      assert.throws(
+        act,
+        (error) => error instanceof DecisionTreeError && error.message === "missing --log or DECISION_TREE_LOG",
+      );
+    });
+
     test("a single-value flag given twice throws", () => {
       // given
       const args = ["--target", "Q1", "--target", "Q2"];
