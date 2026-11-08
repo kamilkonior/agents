@@ -3387,12 +3387,12 @@ const Cli = (() => {
     return { kind: "op", op: op as string, log };
   }
 
-  function readModeConfig<T extends ParseArgsOptionsConfig>(modeOptions: T) {
+  function readModeConfig<T extends ParseArgsOptionsConfig>(modeOptions: T, args?: string[]) {
     const options = { ...cliOptions, ...modeOptions };
 
     const parsed = (() => {
       try {
-        return parseArgs({ options, tokens: true });
+        return parseArgs({ options, tokens: true, args });
       } catch (error) {
         throw new DecisionTreeError((error as Error).message);
       }
@@ -3409,7 +3409,24 @@ const Cli = (() => {
     return parsed.values;
   }
 
+  function tests() {
+    test("a single-value flag given twice throws", () => {
+      // given
+      const args = ["--target", "Q1", "--target", "Q2"];
+
+      // when
+      const act = () => readModeConfig({ target: { type: "string" } } as const, args);
+
+      // then
+      assert.throws(
+        act,
+        (error) => error instanceof DecisionTreeError && error.message === "--target given more than once",
+      );
+    });
+  }
+
   function runTests() {
+    tests();
     Log.tests();
     Graph.tests();
     AddQuestion.tests();
