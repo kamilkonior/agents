@@ -587,6 +587,8 @@ const Graph = (() => {
           siblings.splice(siblings.indexOf(replacement), 1);
           siblings.splice(siblings.indexOf(old), 1, replacement);
           old.supersededBy = replacement;
+          const tags = graph.tags.get(old.id);
+          if (tags !== undefined) graph.tags.set(replacement.id, new Set(tags));
           if (graph.focus?.node === old && !graph.focus.ended) graph.focus.node = replacement;
           break;
         }
