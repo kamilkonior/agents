@@ -2274,6 +2274,30 @@ const SupersedeQuestion = (() => {
         { type: "supersede-question", target: "Q2", question: "Q3" },
       ]);
     });
+
+    test("superseding a question returns the old question's subtree", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "select-option", target: "Q1a" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+      ]);
+
+      // when
+      const supersede = run(log, { target: "Q1", text: "q3" });
+
+      // then
+      assert.deepEqual(supersede.superseded, [
+        {
+          kind: "question",
+          id: "Q1",
+          text: "q1",
+          answer: { id: "Q1a", text: "a" },
+          children: [{ kind: "open-question", id: "Q2", text: "q2", options: [], children: [] }],
+        },
+      ]);
+    });
   }
 
   return { options, run, tests };
