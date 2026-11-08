@@ -2970,7 +2970,26 @@ const Tag = (() => {
     return Graph.taggedItem(log, target);
   }
 
-  function tests() {}
+  function tests() {
+    test("tagging an option throws and appends nothing", () => {
+      // given
+      const events          = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const act = () => run(log, { target: "Q1a", tag: ["t"] });
+
+      // then
+      assert.throws(
+        act,
+        (error) => error instanceof DecisionTreeError && error.message === "target is not a question or follow-up: Q1a",
+      );
+      assert.deepEqual(log.read(), events);
+    });
+  }
 
   return { options, checked, run, tests };
 })();
