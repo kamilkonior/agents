@@ -76,7 +76,7 @@ type TaggedData = {
   tags: string[];
 };
 
-type TaggedQueryItem = TaggedData & { state: ItemState; selected?: OptionData[]; note?: string };
+type TaggedQueryItem = TaggedData & { state: ItemState; selected?: OptionData[]; note?: string; hiddenBy?: string };
 
 type SupersedeData = { question: QuestionData; superseded: SupersededItem[] };
 
@@ -658,6 +658,27 @@ const Graph = (() => {
     return liveSelected(graph, node).length === 0 ? "open" : "settled";
   }
 
+  function offPathCause(graph: Graph, node: QuestionNode | FollowUpNode): OptionNode | FollowUpNode | undefined {
+    const parent = node.parent;
+    if (parent === undefined) return undefined;
+
+    if (parent.kind === "option") {
+      return liveSelected(graph, parent.question).includes(parent) ? offPathCause(graph, parent.question) : parent;
+    }
+    if (parent.kind === "follow-up" && parent.status === "open") return parent;
+
+    return offPathCause(graph, parent);
+  }
+
+  function hiddenBy(graph: Graph, node: QuestionNode | FollowUpNode, state: ItemState): string | undefined {
+    if (state === "open" || state === "settled") return undefined;
+
+    const cause =
+      state === "frozen" ? frozenBy(node) : state === "off-path" ? offPathCause(graph, node) : excludedBy(graph, node);
+
+    return cause === node ? undefined : cause?.id;
+  }
+
   function withTag(log: Log, tag: string, states: ItemState[]): TaggedQueryItem[] {
     const graph = build(log);
 
@@ -676,11 +697,12 @@ const Graph = (() => {
       const selected = node.kind === "question" ? liveSelected(graph, node) : [];
       const selectedData = selected.length === 0 ? {} : { selected: selected.map(({ id, text }) => ({ id, text })) };
 
-      const excluding = excludedBy(graph, node);
-      const note = excluding === undefined ? undefined : graph.exclusions.get(excluding.id)?.note;
+      const note = graph.exclusions.get(node.id)?.note;
       const noteData = note === undefined ? {} : { note };
+      const cause = hiddenBy(graph, node, state);
+      const causeData = cause === undefined ? {} : { hiddenBy: cause };
 
-      return [{ ...taggedData(graph, node), state, ...selectedData, ...noteData }];
+      return [{ ...taggedData(graph, node), state, ...selectedData, ...noteData, ...causeData }];
     });
   }
 
@@ -1735,7 +1757,7 @@ const Graph = (() => {
       );
     });
 
-    test("a tagged item under an excluded ancestor carries the ancestor's note", () => {
+    test("a tagged item under an excluded ancestor is hidden by it and has no note of its own", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q1" },
@@ -1749,8 +1771,8 @@ const Graph = (() => {
 
       // then
       assert.deepEqual(
-        items.map((each) => each.note),
-        ["why"],
+        items.map((each) => [each.hiddenBy, each.note]),
+        [["Q1", undefined]],
       );
     });
 
@@ -3798,6 +3820,33 @@ const Xml = (() => {
       ]);
     });
 
+    test("a tagged item renders its note, escaped, before its tags", () => {
+      // given
+      const items: TaggedQueryItem[] = [
+        {
+          item: { kind: "follow-up", followUp: { id: "F1", text: "f" } },
+          tags: ["t"],
+          state: "deferred",
+          note: "a < b",
+        },
+      ];
+
+      // when
+      const xml = tagged(items);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<tagged>",
+        '  <follow-up state="deferred">',
+        "    <id>F1</id>",
+        "    <text>f</text>",
+        "    <note>a &lt; b</note>",
+        "    <tags><tag>t</tag></tags>",
+        "  </follow-up>",
+        "</tagged>",
+      ]);
+    });
+
     test("an empty tree renders an empty tree element", () => {
       // given
       const items: TreeItem[] = [];
@@ -3934,6 +3983,7 @@ const Xml = (() => {
     const line = `  <tags>${tags}</tags>`;
     const state = data.state === undefined ? "" : ` state="${data.state}"`;
     const note = data.note === undefined ? [] : [`  <note>${escapeXml(data.note)}</note>`];
+    const hidden = data.hiddenBy === undefined ? [] : [`  <hidden-by><id>${data.hiddenBy}</id></hidden-by>`];
 
     if (data.item.kind === "question") {
       const lines = question(data.item.question).split("\n");
@@ -3942,7 +3992,7 @@ const Xml = (() => {
           ? []
           : ["  <selected>", ...data.selected.map((each) => `    ${option(each)}`), "  </selected>"];
 
-      return [`<question${state}>`, ...lines.slice(1, -1), ...selected, ...note, line, "</question>"];
+      return [`<question${state}>`, ...lines.slice(1, -1), ...selected, ...note, ...hidden, line, "</question>"];
     }
 
     const { id, text } = data.item.followUp;
@@ -3952,6 +4002,7 @@ const Xml = (() => {
       `  <id>${id}</id>`,
       `  <text>${escapeXml(text)}</text>`,
       ...note,
+      ...hidden,
       line,
       "</follow-up>",
     ];
