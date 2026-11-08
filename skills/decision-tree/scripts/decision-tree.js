@@ -1160,6 +1160,25 @@ const Graph = (() => {
       assert.deepEqual(deferred, [{ kind: "question", id: "Q2", text: "q2", hungUnder: { id: "Q1a", text: "a" } }]);
     });
 
+    test("the walk does not list deferred items under a superseded question", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+          { type: "exclude-item", target: "Q1a", reason: "deferred" },
+          { type: "add-question", id: "Q2", text: "q2" },
+          { type: "supersede-question", target: "Q1", question: "Q2" },
+        ]),
+      );
+
+      // when
+      const { deferred } = walk(graph);
+
+      // then
+      assert.deepEqual(deferred, []);
+    });
+
     test("tree nests the settled path, with promoted follow-ups in place", () => {
       // given
       const graph = build(
