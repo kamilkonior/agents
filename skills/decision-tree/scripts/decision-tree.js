@@ -2054,6 +2054,24 @@ const Graph = (() => {
       assert.deepEqual(steps, []);
     });
 
+    test("a superseding question keeps the old question's tags", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "tag", target: "Q1", tags: ["t"] },
+        { type: "add-question", id: "Q2", text: "q2" },
+        { type: "supersede-question", target: "Q1", question: "Q2" },
+      ]);
+
+      // when
+      const items = listed(log, "t", ["open"]);
+
+      // then
+      assert.deepEqual(items, [
+        { item: { kind: "question", question: { id: "Q2", text: "q2", options: [] } }, tags: ["t"], state: "open" },
+      ]);
+    });
+
     test("looking up an unknown id throws not found for its role", () => {
       // given
       const log = Log.memoryLog();

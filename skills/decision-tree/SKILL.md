@@ -54,7 +54,7 @@ Some behaviour worth expecting:
 
 | Change | |
 |---|---|
-| `--op supersede-question --target QID --text T [--option A]…` | replaces a question with a reworded one in its place; the old question and everything under it are frozen; prints `<supersede>` |
+| `--op supersede-question --target QID --text T [--option A]…` | replaces a question with a reworded one in its place, keeping its tags; the old question and everything under it are frozen; prints `<supersede>` |
 
 | Remove | |
 |---|---|
