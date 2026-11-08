@@ -3079,6 +3079,26 @@ const Xml = (() => {
       assert.equal(xml, "<tree></tree>");
     });
 
+    test("tree renders a deferred item's note, escaped, before where it hung", () => {
+      // given
+      const deferred                 = [
+        { kind: "question", id: "Q2", text: "q2", note: "a < b", hungUnder: { id: "Q1a", text: "a" } },
+      ];
+
+      // when
+      const xml = tree([], deferred);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<tree>",
+        "  <deferred>",
+        "    <question><id>Q2</id><text>q2</text><note>a &lt; b</note>" +
+          "<hung-under><id>Q1a</id><text>a</text></hung-under></question>",
+        "  </deferred>",
+        "</tree>",
+      ]);
+    });
+
     test("tree renders deferred items in their own section with where they hung", () => {
       // given
       const deferred                 = [{ kind: "question", id: "Q2", text: "q2", hungUnder: { id: "Q1a", text: "a" } }];
