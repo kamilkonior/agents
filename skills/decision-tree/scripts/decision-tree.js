@@ -3924,6 +3924,33 @@ const Xml = (() => {
       ]);
     });
 
+    test("a tagged item renders what hides it before its tags", () => {
+      // given
+      const items                    = [
+        {
+          item: { kind: "follow-up", followUp: { id: "F1", text: "f" } },
+          tags: ["t"],
+          state: "frozen",
+          hiddenBy: "Q1",
+        },
+      ];
+
+      // when
+      const xml = tagged(items);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<tagged>",
+        '  <follow-up state="frozen">',
+        "    <id>F1</id>",
+        "    <text>f</text>",
+        "    <hidden-by><id>Q1</id></hidden-by>",
+        "    <tags><tag>t</tag></tags>",
+        "  </follow-up>",
+        "</tagged>",
+      ]);
+    });
+
     test("an empty tree renders an empty tree element", () => {
       // given
       const items             = [];
