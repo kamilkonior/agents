@@ -823,8 +823,14 @@ const Graph = (() => {
     return cause === node ? undefined : cause?.id;
   }
 
-  function listed(log: Log, tag: string | undefined, states: ItemState[]): ListedItem[] {
+  function listed(log: Log, tag: string | undefined, states: ItemState[], target?: string): ListedItem[] {
     const graph = build(log);
+
+    if (target !== undefined) {
+      const wanted = graph.nodes.get(target);
+      if (wanted === undefined) throw new DecisionTreeError(`target not found: ${target}`);
+      if (wanted.kind === "option") throw new DecisionTreeError(`target is not a question or follow-up: ${target}`);
+    }
 
     const { question, followUp, reached } = project(graph);
     graph.roots.forEach(question);
@@ -835,6 +841,7 @@ const Graph = (() => {
     return nodes.flatMap((node) => {
       if (node.kind === "option") return [];
       if (tag !== undefined && !graph.tags.get(node.id)?.has(tag)) return [];
+      if (target !== undefined && node.id !== target) return [];
 
       const state = itemState(graph, node, reached);
       if (!states.includes(state)) return [];
@@ -3566,6 +3573,7 @@ const Items = (() => {
   const options = {
     tag: { type: "string" },
     state: { type: "string", multiple: true },
+    target: { type: "string" },
   } as const;
 
   const states: ItemState[] = ["open", "settled", "off-path", "deferred", "not-applicable", "frozen"];
@@ -3579,10 +3587,12 @@ const Items = (() => {
     return given.includes("all") ? states : states.filter((state) => given.includes(state));
   }
 
-  function run(log: Log, config: { tag?: string; state?: string[] }): ListedItem[] {
+  function run(log: Log, config: { tag?: string; state?: string[]; target?: string }): ListedItem[] {
     if (config.tag === "") throw new DecisionTreeError("items --tag requires a text");
 
-    return Graph.listed(log, config.tag, chosenStates(config.state));
+    const given = config.state ?? (config.target === undefined ? undefined : ["all"]);
+
+    return Graph.listed(log, config.tag, chosenStates(given), config.target);
   }
 
   function tests() {
