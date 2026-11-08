@@ -115,6 +115,14 @@ const { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync
 class DecisionTreeError extends Error {}
 
 const Log = (() => {
+  function parseLine(line        , number        , path        )        {
+    try {
+      return JSON.parse(line);
+    } catch {
+      throw new DecisionTreeError(`log line ${number} is not valid JSON: ${path}`);
+    }
+  }
+
   function fileLog(path        )      {
     return {
       read() {
@@ -122,8 +130,7 @@ const Log = (() => {
 
         return readFileSync(path, "utf8")
           .split("\n")
-          .filter((line) => line !== "")
-          .map((line) => JSON.parse(line));
+          .flatMap((line, index) => (line === "" ? [] : [parseLine(line, index + 1, path)]));
       },
 
       append(event) {

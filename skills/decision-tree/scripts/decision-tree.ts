@@ -115,6 +115,14 @@ type Graph = {
 class DecisionTreeError extends Error {}
 
 const Log = (() => {
+  function parseLine(line: string, number: number, path: string): Event {
+    try {
+      return JSON.parse(line);
+    } catch {
+      throw new DecisionTreeError(`log line ${number} is not valid JSON: ${path}`);
+    }
+  }
+
   function fileLog(path: string): Log {
     return {
       read() {
@@ -122,8 +130,7 @@ const Log = (() => {
 
         return readFileSync(path, "utf8")
           .split("\n")
-          .filter((line) => line !== "")
-          .map((line) => JSON.parse(line));
+          .flatMap((line, index) => (line === "" ? [] : [parseLine(line, index + 1, path)]));
       },
 
       append(event) {
