@@ -1796,6 +1796,27 @@ const Graph = (() => {
       );
     });
 
+    test("an off-path tagged item is hidden by the unselected option above it", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1b" },
+        { type: "tag", target: "Q2", tags: ["t"] },
+      ]);
+
+      // when
+      const items = withTag(log, "t", ["off-path"]);
+
+      // then
+      assert.deepEqual(
+        items.map((each) => each.hiddenBy),
+        ["Q1b"],
+      );
+    });
+
     test("looking up an unknown id throws not found for its role", () => {
       // given
       const log = Log.memoryLog();
