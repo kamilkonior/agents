@@ -1735,6 +1735,25 @@ const Graph = (() => {
       );
     });
 
+    test("a tagged item under an excluded ancestor carries the ancestor's note", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1" },
+        { type: "tag", target: "Q2", tags: ["t"] },
+        { type: "exclude", target: "Q1", reason: "deferred", note: "why" },
+      ]);
+
+      // when
+      const items = withTag(log, "t", ["deferred"]);
+
+      // then
+      assert.deepEqual(
+        items.map((each) => each.note),
+        ["why"],
+      );
+    });
+
     test("looking up an unknown id throws not found for its role", () => {
       // given
       const log = Log.memoryLog();
