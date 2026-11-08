@@ -327,6 +327,23 @@ const Log = (() => {
       assert.equal(existsSync(`${path}.lock`), false);
     });
 
+    test("the lock is released when the work throws", (t) => {
+      // given
+      const dir = mkdtempSync(join(tmpdir(), "decision-tree-"));
+      t.after(() => rmSync(dir, { recursive: true }));
+      const path = join(dir, "decision-tree.jsonl");
+
+      // when
+      const act = () =>
+        locked(path, () => {
+          throw new DecisionTreeError("failed");
+        });
+
+      // then
+      assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "failed");
+      assert.equal(existsSync(`${path}.lock`), false);
+    });
+
     test("file log with a malformed line throws, naming the line", (t) => {
       // given
       const dir = mkdtempSync(join(tmpdir(), "decision-tree-"));

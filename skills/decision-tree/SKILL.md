@@ -229,4 +229,4 @@ A refusal means the tree is protecting a rule, so read the message and change th
 
 ## The log
 
-A log is a `.jsonl` file at a path you choose, and it holds one tree with any number of roots. Calling the CLI with the same path resumes it. Set `DECISION_TREE_LOG` to that path to leave out `--log` on every call. Don't edit a log by hand: it is the source of truth, and the tree is rebuilt from it on every call.
+A log is a `.jsonl` file at a path you choose, and it holds one tree with any number of roots. Calling the CLI with the same path resumes it. Set `DECISION_TREE_LOG` to that path to leave out `--log` on every call. Writes take a short lock, `<log>.lock`, so several agents can share a log. Don't edit a log by hand: it is the source of truth, and the tree is rebuilt from it on every call.
