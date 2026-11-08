@@ -1776,6 +1776,26 @@ const Graph = (() => {
       );
     });
 
+    test("a tagged item under a superseded question is hidden by it", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1" },
+        { type: "tag", target: "Q2", tags: ["t"] },
+        { type: "add-question", id: "Q3", text: "q3" },
+        { type: "supersede-question", target: "Q1", question: "Q3" },
+      ]);
+
+      // when
+      const items = withTag(log, "t", ["frozen"]);
+
+      // then
+      assert.deepEqual(
+        items.map((each) => each.hiddenBy),
+        ["Q1"],
+      );
+    });
+
     test("looking up an unknown id throws not found for its role", () => {
       // given
       const log = Log.memoryLog();
