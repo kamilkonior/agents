@@ -76,7 +76,7 @@ type TaggedData = {
   tags: string[];
 };
 
-type TaggedQueryItem = TaggedData & { state: ItemState; selected?: OptionData[] };
+type TaggedQueryItem = TaggedData & { state: ItemState; selected?: OptionData[]; note?: string };
 
 type SupersedeData = { question: QuestionData; superseded: SupersededItem[] };
 
@@ -676,7 +676,11 @@ const Graph = (() => {
       const selected = node.kind === "question" ? liveSelected(graph, node) : [];
       const selectedData = selected.length === 0 ? {} : { selected: selected.map(({ id, text }) => ({ id, text })) };
 
-      return [{ ...taggedData(graph, node), state, ...selectedData }];
+      const excluding = excludedBy(graph, node);
+      const note = excluding === undefined ? undefined : graph.exclusions.get(excluding.id)?.note;
+      const noteData = note === undefined ? {} : { note };
+
+      return [{ ...taggedData(graph, node), state, ...selectedData, ...noteData }];
     });
   }
 
@@ -3892,6 +3896,7 @@ const Xml = (() => {
     const tags = data.tags.map((tag) => `<tag>${escapeXml(tag)}</tag>`).join("");
     const line = `  <tags>${tags}</tags>`;
     const state = data.state === undefined ? "" : ` state="${data.state}"`;
+    const note = data.note === undefined ? [] : [`  <note>${escapeXml(data.note)}</note>`];
 
     if (data.item.kind === "question") {
       const lines = question(data.item.question).split("\n");
@@ -3900,12 +3905,19 @@ const Xml = (() => {
           ? []
           : ["  <selected>", ...data.selected.map((each) => `    ${option(each)}`), "  </selected>"];
 
-      return [`<question${state}>`, ...lines.slice(1, -1), ...selected, line, "</question>"];
+      return [`<question${state}>`, ...lines.slice(1, -1), ...selected, ...note, line, "</question>"];
     }
 
     const { id, text } = data.item.followUp;
 
-    return [`<follow-up${state}>`, `  <id>${id}</id>`, `  <text>${escapeXml(text)}</text>`, line, "</follow-up>"];
+    return [
+      `<follow-up${state}>`,
+      `  <id>${id}</id>`,
+      `  <text>${escapeXml(text)}</text>`,
+      ...note,
+      line,
+      "</follow-up>",
+    ];
   }
 
   function taggedItem(data: TaggedData): string {
