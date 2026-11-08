@@ -3214,6 +3214,27 @@ const Tags = (() => {
   }
 
   function tests() {
+    test("querying with state all returns items in every state", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "open" },
+        { type: "add-question", id: "Q2", text: "settled" },
+        { type: "add-option", id: "Q2a", text: "a", origin: "Q2" },
+        { type: "select-option", targets: ["Q2a"] },
+        { type: "tag", target: "Q1", tags: ["t"] },
+        { type: "tag", target: "Q2", tags: ["t"] },
+      ]);
+
+      // when
+      const items = run(log, { tag: "t", state: ["all"] });
+
+      // then
+      assert.deepEqual(
+        items.map((each) => each.state),
+        ["open", "settled"],
+      );
+    });
+
     test("querying with an unknown state throws", () => {
       // given
       const log = Log.memoryLog([{ type: "add-question", id: "Q1", text: "q" }]);
