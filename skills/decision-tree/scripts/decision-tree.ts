@@ -3642,6 +3642,23 @@ const Items = (() => {
       assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "target not found: Q9");
     });
 
+    test("querying an option as target throws", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+      ]);
+
+      // when
+      const act = () => run(log, { target: "Q1a" });
+
+      // then
+      assert.throws(
+        act,
+        (error) => error instanceof DecisionTreeError && error.message === "target is not a question or follow-up: Q1a",
+      );
+    });
+
     test("querying with an unknown state throws", () => {
       // given
       const log = Log.memoryLog([{ type: "add-question", id: "Q1", text: "q" }]);
