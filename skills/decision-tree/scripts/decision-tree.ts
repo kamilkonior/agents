@@ -3053,6 +3053,25 @@ const Untag = (() => {
       assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "Q1 has no tag: b");
       assert.deepEqual(log.read(), events);
     });
+
+    test("removing a tag records it and returns the item without it", () => {
+      // given
+      const events: Event[] = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "tag", target: "Q1", tags: ["a", "b"] },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const untagged = run(log, { target: "Q1", tag: ["a"] });
+
+      // then
+      assert.deepEqual(untagged, {
+        item: { kind: "question", question: { id: "Q1", text: "q", options: [] } },
+        tags: ["b"],
+      });
+      assert.deepEqual(log.read(), [...events, { type: "untag", target: "Q1", tags: ["a"] }]);
+    });
   }
 
   return { options, run, tests };
