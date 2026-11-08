@@ -1227,6 +1227,41 @@ const Graph = (() => {
       ]);
     });
 
+    test("several selected options are walked in option order", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+          { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+          { type: "add-option", id: "Q1c", text: "c", origin: "Q1" },
+          { type: "add-question", id: "Q2", text: "q2", origin: "Q1c" },
+          { type: "add-question", id: "Q3", text: "q3", origin: "Q1a" },
+          { type: "select-option", targets: ["Q1c", "Q1a"] },
+        ]),
+      );
+
+      // when
+      const items = tree(graph);
+
+      // then
+      assert.deepEqual(items, [
+        {
+          kind: "question",
+          id: "Q1",
+          text: "q1",
+          selected: [
+            { id: "Q1a", text: "a" },
+            { id: "Q1c", text: "c" },
+          ],
+          children: [
+            { kind: "open-question", id: "Q3", text: "q3", options: [], children: [] },
+            { kind: "open-question", id: "Q2", text: "q2", options: [], children: [] },
+          ],
+        },
+      ]);
+    });
+
     test("a restored answer settles its question again with its subtree", () => {
       // given
       const graph = build(
