@@ -2570,6 +2570,19 @@ const FocusItem = (() => {
       );
       assert.deepEqual(log.read(), events);
     });
+
+    test("focusing a question records the focus and returns the question", () => {
+      // given
+      const events          = [{ type: "add-question", id: "Q1", text: "q" }];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const focused = run(log, { target: "Q1" });
+
+      // then
+      assert.deepEqual(focused, { kind: "question", question: { id: "Q1", text: "q", options: [] } });
+      assert.deepEqual(log.read(), [...events, { type: "focus-item", target: "Q1" }]);
+    });
   }
 
   return { options, run, tests };
