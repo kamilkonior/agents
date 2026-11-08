@@ -65,10 +65,16 @@ Some behaviour worth expecting:
 |---|---|
 | `--op focus --target ID` | puts a question or follow-up at the head of `next` until its subtree has nothing open |
 
+| Label | |
+|---|---|
+| `--op tag --target ID --tag T [--tag T]…` | adds tags to a question or follow-up; prints the item with its tags |
+| `--op untag --target ID --tag T [--tag T]…` | removes tags; fails if the item doesn't have one of them |
+
 | Read | |
 |---|---|
 | `--query next` | the one thing to handle now |
 | `--query tree` | the settled tree, open questions and deferred items |
+| `--query tags --tag T` | the open items on the chosen path that carry `T`, whether or not a focus is active; prints `<tagged>` |
 
 ## Output
 
@@ -172,6 +178,8 @@ Some behaviour worth expecting:
 **Revisit something excluded.** `restore` the item that was excluded; everything under it comes back as it was.
 
 **Work on one topic first.** `focus` it. Only the latest focus counts. `next` stays inside its subtree until nothing is open there, then returns to the normal walk.
+
+**Find work by topic.** `tag` questions and follow-ups as they come up, list the open ones with `--query tags --tag T`, and `focus` the one to work through first.
 
 **Finish.** When `next` is empty, `--query tree` is the record of what was decided, and `<deferred>` is what was left for later.
 
