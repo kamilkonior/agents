@@ -1717,6 +1717,24 @@ const Graph = (() => {
       ]);
     });
 
+    test("an excluded tagged item carries its note", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "tag", target: "Q1", tags: ["t"] },
+        { type: "exclude", target: "Q1", reason: "not-applicable", note: "why" },
+      ]);
+
+      // when
+      const items = withTag(log, "t", ["not-applicable"]);
+
+      // then
+      assert.deepEqual(
+        items.map((each) => each.note),
+        ["why"],
+      );
+    });
+
     test("looking up an unknown id throws not found for its role", () => {
       // given
       const log = Log.memoryLog();
