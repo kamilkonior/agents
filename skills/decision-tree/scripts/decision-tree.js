@@ -2112,6 +2112,29 @@ const SelectOption = (() => {
       assert.deepEqual(log.read(), [question]);
     });
 
+    test("selecting several options records them in one event and returns them all", () => {
+      // given
+      const events          = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const selection = select(log, ["Q1a", "Q1b"]);
+
+      // then
+      assert.deepEqual(selection, {
+        question: { id: "Q1", text: "q" },
+        options: [
+          { id: "Q1a", text: "a" },
+          { id: "Q1b", text: "b" },
+        ],
+      });
+      assert.deepEqual(log.read(), [...events, { type: "select-option", targets: ["Q1a", "Q1b"] }]);
+    });
+
     test("selecting an option records it and returns the question with the option", () => {
       // given
       const events          = [
