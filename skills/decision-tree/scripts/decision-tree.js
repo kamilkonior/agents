@@ -14,7 +14,7 @@ const { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync
             
                                                                        
                                                                     
-                                             
+                                                
                                                                         
                                                  
                                                                                     
@@ -33,12 +33,12 @@ const { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync
 
                                                                         
 
-                                                                                    
+                                                                                       
 
                                                  
 
                
-                                                                                            
+                                                                                                
                                                                                                     
                                                     
 
@@ -62,7 +62,7 @@ const { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync
                        
                  
                    
-                                                    
+                                                      
                                  
      
                                                     
@@ -81,7 +81,7 @@ const { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync
                         
                            
                             
-                      
+                         
                               
   
 
@@ -333,6 +333,7 @@ const Graph = (() => {
             id: event.id,
             text: event.text,
             options: [],
+            selected: [],
             children: [],
             followUps: [],
           };
@@ -365,8 +366,12 @@ const Graph = (() => {
         }
 
         case "select-option": {
-          const option = optionNode(nodes, event.target);
-          option.question.answer = option;
+          if (event.targets === undefined) {
+            throw new DecisionTreeError("select-option event has no targets: this log was written by an older version");
+          }
+
+          const options = event.targets.map((id) => optionNode(nodes, id));
+          options[0].question.selected = options;
           break;
         }
 
@@ -471,23 +476,23 @@ const Graph = (() => {
 
       node.options.filter((option) => !live(option)).forEach(noteDeferred);
 
-      const answer = node.answer !== undefined && live(node.answer) ? node.answer : undefined;
+      const selected = node.options.filter((option) => node.selected.includes(option) && live(option));
 
       const children             = [];
-      if (answer !== undefined) {
-        children.push(...answer.children.flatMap(question), ...followUps(answer));
+      for (const option of selected) {
+        children.push(...option.children.flatMap(question), ...followUps(option));
       }
       children.push(...node.children.flatMap(question), ...followUps(node));
 
-      if (answer === undefined) {
+      if (selected.length === 0) {
         const options = liveOptions(graph, node);
 
         return [{ kind: "open-question", id: node.id, text: node.text, options, children }];
       }
 
-      return [
-        { kind: "question", id: node.id, text: node.text, answer: { id: answer.id, text: answer.text }, children },
-      ];
+      const selectedData = selected.map((option) => ({ id: option.id, text: option.text }));
+
+      return [{ kind: "question", id: node.id, text: node.text, selected: selectedData, children }];
     }
 
     function followUps(node                                          )             {
@@ -531,10 +536,10 @@ const Graph = (() => {
     function withOptions(item          )                 {
       if (item.kind === "follow-up") return item;
 
-      const chosen = item.kind === "question" ? item.answer.id : undefined;
+      const selectedIds = item.kind === "question" ? item.selected.map((option) => option.id) : [];
       const options = liveOptions(graph, questionNode(graph.nodes, item.id)).map((option) => ({
         ...option,
-        chosen: option.id === chosen,
+        selected: selectedIds.includes(option.id),
       }));
 
       return { kind: "question", id: item.id, text: item.text, options, children: item.children.map(withOptions) };
@@ -633,15 +638,15 @@ const Graph = (() => {
         { type: "add-question", id: "Q1", text: "q" },
         { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
         { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
-        { type: "select-option", target: "Q1a" },
-        { type: "select-option", target: "Q1b" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "select-option", targets: ["Q1b"] },
       ]);
 
       // when
       const graph = build(log);
 
       // then
-      assert.equal(questionNode(graph.nodes, "Q1").answer?.id, "Q1b");
+      assert.equal(questionNode(graph.nodes, "Q1").selected[0]?.id, "Q1b");
     });
 
     test("questions without an origin become roots in order", () => {
@@ -727,7 +732,7 @@ const Graph = (() => {
           { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
           { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
           { type: "add-question", id: "Q2", text: "q2", origin: "Q1b" },
-          { type: "select-option", target: "Q1a" },
+          { type: "select-option", targets: ["Q1a"] },
         ]),
       );
 
@@ -746,7 +751,7 @@ const Graph = (() => {
           { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
           { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
           { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
-          { type: "select-option", target: "Q1a" },
+          { type: "select-option", targets: ["Q1a"] },
         ]),
       );
 
@@ -769,7 +774,7 @@ const Graph = (() => {
           { type: "add-question", id: "Q3", text: "q3", origin: "Q1" },
           { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
           { type: "add-question", id: "Q4", text: "q4" },
-          { type: "select-option", target: "Q1a" },
+          { type: "select-option", targets: ["Q1a"] },
         ]),
       );
 
@@ -811,8 +816,8 @@ const Graph = (() => {
           { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
           { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
           { type: "add-question", id: "Q3", text: "q3", origin: "Q1b" },
-          { type: "select-option", target: "Q1a" },
-          { type: "select-option", target: "Q1b" },
+          { type: "select-option", targets: ["Q1a"] },
+          { type: "select-option", targets: ["Q1b"] },
         ]),
       );
 
@@ -832,7 +837,7 @@ const Graph = (() => {
         Log.memoryLog([
           { type: "add-question", id: "Q1", text: "q1" },
           { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-          { type: "select-option", target: "Q1a" },
+          { type: "select-option", targets: ["Q1a"] },
           { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
           { type: "add-follow-up", id: "F2", text: "f2", origin: "Q1" },
           { type: "promote-follow-up", target: "F1" },
@@ -855,7 +860,7 @@ const Graph = (() => {
           { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
           { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
           { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1b" },
-          { type: "select-option", target: "Q1a" },
+          { type: "select-option", targets: ["Q1a"] },
         ]),
       );
 
@@ -877,7 +882,7 @@ const Graph = (() => {
           { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
           { type: "add-question", id: "Q3", text: "q3", origin: "Q1" },
           { type: "add-question", id: "Q4", text: "q4" },
-          { type: "select-option", target: "Q1a" },
+          { type: "select-option", targets: ["Q1a"] },
         ]),
       );
 
@@ -897,7 +902,7 @@ const Graph = (() => {
         Log.memoryLog([
           { type: "add-question", id: "Q1", text: "q1" },
           { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-          { type: "select-option", target: "Q1a" },
+          { type: "select-option", targets: ["Q1a"] },
           { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
           { type: "add-follow-up", id: "F2", text: "f2", origin: "F1" },
         ]),
@@ -919,7 +924,7 @@ const Graph = (() => {
         Log.memoryLog([
           { type: "add-question", id: "Q1", text: "q1" },
           { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-          { type: "select-option", target: "Q1a" },
+          { type: "select-option", targets: ["Q1a"] },
           { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
           { type: "add-follow-up", id: "F2", text: "f2", origin: "F1" },
           { type: "add-question", id: "Q2", text: "f1", origin: "F1" },
@@ -943,7 +948,7 @@ const Graph = (() => {
         Log.memoryLog([
           { type: "add-question", id: "Q1", text: "q1" },
           { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-          { type: "select-option", target: "Q1a" },
+          { type: "select-option", targets: ["Q1a"] },
           { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
           { type: "add-follow-up", id: "F2", text: "f2", origin: "F1" },
           { type: "exclude-item", target: "F1", reason: "not-applicable" },
@@ -1005,7 +1010,7 @@ const Graph = (() => {
           { type: "add-question", id: "Q2", text: "q2" },
           { type: "add-option", id: "Q2a", text: "a", origin: "Q2" },
           { type: "focus-item", target: "Q2" },
-          { type: "select-option", target: "Q2a" },
+          { type: "select-option", targets: ["Q2a"] },
         ]),
       );
 
@@ -1049,7 +1054,7 @@ const Graph = (() => {
           { type: "add-question", id: "Q2", text: "q2" },
           { type: "add-option", id: "Q2a", text: "a", origin: "Q2" },
           { type: "focus-item", target: "Q2" },
-          { type: "select-option", target: "Q2a" },
+          { type: "select-option", targets: ["Q2a"] },
           { type: "add-question", id: "Q3", text: "q3" },
           { type: "supersede-question", target: "Q2", question: "Q3" },
         ]),
@@ -1073,7 +1078,7 @@ const Graph = (() => {
           { type: "add-question", id: "Q2", text: "q2" },
           { type: "add-option", id: "Q2a", text: "a", origin: "Q2" },
           { type: "focus-item", target: "Q2" },
-          { type: "select-option", target: "Q2a" },
+          { type: "select-option", targets: ["Q2a"] },
           { type: "add-follow-up", id: "F1", text: "f1", origin: "Q2" },
         ]),
       );
@@ -1095,7 +1100,7 @@ const Graph = (() => {
           { type: "add-question", id: "Q1", text: "q1" },
           { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
           { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
-          { type: "select-option", target: "Q1a" },
+          { type: "select-option", targets: ["Q1a"] },
           { type: "add-question", id: "Q2", text: "q2", origin: "Q1b" },
           { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
           { type: "exclude-item", target: "F1", reason: "not-applicable" },
@@ -1107,7 +1112,7 @@ const Graph = (() => {
 
       // then
       assert.deepEqual(items, [
-        { kind: "question", id: "Q1", text: "q1", answer: { id: "Q1a", text: "a" }, children: [] },
+        { kind: "question", id: "Q1", text: "q1", selected: [{ id: "Q1a", text: "a" }], children: [] },
       ]);
     });
 
@@ -1118,7 +1123,7 @@ const Graph = (() => {
           { type: "add-question", id: "Q1", text: "q1" },
           { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
           { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
-          { type: "select-option", target: "Q1a" },
+          { type: "select-option", targets: ["Q1a"] },
           { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
           { type: "add-option", id: "Q2a", text: "x", origin: "Q2" },
           { type: "exclude-item", target: "Q1a", reason: "not-applicable" },
@@ -1189,7 +1194,7 @@ const Graph = (() => {
         Log.memoryLog([
           { type: "add-question", id: "Q1", text: "q1" },
           { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-          { type: "select-option", target: "Q1a" },
+          { type: "select-option", targets: ["Q1a"] },
           { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
           { type: "add-question", id: "Q2", text: "f1", origin: "F1" },
           { type: "promote-follow-up", target: "F1" },
@@ -1202,7 +1207,7 @@ const Graph = (() => {
 
       // then
       assert.deepEqual(items, [
-        { kind: "question", id: "Q1", text: "q1", answer: { id: "Q1a", text: "a" }, children: [] },
+        { kind: "question", id: "Q1", text: "q1", selected: [{ id: "Q1a", text: "a" }], children: [] },
       ]);
     });
 
@@ -1213,7 +1218,7 @@ const Graph = (() => {
           { type: "add-question", id: "Q1", text: "q1" },
           { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
           { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
-          { type: "select-option", target: "Q1a" },
+          { type: "select-option", targets: ["Q1a"] },
           { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
           { type: "exclude-item", target: "Q1a", reason: "not-applicable" },
           { type: "restore-item", target: "Q1a" },
@@ -1229,7 +1234,7 @@ const Graph = (() => {
           kind: "question",
           id: "Q1",
           text: "q1",
-          answer: { id: "Q1a", text: "a" },
+          selected: [{ id: "Q1a", text: "a" }],
           children: [{ kind: "open-question", id: "Q2", text: "q2", options: [], children: [] }],
         },
       ]);
@@ -1268,7 +1273,7 @@ const Graph = (() => {
         { type: "add-question", id: "Q1", text: "q1" },
         { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
         { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
-        { type: "select-option", target: "Q1a" },
+        { type: "select-option", targets: ["Q1a"] },
         { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
         { type: "add-question", id: "Q3", text: "q3", origin: "Q1b" },
         { type: "add-question", id: "Q4", text: "q4" },
@@ -1283,7 +1288,7 @@ const Graph = (() => {
           kind: "question",
           id: "Q1",
           text: "q1",
-          answer: { id: "Q1a", text: "a" },
+          selected: [{ id: "Q1a", text: "a" }],
           children: [{ kind: "open-question", id: "Q2", text: "q2", options: [], children: [] }],
         },
       ]);
@@ -1295,7 +1300,7 @@ const Graph = (() => {
         Log.memoryLog([
           { type: "add-question", id: "Q1", text: "q1" },
           { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-          { type: "select-option", target: "Q1a" },
+          { type: "select-option", targets: ["Q1a"] },
           { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
           { type: "add-question", id: "Q3", text: "q3", origin: "Q1a" },
           { type: "exclude-item", target: "Q2", reason: "deferred" },
@@ -1351,12 +1356,12 @@ const Graph = (() => {
         Log.memoryLog([
           { type: "add-question", id: "Q1", text: "q1" },
           { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-          { type: "select-option", target: "Q1a" },
+          { type: "select-option", targets: ["Q1a"] },
           { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1a" },
           { type: "add-question", id: "Q2", text: "f1", origin: "F1" },
           { type: "add-option", id: "Q2a", text: "x", origin: "Q2" },
           { type: "promote-follow-up", target: "F1" },
-          { type: "select-option", target: "Q2a" },
+          { type: "select-option", targets: ["Q2a"] },
         ]),
       );
 
@@ -1369,9 +1374,9 @@ const Graph = (() => {
           kind: "question",
           id: "Q1",
           text: "q1",
-          answer: { id: "Q1a", text: "a" },
+          selected: [{ id: "Q1a", text: "a" }],
           children: [
-            { kind: "question", id: "Q2", text: "f1", answer: { id: "Q2a", text: "x" }, children: [] },
+            { kind: "question", id: "Q2", text: "f1", selected: [{ id: "Q2a", text: "x" }], children: [] },
           ],
         },
       ]);
@@ -1922,26 +1927,36 @@ const AddOption = (() => {
 
 const SelectOption = (() => {
   const options = {
-    target: { type: "string" },
+    target: { type: "string", multiple: true },
   }         ;
 
-  function select(log     , target        )                {
+  function liveOption(log     , target        )             {
     const option = Graph.liveNode(log, target, "target");
     if (option.kind !== "option") {
       throw new DecisionTreeError(`target is not an option: ${target}`);
     }
 
-    const question = option.question;
+    return option;
+  }
 
-    log.append({ type: "select-option", target });
+  function select(log     , targets          )                {
+    const repeated = targets.find((target, index) => targets.indexOf(target) !== index);
+    if (repeated !== undefined) throw new DecisionTreeError(`target is repeated: ${repeated}`);
+
+    const selected = targets.map((target) => liveOption(log, target));
+    const question = selected[0].question;
+    const stray = selected.find((option) => option.question.id !== question.id);
+    if (stray !== undefined) throw new DecisionTreeError(`target is not an option of ${question.id}: ${stray.id}`);
+
+    log.append({ type: "select-option", targets });
 
     return {
       question: { id: question.id, text: question.text },
-      option: { id: option.id, text: option.text },
+      options: selected.map((option) => ({ id: option.id, text: option.text })),
     };
   }
 
-  function run(log     , config                     )                {
+  function run(log     , config                       )                {
     if (!config.target) throw new DecisionTreeError("select-option requires --target");
 
     return select(log, config.target);
@@ -1968,7 +1983,7 @@ const SelectOption = (() => {
       const log = Log.memoryLog();
 
       // when
-      const act = () => select(log, "Q1a");
+      const act = () => select(log, ["Q1a"]);
 
       // then
       assert.throws(act, DecisionTreeError);
@@ -1981,7 +1996,7 @@ const SelectOption = (() => {
       const log = Log.memoryLog([question]);
 
       // when
-      const act = () => select(log, "Q1");
+      const act = () => select(log, ["Q1"]);
 
       // then
       assert.throws(act, DecisionTreeError);
@@ -1997,14 +2012,14 @@ const SelectOption = (() => {
       const log = Log.memoryLog([...events]);
 
       // when
-      const selection = select(log, "Q1a");
+      const selection = select(log, ["Q1a"]);
 
       // then
       assert.deepEqual(selection, {
         question: { id: "Q1", text: "q" },
-        option: { id: "Q1a", text: "a" },
+        options: [{ id: "Q1a", text: "a" }],
       });
-      assert.deepEqual(log.read(), [...events, { type: "select-option", target: "Q1a" }]);
+      assert.deepEqual(log.read(), [...events, { type: "select-option", targets: ["Q1a"] }]);
     });
   }
 
@@ -2578,13 +2593,13 @@ const SupersedeQuestion = (() => {
       ]);
     });
 
-    test("superseding a question returns the old subtree with every option and the chosen one marked", () => {
+    test("superseding a question returns the old subtree with every option and the selected one marked", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q1" },
         { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
         { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
-        { type: "select-option", target: "Q1a" },
+        { type: "select-option", targets: ["Q1a"] },
         { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
         { type: "add-option", id: "Q2a", text: "x", origin: "Q2" },
       ]);
@@ -2599,15 +2614,15 @@ const SupersedeQuestion = (() => {
           id: "Q1",
           text: "q1",
           options: [
-            { id: "Q1a", text: "a", chosen: true },
-            { id: "Q1b", text: "b", chosen: false },
+            { id: "Q1a", text: "a", selected: true },
+            { id: "Q1b", text: "b", selected: false },
           ],
           children: [
             {
               kind: "question",
               id: "Q2",
               text: "q2",
-              options: [{ id: "Q2a", text: "x", chosen: false }],
+              options: [{ id: "Q2a", text: "x", selected: false }],
               children: [],
             },
           ],
@@ -2746,7 +2761,7 @@ const Next = (() => {
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q1" },
         { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-        { type: "select-option", target: "Q1a" },
+        { type: "select-option", targets: ["Q1a"] },
         { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1a" },
       ]);
 
@@ -2802,7 +2817,7 @@ const Xml = (() => {
     return [
       "<selection>",
       `  <question><id>${data.question.id}</id><text>${escapeXml(data.question.text)}</text></question>`,
-      `  ${option(data.option)}`,
+      ...data.options.map((each) => `  ${option(each)}`),
       "</selection>",
     ].join("\n");
   }
@@ -2840,7 +2855,7 @@ const Xml = (() => {
     const head = [`  <id>${item.id}</id>`, `  <text>${escapeXml(item.text)}</text>`];
     const state =
       item.kind === "question"
-        ? [`  <answer><id>${item.answer.id}</id><text>${escapeXml(item.answer.text)}</text></answer>`]
+        ? ["  <selected>", ...item.selected.map((each) => `    ${option(each)}`), "  </selected>"]
         : optionsLines(item.options);
     const children = item.children.flatMap(treeLines).map((line) => `  ${line}`);
 
@@ -2874,7 +2889,7 @@ const Xml = (() => {
     if (item.kind === "follow-up") return [followUp(item)];
 
     const options = item.options.map((each) =>
-      each.chosen ? `    ${option(each).replace("<option>", '<option chosen="true">')}` : `    ${option(each)}`,
+      each.selected ? `    ${option(each).replace("<option>", '<option selected="true">')}` : `    ${option(each)}`,
     );
     const children = item.children.flatMap(supersededLines).map((line) => `  ${line}`);
 
@@ -3026,7 +3041,7 @@ const Xml = (() => {
       assert.equal(xml, "<follow-up><id>F1</id><text>f</text></follow-up>");
     });
 
-    test("supersede renders the superseded question with every option, the chosen one marked", () => {
+    test("supersede renders the superseded question with every option, the selected one marked", () => {
       // given
       const data                = {
         question: { id: "Q3", text: "q3", options: [] },
@@ -3036,8 +3051,8 @@ const Xml = (() => {
             id: "Q1",
             text: "q1",
             options: [
-              { id: "Q1a", text: "a", chosen: true },
-              { id: "Q1b", text: "b", chosen: false },
+              { id: "Q1a", text: "a", selected: true },
+              { id: "Q1b", text: "b", selected: false },
             ],
             children: [],
           },
@@ -3060,7 +3075,7 @@ const Xml = (() => {
         "      <id>Q1</id>",
         "      <text>q1</text>",
         "      <options>",
-        '        <option chosen="true"><id>Q1a</id><text>a</text></option>',
+        '        <option selected="true"><id>Q1a</id><text>a</text></option>',
         "        <option><id>Q1b</id><text>b</text></option>",
         "      </options>",
         "    </question>",
@@ -3124,7 +3139,7 @@ const Xml = (() => {
           kind: "question",
           id: "Q1",
           text: "q1",
-          answer: { id: "Q1a", text: "a" },
+          selected: [{ id: "Q1a", text: "a" }],
           children: [
             {
               kind: "open-question",
@@ -3151,7 +3166,9 @@ const Xml = (() => {
           "  <question>",
           "    <id>Q1</id>",
           "    <text>q1</text>",
-          "    <answer><id>Q1a</id><text>a</text></answer>",
+          "    <selected>",
+          "      <option><id>Q1a</id><text>a</text></option>",
+          "    </selected>",
           "    <question>",
           "      <id>Q2</id>",
           "      <text>q2</text>",
@@ -3174,7 +3191,7 @@ const Xml = (() => {
           kind: "question",
           id: "Q1",
           text: "q1",
-          answer: { id: "Q1a", text: "a < b > c & d" },
+          selected: [{ id: "Q1a", text: "a < b > c & d" }],
           children: [],
         },
         { kind: "follow-up", ...follow },
@@ -3185,7 +3202,7 @@ const Xml = (() => {
 
       // then
       const lines = xml.split("\n");
-      assert.ok(lines.includes("    <answer><id>Q1a</id><text>a &lt; b &gt; c &amp; d</text></answer>"));
+      assert.ok(lines.includes("      <option><id>Q1a</id><text>a &lt; b &gt; c &amp; d</text></option>"));
       assert.equal(lines.at(-2), `  ${followUp(follow)}`);
     });
   }
