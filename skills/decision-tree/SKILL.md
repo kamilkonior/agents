@@ -225,7 +225,7 @@ A refusal means the tree is protecting a rule, so read the message and change th
 - **Frozen items**, meaning a superseded question and everything under it, can never be changed. Work on the replacement instead.
 - **Selections** must be live options of one question, each named once.
 - **A focus** needs something open: a question or follow-up whose subtree is fully settled is refused.
-- **Flags** must be known to the op, and a flag can only be repeated where the table shows `…`.
+- **Flags** must be known to the op, a flag can only be repeated where the table shows `…`, and values can't be blank.
 
 ## The log
 

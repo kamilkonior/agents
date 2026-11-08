@@ -4325,6 +4325,20 @@ const Cli = (() => {
       assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "--text must not be blank");
     });
 
+    test("a blank value among repeated flags throws", () => {
+      // given
+      const args = ["--option", "a", "--option", " "];
+
+      // when
+      const act = () => readModeConfig({ option: { type: "string", multiple: true } }         , args);
+
+      // then
+      assert.throws(
+        act,
+        (error) => error instanceof DecisionTreeError && error.message === "--option must not be blank",
+      );
+    });
+
     test("a single-value flag given twice throws", () => {
       // given
       const args = ["--target", "Q1", "--target", "Q2"];
