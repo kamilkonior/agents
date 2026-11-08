@@ -3388,11 +3388,25 @@ const Cli = (() => {
   }
 
   function readModeConfig                                  (modeOptions   ) {
-    try {
-      return parseArgs({ options: { ...cliOptions, ...modeOptions } }).values;
-    } catch (error) {
-      throw new DecisionTreeError((error         ).message);
+    const options = { ...cliOptions, ...modeOptions };
+
+    const parsed = (() => {
+      try {
+        return parseArgs({ options, tokens: true });
+      } catch (error) {
+        throw new DecisionTreeError((error         ).message);
+      }
+    })();
+
+    const seen = new Set        ();
+    for (const token of parsed.tokens) {
+      if (token.kind !== "option" || options[token.name]?.multiple) continue;
+      if (seen.has(token.name)) throw new DecisionTreeError(`--${token.name} given more than once`);
+
+      seen.add(token.name);
     }
+
+    return parsed.values;
   }
 
   function runTests() {
