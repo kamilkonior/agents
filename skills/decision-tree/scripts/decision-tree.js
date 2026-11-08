@@ -3226,6 +3226,23 @@ const Focus = (() => {
       assert.deepEqual(log.read(), events);
     });
 
+    test("focusing an item with nothing open throws and appends nothing", () => {
+      // given
+      const events          = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const act = () => run(log, { target: "Q1" });
+
+      // then
+      assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "nothing open under Q1");
+      assert.deepEqual(log.read(), events);
+    });
+
     test("focusing an option throws and appends nothing", () => {
       // given
       const events          = [
