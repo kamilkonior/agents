@@ -1013,6 +1013,29 @@ const Graph = (() => {
       );
     });
 
+    test("an ended focus does not return when new work appears under it", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-question", id: "Q2", text: "q2" },
+          { type: "add-option", id: "Q2a", text: "a", origin: "Q2" },
+          { type: "focus-item", target: "Q2" },
+          { type: "select-option", target: "Q2a" },
+          { type: "add-follow-up", id: "F1", text: "f1", origin: "Q2" },
+        ]),
+      );
+
+      // when
+      const open = frontier(graph);
+
+      // then
+      assert.deepEqual(
+        open.map((node) => node.id),
+        ["Q1", "F1"],
+      );
+    });
+
     test("tree leaves out off-path branches and excluded follow-ups", () => {
       // given
       const graph = build(
