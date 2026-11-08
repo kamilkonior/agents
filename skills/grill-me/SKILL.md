@@ -32,7 +32,7 @@ Use one log per session: `.grill-me/<topic>.jsonl` in the project root, where `<
 
 1. Run `--query next`.
 2. If it is a **question**, ask the user exactly that question with its options, and nothing else in the same message. Show the options as a short list the user can pick from, and say they may answer in their own words.
-   - The user picks an option: `select-option` it.
+   - The user picks one or more options: `select-option` them in one call.
    - The user answers with something not listed: `add-option` with their answer, then `select-option` it.
    - The user isn't ready to decide: leave the question open and record what is blocking them as a follow-up under it.
    - The user says the question doesn't belong to this design: `exclude-item` it, `deferred` or `not-applicable` as in step 3.
