@@ -1199,6 +1199,30 @@ const Graph = (() => {
       );
     });
 
+    test("the walk order goes answer first, then the question's own, then the roots", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-follow-up", id: "F3", text: "root follow-up" },
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-question", id: "Q4", text: "second root" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "add-follow-up", id: "F2", text: "question follow-up", origin: "Q1" },
+        { type: "add-question", id: "Q3", text: "question child", origin: "Q1" },
+        { type: "add-follow-up", id: "F1", text: "answer follow-up", origin: "Q1a" },
+        { type: "add-question", id: "Q2", text: "answer child", origin: "Q1a" },
+      ]);
+
+      // when
+      const graph = build(log);
+
+      // then
+      assert.deepEqual(
+        graph.walkOrder.map((node) => node.id),
+        ["Q1", "Q2", "F1", "Q3", "F2", "Q4", "F3"],
+      );
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
