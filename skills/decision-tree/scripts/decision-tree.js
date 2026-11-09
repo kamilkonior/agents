@@ -642,14 +642,26 @@ const Graph = (() => {
 
   function assignStates(graph       )       {
     graph.roots.forEach((question) => assignQuestion(graph, question, undefined));
+
+    for (const node of graph.nodes.values()) {
+      if (node.kind === "question" && node.supersededBy !== undefined) assignQuestion(graph, node, undefined);
+    }
+  }
+
+  function hidingOf(graph       , question              , inherited                    )                     {
+    if (question.supersededBy !== undefined) return { state: "frozen", by: question.id };
+    if (inherited?.state === "frozen") return inherited;
+
+    const exclusion = graph.exclusions.get(question.id);
+
+    return exclusion === undefined ? inherited : { state: exclusion.reason, by: question.id };
   }
 
   function assignQuestion(graph       , question              , inherited                    )       {
-    const exclusion = graph.exclusions.get(question.id);
-    const hiding = exclusion === undefined ? inherited : { state: exclusion.reason, by: question.id };
+    const hiding = hidingOf(graph, question, inherited);
     const selected = liveSelected(graph, question);
 
-    if (exclusion === undefined && hiding !== undefined) question.hiddenBy = hiding.by;
+    if (hiding !== undefined && hiding.by !== question.id) question.hiddenBy = hiding.by;
     question.state = hiding?.state ?? (selected.length === 0 ? "open" : "settled");
 
     for (const option of question.options) {
