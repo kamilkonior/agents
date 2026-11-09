@@ -6513,6 +6513,34 @@ const Xml = (() => {
       ]);
     });
 
+    test("the built tree escapes every text it renders", () => {
+      // given
+      const text = "<&>";
+      const followUp            = { kind: "follow-up", state: "deferred", id: "F1", text, note: text, children: [] };
+      const entries              = [
+        {
+          kind: "question",
+          state: "deferred",
+          id: "Q1",
+          text,
+          note: text,
+          options: [
+            { id: "Q1a", text, state: "deferred", note: text, children: [followUp] },
+            { id: "Q1b", text, children: [] },
+            { id: "Q1c", text, state: "deferred", note: text, children: [] },
+          ],
+          children: [],
+        },
+      ];
+
+      // when
+      const xml = builtTree(entries);
+
+      // then
+      assert.equal(xml.includes(text), false);
+      assert.equal(xml.split("&lt;&amp;&gt;").length - 1, 9);
+    });
+
     test("status renders no items as an empty element", () => {
       // given
       const items               = [];
