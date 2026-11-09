@@ -5264,6 +5264,42 @@ const Tree = (() => {
         ["Q2"],
       );
     });
+
+    test("a target limits the tree to its subtree and stays as the ancestor", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+        { type: "add-option", id: "Q2a", text: "b", origin: "Q2" },
+        { type: "select-option", targets: ["Q2a"] },
+        { type: "add-question", id: "Q3", text: "q3", origin: "Q2a" },
+        { type: "add-question", id: "Q4", text: "elsewhere" },
+      ]);
+
+      // when
+      const entries = view(log, { target: "Q2" });
+
+      // then
+      assert.deepEqual(entries, [
+        {
+          kind: "question",
+          state: "settled",
+          id: "Q2",
+          text: "q2",
+          options: [
+            {
+              id: "Q2a",
+              text: "b",
+              selected: true,
+              children: [{ kind: "question", state: "open", id: "Q3", text: "q3", options: [], children: [] }],
+            },
+          ],
+          children: [],
+        },
+      ]);
+    });
   }
 
   return { options, run, tests };
