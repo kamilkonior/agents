@@ -1017,6 +1017,10 @@ const Graph = (() => {
     ];
   }
 
+  function filterTree(entries: TreeEntry[], states: ItemState[]): TreeEntry[] {
+    return entries.filter((entry) => states.includes(entry.state));
+  }
+
   function firstQuestionEntry(log: Log): Extract<TreeEntry, { kind: "question" }> {
     const [item] = buildTree(log);
     if (item?.kind !== "question") throw new Error("the first entry of the built tree is not a question");
