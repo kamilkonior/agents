@@ -1008,8 +1008,14 @@ const Graph = (() => {
     };
   }
 
-  function buildTree(log: Log): TreeEntry[] {
+  function buildTree(log: Log, target?: string): TreeEntry[] {
     const graph = build(log);
+
+    if (target !== undefined) {
+      const node = targetNode(graph, target);
+
+      return node.kind === "question" ? questionEntries(graph, node).slice(0, 1) : [followUpEntry(graph, node)];
+    }
 
     return [
       ...graph.roots.flatMap((question) => questionEntries(graph, question)),
@@ -5188,10 +5194,10 @@ const Tree = (() => {
     return Graph.walk(log);
   }
 
-  function view(log: Log, config: { state?: string[] }): TreeEntry[] {
+  function view(log: Log, config: { state?: string[]; target?: string }): TreeEntry[] {
     const states = Items.chosenStates(config.state);
 
-    return Graph.filterTree(Graph.buildTree(log), states);
+    return Graph.filterTree(Graph.buildTree(log, config.target), states);
   }
 
   function tests() {
