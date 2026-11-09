@@ -3492,17 +3492,18 @@ const AddFollowUp = (() => {
 const PromoteFollowUp = (() => {
   const options = {
     target: { type: "string" },
+    text: { type: "string" },
     option: { type: "string", multiple: true },
   }         ;
 
-  function run(log     , config                                        )               {
+  function run(log     , config                                                       )               {
     const target = config.target;
     if (!target) throw new DecisionTreeError("promote-follow-up requires --target");
 
     return Log.transaction(log, (staged) => {
       const followUp = AddFollowUp.open(staged, target);
       const question = AddQuestion.run(staged, {
-        text: followUp.text,
+        text: config.text ?? followUp.text,
         origin: followUp.id,
         option: config.option,
       });
@@ -3575,6 +3576,23 @@ const PromoteFollowUp = (() => {
         { type: "add-question", id: "Q2", text: "f", origin: "F1" },
         { type: "add-option", id: "Q2a", text: "x", origin: "Q2" },
         { type: "add-option", id: "Q2b", text: "y", origin: "Q2" },
+        { type: "promote-follow-up", target: "F1" },
+      ]);
+    });
+
+    test("promoting with a text words the question that way and leaves the follow-up as it was", () => {
+      // given
+      const events          = [{ type: "add-follow-up", id: "F1", text: "f" }];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const question = run(log, { target: "F1", text: "better" });
+
+      // then
+      assert.deepEqual(question, { id: "Q1", text: "better", options: [] });
+      assert.deepEqual(log.read(), [
+        ...events,
+        { type: "add-question", id: "Q1", text: "better", origin: "F1" },
         { type: "promote-follow-up", target: "F1" },
       ]);
     });
