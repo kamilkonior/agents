@@ -652,7 +652,7 @@ const Graph = (() => {
 
   function hidingOf(
     graph       ,
-    node                             ,
+    node                                          ,
     inherited                    ,
   )                     {
     if (node.kind === "question" && node.supersededBy !== undefined) return { state: "frozen", by: node.id };
@@ -676,9 +676,10 @@ const Graph = (() => {
 
     for (const option of question.options) {
       const onPath = selected.includes(option);
-      const below = onPath ? hiding : offPathBelow(hiding, option.id);
+      const optionHiding = hidingOf(graph, option, hiding);
+      const below = onPath ? optionHiding : offPathBelow(optionHiding, option.id);
 
-      option.state = hiding?.state ?? (selected.length === 0 ? "open" : onPath ? "settled" : "off-path");
+      option.state = optionHiding?.state ?? (selected.length === 0 ? "open" : onPath ? "settled" : "off-path");
       option.children.forEach((child) => assignQuestion(graph, child, below));
       option.followUps.forEach((followUp) => assignFollowUp(graph, followUp, below));
     }
