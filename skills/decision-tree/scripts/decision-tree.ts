@@ -700,9 +700,15 @@ const Graph = (() => {
     followUp.followUps.forEach((nested) => assignFollowUp(graph, nested, below));
   }
 
+  function assignedState(node: QuestionNode | OptionNode | FollowUpNode): ItemState {
+    if (node.state === "unset") throw new Error(`node ${node.id} has no state`);
+
+    return node.state;
+  }
+
   function assertStatesAssigned(graph: Graph): void {
     for (const node of graph.nodes.values()) {
-      if (node.state === "unset") throw new Error(`node ${node.id} has no state`);
+      assignedState(node);
     }
   }
 
@@ -871,18 +877,6 @@ const Graph = (() => {
     return node.options.filter((option) => node.selected.includes(option) && !graph.exclusions.has(option.id));
   }
 
-  function itemState(graph: Graph, node: QuestionNode | FollowUpNode, reached: Set<unknown>): ItemState {
-    if (frozenBy(node) !== undefined) return "frozen";
-
-    const excluding = excludedBy(graph, node);
-    if (excluding !== undefined) return graph.exclusions.get(excluding.id)?.reason ?? "not-applicable";
-
-    if (!reached.has(node)) return "off-path";
-    if (node.kind === "follow-up") return node.status === "open" ? "open" : "settled";
-
-    return liveSelected(graph, node).length === 0 ? "open" : "settled";
-  }
-
   function offPathCause(graph: Graph, node: QuestionNode | FollowUpNode): OptionNode | FollowUpNode | undefined {
     const parent = node.parent;
     if (parent === undefined) return undefined;
@@ -893,15 +887,6 @@ const Graph = (() => {
     if (parent.kind === "follow-up" && parent.status === "open") return parent;
 
     return offPathCause(graph, parent);
-  }
-
-  function hiddenBy(graph: Graph, node: QuestionNode | FollowUpNode, state: ItemState): string | undefined {
-    if (state === "open" || state === "settled") return undefined;
-
-    const cause =
-      state === "frozen" ? frozenBy(node) : state === "off-path" ? offPathCause(graph, node) : excludedBy(graph, node);
-
-    return cause === node ? undefined : cause?.id;
   }
 
   function reachedNodes(graph: Graph): Set<QuestionNode | FollowUpNode> {
@@ -942,7 +927,7 @@ const Graph = (() => {
       if (tag !== undefined && !graph.tags.get(node.id)?.has(tag)) return [];
       if (target !== undefined && node.id !== target) return [];
 
-      const state = itemState(graph, node, reached);
+      const state = assignedState(node);
       if (!states.includes(state)) return [];
 
       const selected = node.kind === "question" ? liveSelected(graph, node) : [];
@@ -950,8 +935,7 @@ const Graph = (() => {
 
       const note = graph.exclusions.get(node.id)?.note;
       const noteData = note === undefined ? {} : { note };
-      const cause = hiddenBy(graph, node, state);
-      const causeData = cause === undefined ? {} : { hiddenBy: cause };
+      const causeData = node.hiddenBy === undefined ? {} : { hiddenBy: node.hiddenBy };
 
       return [{ ...taggedData(graph, node), state, ...selectedData, ...noteData, ...causeData }];
     });
