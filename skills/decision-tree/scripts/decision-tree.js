@@ -1154,6 +1154,21 @@ const Graph = (() => {
       assert.deepEqual([question.state, question.hiddenBy], ["off-path", "F1"]);
     });
 
+    test("an open follow-up is open and a promoted one is settled", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-follow-up", id: "F1", text: "f1" },
+        { type: "add-follow-up", id: "F2", text: "f2" },
+        { type: "promote-follow-up", target: "F2" },
+      ]);
+
+      // when
+      const graph = build(log);
+
+      // then
+      assert.deepEqual([graph.nodes.get("F1")?.state, graph.nodes.get("F2")?.state], ["open", "settled"]);
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
