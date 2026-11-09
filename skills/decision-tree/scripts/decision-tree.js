@@ -1139,6 +1139,21 @@ const Graph = (() => {
       );
     });
 
+    test("a question under an open follow-up is off-path, hidden by the follow-up", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-follow-up", id: "F1", text: "f" },
+        { type: "add-question", id: "Q1", text: "q", origin: "F1" },
+      ]);
+
+      // when
+      const graph = build(log);
+
+      // then
+      const question = questionNode(graph.nodes, "Q1");
+      assert.deepEqual([question.state, question.hiddenBy], ["off-path", "F1"]);
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
