@@ -1769,6 +1769,30 @@ const Graph = (() => {
       );
     });
 
+    test("the complete tree lists a question superseded twice newest first", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "first" },
+        { type: "add-question", id: "Q2", text: "second" },
+        { type: "supersede-question", target: "Q1", question: "Q2" },
+        { type: "add-question", id: "Q3", text: "third" },
+        { type: "supersede-question", target: "Q2", question: "Q3" },
+      ]);
+
+      // when
+      const items = completeTree(log);
+
+      // then
+      assert.deepEqual(
+        items.map((item) => [item.id, item.state]),
+        [
+          ["Q3", "open"],
+          ["Q2", "frozen"],
+          ["Q1", "frozen"],
+        ],
+      );
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
