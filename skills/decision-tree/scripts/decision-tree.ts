@@ -4980,6 +4980,32 @@ const Xml = (() => {
       assert.equal(xml, "<status></status>");
     });
 
+    test("status renders an open question with its state and options", () => {
+      // given
+      const items: StatusItem[] = [
+        { kind: "question", state: "open", id: "Q1", text: "q", options: [{ id: "Q1a", text: "a" }], children: [] },
+      ];
+
+      // when
+      const xml = status(items);
+
+      // then
+      assert.equal(
+        xml,
+        [
+          "<status>",
+          '  <question state="open">',
+          "    <id>Q1</id>",
+          "    <text>q</text>",
+          "    <options>",
+          "      <option><id>Q1a</id><text>a</text></option>",
+          "    </options>",
+          "  </question>",
+          "</status>",
+        ].join("\n"),
+      );
+    });
+
     test("option text is escaped", () => {
       // given
       const data: OptionData = { id: "Q1a", text: "a < b > c & d" };
