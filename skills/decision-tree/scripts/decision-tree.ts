@@ -4213,6 +4213,26 @@ const Items = (() => {
       assert.deepEqual(items, []);
     });
 
+    test("an off-path target with a trail shows the unchosen option in its path", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1b" },
+      ]);
+
+      // when
+      const items = run(log, { target: "Q2", trail: true });
+
+      // then
+      assert.deepEqual(items[0].trail, [
+        { kind: "question", id: "Q1", text: "q1" },
+        { kind: "option", id: "Q1b", text: "b" },
+      ]);
+    });
+
     test("querying with state all returns items in every state", () => {
       // given
       const log = Log.memoryLog([
