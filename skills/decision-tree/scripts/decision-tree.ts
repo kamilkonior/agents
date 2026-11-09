@@ -6139,7 +6139,15 @@ const Xml = (() => {
   }
 
   function builtTreeLines(entry: TreeEntry): string[] {
-    if (entry.kind === "follow-up") throw new Error("built tree rendering of follow-ups is not built yet");
+    if (entry.kind === "follow-up") {
+      return [
+        `<follow-up state="${entry.state}">`,
+        `  <id>${entry.id}</id>`,
+        `  <text>${escapeXml(entry.text)}</text>`,
+        ...entry.children.flatMap(builtTreeLines).map((line) => `  ${line}`),
+        "</follow-up>",
+      ];
+    }
 
     const options = entry.options.flatMap(builtTreeOptionLines).map((line) => `    ${line}`);
     const optionsBlock = options.length === 0 ? optionsLines([]) : ["  <options>", ...options, "  </options>"];
