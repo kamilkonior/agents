@@ -1439,6 +1439,17 @@ const Graph = (() => {
       );
     });
 
+    test("the tree view of an empty log has no items", () => {
+      // given
+      const log = Log.memoryLog();
+
+      // when
+      const items = treeView(log);
+
+      // then
+      assert.deepEqual(items, []);
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
