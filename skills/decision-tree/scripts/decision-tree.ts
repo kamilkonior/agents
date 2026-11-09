@@ -1640,6 +1640,32 @@ const Graph = (() => {
       ]);
     });
 
+    test("the tree view places follow-ups after the questions at their level", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "add-follow-up", id: "F1", text: "answer follow-up", origin: "Q1a" },
+        { type: "add-question", id: "Q2", text: "answer child", origin: "Q1a" },
+        { type: "add-follow-up", id: "F2", text: "question follow-up", origin: "Q1" },
+        { type: "add-question", id: "Q3", text: "question child", origin: "Q1" },
+      ]);
+
+      // when
+      const question = firstViewQuestion(log);
+
+      // then
+      assert.deepEqual(
+        question.options[0].children.map((child) => child.id),
+        ["Q2", "F1"],
+      );
+      assert.deepEqual(
+        question.children.map((child) => child.id),
+        ["Q3", "F2"],
+      );
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
