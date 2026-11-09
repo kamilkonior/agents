@@ -5179,6 +5179,10 @@ const Xml = (() => {
     return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
   }
 
+  function markedOption(data            , selected         )         {
+    return selected ? option(data).replace("<option>", '<option selected="true">') : option(data);
+  }
+
   function trailLines(steps                         )           {
     if (steps === undefined) return [];
 
@@ -5353,7 +5357,7 @@ const Xml = (() => {
     if (item.kind === "follow-up") return [followUp(item)];
 
     const options = item.options.map((each) =>
-      each.selected ? `    ${option(each).replace("<option>", '<option selected="true">')}` : `    ${option(each)}`,
+      `    ${markedOption(each, each.selected)}`,
     );
     const children = item.children.flatMap(supersededLines).map((line) => `  ${line}`);
 
@@ -5878,12 +5882,9 @@ const Xml = (() => {
         "    <id>Q1</id>",
         "    <text>q</text>",
         "    <options>",
-        "      <option><id>Q1a</id><text>a</text></option>",
+        '      <option selected="true"><id>Q1a</id><text>a</text></option>',
         "      <option><id>Q1b</id><text>b</text></option>",
         "    </options>",
-        "    <selected>",
-        "      <option><id>Q1a</id><text>a</text></option>",
-        "    </selected>",
         "    <tags><tag>t</tag></tags>",
         "  </question>",
         "</items>",
@@ -6109,13 +6110,22 @@ const Xml = (() => {
     const hidden = data.hiddenBy === undefined ? [] : [`  <hidden-by><id>${data.hiddenBy}</id></hidden-by>`];
 
     if (data.item.kind === "question") {
-      const lines = question(data.item.question).split("\n");
-      const selected =
-        data.selected === undefined
-          ? []
-          : ["  <selected>", ...data.selected.map((each) => `    ${option(each)}`), "  </selected>"];
+      const { id, text, options } = data.item.question;
+      const selectedIds = (data.selected ?? []).map((each) => each.id);
+      const optionLines = options.map((each) => `    ${markedOption(each, selectedIds.includes(each.id))}`);
+      const optionsBlock = options.length === 0 ? optionsLines([]) : ["  <options>", ...optionLines, "  </options>"];
 
-      return [`<question${state}>`, ...lines.slice(1, -1), ...selected, ...note, ...hidden, line, ...trailLines(data.trail), "</question>"];
+      return [
+        `<question${state}>`,
+        `  <id>${id}</id>`,
+        `  <text>${escapeXml(text)}</text>`,
+        ...optionsBlock,
+        ...note,
+        ...hidden,
+        line,
+        ...trailLines(data.trail),
+        "</question>",
+      ];
     }
 
     const { id, text } = data.item.followUp;
