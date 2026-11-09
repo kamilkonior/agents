@@ -5044,6 +5044,22 @@ const Xml = (() => {
       );
     });
 
+    test("status renders an open follow-up with its state", () => {
+      // given
+      const items: StatusItem[] = [{ kind: "follow-up", state: "open", id: "F1", text: "f" }];
+
+      // when
+      const xml = status(items);
+
+      // then
+      assert.equal(
+        xml,
+        ["<status>", '  <follow-up state="open">', "    <id>F1</id>", "    <text>f</text>", "  </follow-up>", "</status>"].join(
+          "\n",
+        ),
+      );
+    });
+
     test("status renders an open question with its state and options", () => {
       // given
       const items: StatusItem[] = [
