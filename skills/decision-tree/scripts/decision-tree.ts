@@ -1912,6 +1912,18 @@ const Graph = (() => {
       ]);
     });
 
+    test("filtering keeps a promoted follow-up that holds an open question", () => {
+      // given
+      const open: TreeEntry = { kind: "question", state: "open", id: "Q1", text: "q", options: [], children: [] };
+      const entries: TreeEntry[] = [{ kind: "follow-up", state: "settled", id: "F1", text: "f", children: [open] }];
+
+      // when
+      const kept = filterTree(entries, ["open"]);
+
+      // then
+      assert.deepEqual(kept, entries);
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
