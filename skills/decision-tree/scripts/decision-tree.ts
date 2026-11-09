@@ -1022,6 +1022,25 @@ const Graph = (() => {
       assert.deepEqual([question.state, question.hiddenBy], ["off-path", "Q1b"]);
     });
 
+    test("an off-path question is hidden by its nearest unchosen option", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1b" },
+        { type: "add-option", id: "Q2a", text: "c", origin: "Q2" },
+        { type: "add-question", id: "Q3", text: "q3", origin: "Q2a" },
+      ]);
+
+      // when
+      const graph = build(log);
+
+      // then
+      assert.equal(questionNode(graph.nodes, "Q3").hiddenBy, "Q2a");
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
