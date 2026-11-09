@@ -39,25 +39,11 @@ type SelectionData = { question: { id: string; text: string }; options: OptionDa
 
 type FollowUpData = { id: string; text: string };
 
-type TreeItem =
-  | { kind: "question"; id: string; text: string; selected: OptionData[]; children: TreeItem[] }
-  | { kind: "open-question"; id: string; text: string; options: OptionData[]; children: TreeItem[] }
-  | { kind: "follow-up"; id: string; text: string };
-
 type ItemData =
   | { kind: "question"; question: QuestionData }
   | { kind: "option"; option: OptionData }
   | { kind: "follow-up"; followUp: FollowUpData };
 
-type DeferredItem = {
-  kind: "question" | "option" | "follow-up";
-  id: string;
-  text: string;
-  note?: string;
-  hungUnder?: { id: string; text: string };
-};
-
-type TreeData = { items: TreeItem[]; deferred: DeferredItem[] };
 
 type ItemState = "open" | "settled" | "off-path" | "deferred" | "not-applicable" | "frozen";
 
@@ -81,6 +67,10 @@ type TreeEntry =
       children: TreeEntry[];
     }
   | { kind: "follow-up"; state: ItemState; id: string; text: string; note?: string; children: TreeEntry[] };
+
+type OpenItem =
+  | { kind: "open-question"; id: string; text: string; options: OptionData[] }
+  | { kind: "follow-up"; id: string; text: string };
 
 type StatusItem =
   | { kind: "option"; state: "deferred"; id: string; text: string; note?: string }
@@ -733,86 +723,6 @@ const Graph = (() => {
     }
   }
 
-  function project(graph: Graph) {
-    const deferred: DeferredItem[] = [];
-
-    function live(node: QuestionNode | OptionNode | FollowUpNode): boolean {
-      return !graph.exclusions.has(node.id);
-    }
-
-    function noteDeferred(node: QuestionNode | OptionNode | FollowUpNode): void {
-      const exclusion = graph.exclusions.get(node.id);
-      if (exclusion?.reason !== "deferred") return;
-
-      const parent = node.kind === "option" ? node.question : node.parent;
-      const note = exclusion.note === undefined ? {} : { note: exclusion.note };
-      const hungUnder = parent === undefined ? {} : { hungUnder: { id: parent.id, text: parent.text } };
-      deferred.push({ kind: node.kind, id: node.id, text: node.text, ...note, ...hungUnder });
-    }
-
-    function question(node: QuestionNode): TreeItem[] {
-      if (!live(node)) {
-        noteDeferred(node);
-        return [];
-      }
-
-      node.options.filter((option) => !live(option)).forEach(noteDeferred);
-
-      const selected = node.options.filter((option) => node.selected.includes(option) && live(option));
-
-      const children: TreeItem[] = [];
-      for (const option of selected) {
-        children.push(...option.children.flatMap(question), ...followUps(option));
-      }
-      children.push(...node.children.flatMap(question), ...followUps(node));
-
-      if (selected.length === 0) {
-        const options = liveOptions(graph, node);
-
-        return [{ kind: "open-question", id: node.id, text: node.text, options, children }];
-      }
-
-      const selectedData = selected.map((option) => ({ id: option.id, text: option.text }));
-
-      return [{ kind: "question", id: node.id, text: node.text, selected: selectedData, children }];
-    }
-
-    function followUps(node: QuestionNode | OptionNode | FollowUpNode): TreeItem[] {
-      return node.followUps.flatMap(followUp);
-    }
-
-    function followUp(node: FollowUpNode): TreeItem[] {
-      if (!live(node)) {
-        noteDeferred(node);
-        return [];
-      }
-
-      if (node.status === "open") return [{ kind: "follow-up", id: node.id, text: node.text }];
-
-      return [...node.children.flatMap(question), ...followUps(node)];
-    }
-
-    return { question, followUp, deferred };
-  }
-
-  function walk(graph: Graph): TreeData {
-    const { question, followUp, deferred } = project(graph);
-
-    const items = [...graph.roots.flatMap(question), ...graph.rootFollowUps.flatMap(followUp)];
-
-    return { items, deferred };
-  }
-
-  function tree(graph: Graph): TreeItem[] {
-    return walk(graph).items;
-  }
-
-  function subtree(log: Log, id: string): TreeItem[] {
-    const graph = build(log);
-
-    return project(graph).question(questionNode(graph.nodes, id));
-  }
-
   function isWithin(node: QuestionNode | FollowUpNode, ancestor: QuestionNode | FollowUpNode): boolean {
     let current: QuestionNode | OptionNode | FollowUpNode | undefined = node;
     while (current !== undefined) {
@@ -824,13 +734,13 @@ const Graph = (() => {
     return false;
   }
 
-  function openItem(graph: Graph, node: QuestionNode | FollowUpNode): Exclude<TreeItem, { kind: "question" }> {
+  function openItem(graph: Graph, node: QuestionNode | FollowUpNode): OpenItem {
     if (node.kind === "follow-up") return { kind: "follow-up", id: node.id, text: node.text };
 
-    return { kind: "open-question", id: node.id, text: node.text, options: liveOptions(graph, node), children: [] };
+    return { kind: "open-question", id: node.id, text: node.text, options: liveOptions(graph, node) };
   }
 
-  function openWithin(graph: Graph, ancestor?: QuestionNode | FollowUpNode): Exclude<TreeItem, { kind: "question" }>[] {
+  function openWithin(graph: Graph, ancestor?: QuestionNode | FollowUpNode): OpenItem[] {
     return graph.walkOrder
       .filter((node) => node.state === "open" && (ancestor === undefined || isWithin(node, ancestor)))
       .map((node) => openItem(graph, node));
@@ -1032,7 +942,7 @@ const Graph = (() => {
     return openWithin(build(log), node).length > 0;
   }
 
-  function frontier(graph: Graph): Exclude<TreeItem, { kind: "question" }>[] {
+  function frontier(graph: Graph): OpenItem[] {
     const focused = graph.focus !== undefined && !graph.focus.ended ? graph.focus.node : undefined;
 
     return openWithin(graph, focused);
@@ -2459,380 +2369,6 @@ const Graph = (() => {
       );
     });
 
-    test("tree leaves out off-path branches and excluded follow-ups", () => {
-      // given
-      const graph = build(
-        Log.memoryLog([
-          { type: "add-question", id: "Q1", text: "q1" },
-          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-          { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
-          { type: "select-option", targets: ["Q1a"] },
-          { type: "add-question", id: "Q2", text: "q2", origin: "Q1b" },
-          { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
-          { type: "exclude", target: "F1", reason: "not-applicable" },
-        ]),
-      );
-
-      // when
-      const items = tree(graph);
-
-      // then
-      assert.deepEqual(items, [
-        { kind: "question", id: "Q1", text: "q1", selected: [{ id: "Q1a", text: "a" }], children: [] },
-      ]);
-    });
-
-    test("an excluded answer reopens its question and leaves its subtree out", () => {
-      // given
-      const graph = build(
-        Log.memoryLog([
-          { type: "add-question", id: "Q1", text: "q1" },
-          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-          { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
-          { type: "select-option", targets: ["Q1a"] },
-          { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
-          { type: "add-option", id: "Q2a", text: "x", origin: "Q2" },
-          { type: "exclude", target: "Q1a", reason: "not-applicable" },
-        ]),
-      );
-
-      // when
-      const items = tree(graph);
-
-      // then
-      assert.deepEqual(items, [
-        { kind: "open-question", id: "Q1", text: "q1", options: [{ id: "Q1b", text: "b" }], children: [] },
-      ]);
-    });
-
-    test("an excluded option is not offered by its open question", () => {
-      // given
-      const graph = build(
-        Log.memoryLog([
-          { type: "add-question", id: "Q1", text: "q1" },
-          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-          { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
-          { type: "add-option", id: "Q1c", text: "c", origin: "Q1" },
-          { type: "exclude", target: "Q1b", reason: "deferred" },
-        ]),
-      );
-
-      // when
-      const items = tree(graph);
-
-      // then
-      assert.deepEqual(items, [
-        {
-          kind: "open-question",
-          id: "Q1",
-          text: "q1",
-          options: [
-            { id: "Q1a", text: "a" },
-            { id: "Q1c", text: "c" },
-          ],
-          children: [],
-        },
-      ]);
-    });
-
-    test("an excluded question is left out with its subtree", () => {
-      // given
-      const graph = build(
-        Log.memoryLog([
-          { type: "add-question", id: "Q1", text: "q1" },
-          { type: "add-question", id: "Q2", text: "q2" },
-          { type: "add-question", id: "Q3", text: "q3", origin: "Q1" },
-          { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
-          { type: "exclude", target: "Q1", reason: "not-applicable" },
-        ]),
-      );
-
-      // when
-      const items = tree(graph);
-
-      // then
-      assert.deepEqual(items, [{ kind: "open-question", id: "Q2", text: "q2", options: [], children: [] }]);
-    });
-
-    test("an excluded follow-up is left out with its subtree", () => {
-      // given
-      const graph = build(
-        Log.memoryLog([
-          { type: "add-question", id: "Q1", text: "q1" },
-          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-          { type: "select-option", targets: ["Q1a"] },
-          { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
-          { type: "add-question", id: "Q2", text: "f1", origin: "F1" },
-          { type: "promote-follow-up", target: "F1" },
-          { type: "exclude", target: "F1", reason: "deferred" },
-        ]),
-      );
-
-      // when
-      const items = tree(graph);
-
-      // then
-      assert.deepEqual(items, [
-        { kind: "question", id: "Q1", text: "q1", selected: [{ id: "Q1a", text: "a" }], children: [] },
-      ]);
-    });
-
-    test("several selected options are walked in option order", () => {
-      // given
-      const graph = build(
-        Log.memoryLog([
-          { type: "add-question", id: "Q1", text: "q1" },
-          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-          { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
-          { type: "add-option", id: "Q1c", text: "c", origin: "Q1" },
-          { type: "add-question", id: "Q2", text: "q2", origin: "Q1c" },
-          { type: "add-question", id: "Q3", text: "q3", origin: "Q1a" },
-          { type: "select-option", targets: ["Q1c", "Q1a"] },
-        ]),
-      );
-
-      // when
-      const items = tree(graph);
-
-      // then
-      assert.deepEqual(items, [
-        {
-          kind: "question",
-          id: "Q1",
-          text: "q1",
-          selected: [
-            { id: "Q1a", text: "a" },
-            { id: "Q1c", text: "c" },
-          ],
-          children: [
-            { kind: "open-question", id: "Q3", text: "q3", options: [], children: [] },
-            { kind: "open-question", id: "Q2", text: "q2", options: [], children: [] },
-          ],
-        },
-      ]);
-    });
-
-    test("excluding one selected option keeps the others selected", () => {
-      // given
-      const graph = build(
-        Log.memoryLog([
-          { type: "add-question", id: "Q1", text: "q1" },
-          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-          { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
-          { type: "select-option", targets: ["Q1a", "Q1b"] },
-          { type: "exclude", target: "Q1a", reason: "not-applicable" },
-        ]),
-      );
-
-      // when
-      const items = tree(graph);
-
-      // then
-      assert.deepEqual(items, [
-        { kind: "question", id: "Q1", text: "q1", selected: [{ id: "Q1b", text: "b" }], children: [] },
-      ]);
-    });
-
-    test("a restored answer settles its question again with its subtree", () => {
-      // given
-      const graph = build(
-        Log.memoryLog([
-          { type: "add-question", id: "Q1", text: "q1" },
-          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-          { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
-          { type: "select-option", targets: ["Q1a"] },
-          { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
-          { type: "exclude", target: "Q1a", reason: "not-applicable" },
-          { type: "restore", target: "Q1a" },
-        ]),
-      );
-
-      // when
-      const items = tree(graph);
-
-      // then
-      assert.deepEqual(items, [
-        {
-          kind: "question",
-          id: "Q1",
-          text: "q1",
-          selected: [{ id: "Q1a", text: "a" }],
-          children: [{ kind: "open-question", id: "Q2", text: "q2", options: [], children: [] }],
-        },
-      ]);
-    });
-
-    test("a superseding question takes the old question's slot and the old subtree leaves the tree", () => {
-      // given
-      const graph = build(
-        Log.memoryLog([
-          { type: "add-question", id: "Q1", text: "q1" },
-          { type: "add-question", id: "Q2", text: "q2" },
-          { type: "add-question", id: "Q3", text: "q3" },
-          { type: "add-question", id: "Q4", text: "q4", origin: "Q2" },
-          { type: "add-question", id: "Q5", text: "q5" },
-          { type: "supersede-question", target: "Q2", question: "Q5" },
-        ]),
-      );
-
-      // when
-      const items = tree(graph);
-
-      // then
-      assert.deepEqual(
-        items.map((item) => item.id),
-        ["Q1", "Q5", "Q3"],
-      );
-      assert.deepEqual(
-        items.flatMap((item) => (item.kind === "follow-up" ? [] : item.children)),
-        [],
-      );
-    });
-
-    test("a subtree renders one question with its settled path only", () => {
-      // given
-      const log = Log.memoryLog([
-        { type: "add-question", id: "Q1", text: "q1" },
-        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
-        { type: "select-option", targets: ["Q1a"] },
-        { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
-        { type: "add-question", id: "Q3", text: "q3", origin: "Q1b" },
-        { type: "add-question", id: "Q4", text: "q4" },
-      ]);
-
-      // when
-      const items = subtree(log, "Q1");
-
-      // then
-      assert.deepEqual(items, [
-        {
-          kind: "question",
-          id: "Q1",
-          text: "q1",
-          selected: [{ id: "Q1a", text: "a" }],
-          children: [{ kind: "open-question", id: "Q2", text: "q2", options: [], children: [] }],
-        },
-      ]);
-    });
-
-    test("the walk lists deferred items with where they hung, but not not-applicable ones", () => {
-      // given
-      const graph = build(
-        Log.memoryLog([
-          { type: "add-question", id: "Q1", text: "q1" },
-          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-          { type: "select-option", targets: ["Q1a"] },
-          { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
-          { type: "add-question", id: "Q3", text: "q3", origin: "Q1a" },
-          { type: "exclude", target: "Q2", reason: "deferred" },
-          { type: "exclude", target: "Q3", reason: "not-applicable" },
-        ]),
-      );
-
-      // when
-      const { deferred } = walk(graph);
-
-      // then
-      assert.deepEqual(deferred, [{ kind: "question", id: "Q2", text: "q2", hungUnder: { id: "Q1a", text: "a" } }]);
-    });
-
-    test("the walk carries a deferred item's note", () => {
-      // given
-      const graph = build(
-        Log.memoryLog([
-          { type: "add-question", id: "Q1", text: "q1" },
-          { type: "exclude", target: "Q1", reason: "deferred", note: "why" },
-        ]),
-      );
-
-      // when
-      const { deferred } = walk(graph);
-
-      // then
-      assert.deepEqual(deferred, [{ kind: "question", id: "Q1", text: "q1", note: "why" }]);
-    });
-
-    test("the walk does not list deferred items under a superseded question", () => {
-      // given
-      const graph = build(
-        Log.memoryLog([
-          { type: "add-question", id: "Q1", text: "q1" },
-          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-          { type: "exclude", target: "Q1a", reason: "deferred" },
-          { type: "add-question", id: "Q2", text: "q2" },
-          { type: "supersede-question", target: "Q1", question: "Q2" },
-        ]),
-      );
-
-      // when
-      const { deferred } = walk(graph);
-
-      // then
-      assert.deepEqual(deferred, []);
-    });
-
-    test("tree nests the settled path, with promoted follow-ups in place", () => {
-      // given
-      const graph = build(
-        Log.memoryLog([
-          { type: "add-question", id: "Q1", text: "q1" },
-          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-          { type: "select-option", targets: ["Q1a"] },
-          { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1a" },
-          { type: "add-question", id: "Q2", text: "f1", origin: "F1" },
-          { type: "add-option", id: "Q2a", text: "x", origin: "Q2" },
-          { type: "promote-follow-up", target: "F1" },
-          { type: "select-option", targets: ["Q2a"] },
-        ]),
-      );
-
-      // when
-      const items = tree(graph);
-
-      // then
-      assert.deepEqual(items, [
-        {
-          kind: "question",
-          id: "Q1",
-          text: "q1",
-          selected: [{ id: "Q1a", text: "a" }],
-          children: [
-            { kind: "question", id: "Q2", text: "f1", selected: [{ id: "Q2a", text: "x" }], children: [] },
-          ],
-        },
-      ]);
-    });
-
-    test("an open question shows its options and what's under it", () => {
-      // given
-      const graph = build(
-        Log.memoryLog([
-          { type: "add-question", id: "Q1", text: "q1" },
-          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-          { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
-          { type: "add-question", id: "Q2", text: "q2", origin: "Q1" },
-        ]),
-      );
-
-      // when
-      const items = tree(graph);
-
-      // then
-      assert.deepEqual(items, [
-        {
-          kind: "open-question",
-          id: "Q1",
-          text: "q1",
-          options: [
-            { id: "Q1a", text: "a" },
-            { id: "Q1b", text: "b" },
-          ],
-          children: [{ kind: "open-question", id: "Q2", text: "q2", options: [], children: [] }],
-        },
-      ]);
-    });
-
     test("the tag query returns only open on-path items with that tag", () => {
       // given
       const log = Log.memoryLog([
@@ -3292,8 +2828,6 @@ const Graph = (() => {
   }
 
   return {
-    tree: (log: Log) => tree(build(log)),
-    walk: (log: Log) => walk(build(log)),
     buildTree,
     filterTree,
     status,
@@ -5171,10 +4705,6 @@ const Tree = (() => {
     target: { type: "string" },
   } as const;
 
-  function run(log: Log): TreeData {
-    return Graph.walk(log);
-  }
-
   function view(log: Log, config: { state?: string[]; target?: string }): TreeEntry[] {
     const states = Items.chosenStates(config.state);
 
@@ -5345,7 +4875,7 @@ const Tree = (() => {
     });
   }
 
-  return { options, run, view, tests };
+  return { options, view, tests };
 })();
 
 const Status = (() => {
@@ -5995,48 +5525,6 @@ const Xml = (() => {
             .map((line) => `  ${line}`);
 
     return ["<next>", ...trail, ...body, "</next>"].join("\n");
-  }
-
-  function treeLines(item: TreeItem): string[] {
-    if (item.kind === "follow-up") return [followUp(item)];
-
-    const head = [`  <id>${item.id}</id>`, `  <text>${escapeXml(item.text)}</text>`];
-    const state =
-      item.kind === "question"
-        ? ["  <selected>", ...item.selected.map((each) => `    ${option(each)}`), "  </selected>"]
-        : optionsLines(item.options);
-    const children = item.children.flatMap(treeLines).map((line) => `  ${line}`);
-
-    return ["<question>", ...head, ...state, ...children, "</question>"];
-  }
-
-  function deferredLines(item: DeferredItem): string[] {
-    const note = item.note === undefined ? [] : [`  <note>${escapeXml(item.note)}</note>`];
-    const hungUnder =
-      item.hungUnder === undefined
-        ? []
-        : [`  <hung-under><id>${item.hungUnder.id}</id><text>${escapeXml(item.hungUnder.text)}</text></hung-under>`];
-
-    return [
-      `<${item.kind}>`,
-      `  <id>${item.id}</id>`,
-      `  <text>${escapeXml(item.text)}</text>`,
-      ...note,
-      ...hungUnder,
-      `</${item.kind}>`,
-    ];
-  }
-
-  function tree(items: TreeItem[], deferred: DeferredItem[] = []): string {
-    if (items.length === 0 && deferred.length === 0) return "<tree></tree>";
-
-    const body = items.flatMap(treeLines).map((line) => `  ${line}`);
-    const out =
-      deferred.length === 0
-        ? []
-        : ["  <deferred>", ...deferred.flatMap(deferredLines).map((line) => `    ${line}`), "  </deferred>"];
-
-    return ["<tree>", ...body, ...out, "</tree>"].join("\n");
   }
 
   function decidedLines(data: OptionData & { children: StatusItem[] }): string[] {
@@ -7020,135 +6508,6 @@ const Xml = (() => {
       ]);
     });
 
-    test("an empty tree renders an empty tree element", () => {
-      // given
-      const items: TreeItem[] = [];
-
-      // when
-      const xml = tree(items);
-
-      // then
-      assert.equal(xml, "<tree></tree>");
-    });
-
-    test("tree renders a deferred item's note, escaped, before where it hung", () => {
-      // given
-      const deferred: DeferredItem[] = [
-        { kind: "question", id: "Q2", text: "q2", note: "a < b", hungUnder: { id: "Q1a", text: "a" } },
-      ];
-
-      // when
-      const xml = tree([], deferred);
-
-      // then
-      assert.deepEqual(xml.split("\n"), [
-        "<tree>",
-        "  <deferred>",
-        "    <question>",
-        "      <id>Q2</id>",
-        "      <text>q2</text>",
-        "      <note>a &lt; b</note>",
-        "      <hung-under><id>Q1a</id><text>a</text></hung-under>",
-        "    </question>",
-        "  </deferred>",
-        "</tree>",
-      ]);
-    });
-
-    test("tree renders deferred items in their own section with where they hung", () => {
-      // given
-      const deferred: DeferredItem[] = [{ kind: "question", id: "Q2", text: "q2", hungUnder: { id: "Q1a", text: "a" } }];
-
-      // when
-      const xml = tree([], deferred);
-
-      // then
-      assert.deepEqual(xml.split("\n"), [
-        "<tree>",
-        "  <deferred>",
-        "    <question>",
-        "      <id>Q2</id>",
-        "      <text>q2</text>",
-        "      <hung-under><id>Q1a</id><text>a</text></hung-under>",
-        "    </question>",
-        "  </deferred>",
-        "</tree>",
-      ]);
-    });
-
-    test("tree renders a settled question with an open question nested inside", () => {
-      // given
-      const items: TreeItem[] = [
-        {
-          kind: "question",
-          id: "Q1",
-          text: "q1",
-          selected: [{ id: "Q1a", text: "a" }],
-          children: [
-            {
-              kind: "open-question",
-              id: "Q2",
-              text: "q2",
-              options: [
-                { id: "Q2a", text: "x" },
-                { id: "Q2b", text: "y" },
-              ],
-              children: [],
-            },
-          ],
-        },
-      ];
-
-      // when
-      const xml = tree(items);
-
-      // then
-      assert.equal(
-        xml,
-        [
-          "<tree>",
-          "  <question>",
-          "    <id>Q1</id>",
-          "    <text>q1</text>",
-          "    <selected>",
-          "      <option><id>Q1a</id><text>a</text></option>",
-          "    </selected>",
-          "    <question>",
-          "      <id>Q2</id>",
-          "      <text>q2</text>",
-          "      <options>",
-          "        <option><id>Q2a</id><text>x</text></option>",
-          "        <option><id>Q2b</id><text>y</text></option>",
-          "      </options>",
-          "    </question>",
-          "  </question>",
-          "</tree>",
-        ].join("\n"),
-      );
-    });
-
-    test("tree escapes answer text and renders follow-ups as follow-up lines", () => {
-      // given
-      const follow: FollowUpData = { id: "F1", text: "f" };
-      const items: TreeItem[] = [
-        {
-          kind: "question",
-          id: "Q1",
-          text: "q1",
-          selected: [{ id: "Q1a", text: "a < b > c & d" }],
-          children: [],
-        },
-        { kind: "follow-up", ...follow },
-      ];
-
-      // when
-      const xml = tree(items);
-
-      // then
-      const lines = xml.split("\n");
-      assert.ok(lines.includes("      <option><id>Q1a</id><text>a &lt; b &gt; c &amp; d</text></option>"));
-      assert.equal(lines.at(-2), `  ${followUp(follow)}`);
-    });
   }
 
   function taggedLines(data: TaggedData & Partial<ListedItem>): string[] {
@@ -7204,7 +6563,7 @@ const Xml = (() => {
     return ["<items>", ...list.flatMap(taggedLines).map((line) => `  ${line}`), "</items>"].join("\n");
   }
 
-  return { option, question, selection, followUp, item, next, tree, builtTree, status, supersede, taggedItem, items, tests };
+  return { option, question, selection, followUp, item, next, builtTree, status, supersede, taggedItem, items, tests };
 })();
 
 const Cli = (() => {
