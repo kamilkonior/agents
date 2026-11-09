@@ -933,6 +933,13 @@ const Graph = (() => {
     ];
   }
 
+  function treeView(log     )            {
+    const graph = build(log);
+    if (graph.roots.length > 0) throw new Error("the tree view is not built yet");
+
+    return [];
+  }
+
   function trail(log     , id        )              {
     const steps              = [];
 
