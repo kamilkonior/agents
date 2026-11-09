@@ -134,6 +134,7 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
                                                                       
                                  
                                                                 
+                                             
   
 
 class DecisionTreeError extends Error {}
@@ -496,7 +497,7 @@ const Graph = (() => {
     const roots                 = [];
     const rootFollowUps                 = [];
     const exclusions                      = new Map();
-    const graph        = { nodes, roots, rootFollowUps, exclusions, tags: new Map() };
+    const graph        = { nodes, roots, rootFollowUps, exclusions, tags: new Map(), walkOrder: [] };
 
     for (const event of log.read()) {
       switch (event.type) {
@@ -643,6 +644,8 @@ const Graph = (() => {
   }
 
   function assignStates(graph       )       {
+    graph.walkOrder = [];
+
     graph.roots.forEach((question) => assignQuestion(graph, question, undefined));
     graph.rootFollowUps.forEach((followUp) => assignFollowUp(graph, followUp, undefined));
 
@@ -674,6 +677,7 @@ const Graph = (() => {
 
     if (hiding !== undefined && hiding.by !== question.id) question.hiddenBy = hiding.by;
     question.state = hiding?.state ?? (selected.length === 0 ? "open" : "settled");
+    if (hiding === undefined) graph.walkOrder.push(question);
 
     for (const option of question.options) {
       const onPath = selected.includes(option);
@@ -695,6 +699,7 @@ const Graph = (() => {
 
     if (hiding !== undefined && hiding.by !== followUp.id) followUp.hiddenBy = hiding.by;
     followUp.state = hiding?.state ?? (followUp.status === "open" ? "open" : "settled");
+    if (hiding === undefined) graph.walkOrder.push(followUp);
 
     followUp.children.forEach((child) => assignQuestion(graph, child, below));
     followUp.followUps.forEach((nested) => assignFollowUp(graph, nested, below));
