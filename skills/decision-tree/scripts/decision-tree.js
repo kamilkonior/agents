@@ -975,6 +975,25 @@ const Graph = (() => {
       assert.deepEqual([graph.nodes.get("Q1")?.state, graph.nodes.get("Q1a")?.state], ["open", "open"]);
     });
 
+    test("a selected option and its question are settled and an unchosen option is off-path", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+      ]);
+
+      // when
+      const graph = build(log);
+
+      // then
+      assert.deepEqual(
+        ["Q1", "Q1a", "Q1b"].map((id) => graph.nodes.get(id)?.state),
+        ["settled", "settled", "off-path"],
+      );
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
