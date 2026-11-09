@@ -75,6 +75,7 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
 
                  
                                                                   
+                                                                                     
                                                                                     
                                                                                                                 
      
@@ -832,6 +833,12 @@ const Graph = (() => {
       .map((node) => openItem(graph, node));
   }
 
+  function noteOf(graph       , node                                          )                    {
+    const note = graph.exclusions.get(node.id)?.note;
+
+    return note === undefined ? {} : { note };
+  }
+
   function childItems(graph       , node                                          )               {
     return [
       ...node.children.flatMap((child) => statusItems(graph, child)),
@@ -843,10 +850,7 @@ const Graph = (() => {
     if (question.state === "not-applicable") return [];
 
     if (question.state === "deferred") {
-      const note = graph.exclusions.get(question.id)?.note;
-      const noteData = note === undefined ? {} : { note };
-
-      return [{ kind: "question", state: "deferred", id: question.id, text: question.text, ...noteData }];
+      return [{ kind: "question", state: "deferred", id: question.id, text: question.text, ...noteOf(graph, question) }];
     }
 
     const children = childItems(graph, question);
@@ -877,6 +881,11 @@ const Graph = (() => {
 
   function followUpItems(graph       , followUp              )               {
     if (followUp.state === "settled") return childItems(graph, followUp);
+
+    if (followUp.state === "deferred") {
+      return [{ kind: "follow-up", state: "deferred", id: followUp.id, text: followUp.text, ...noteOf(graph, followUp) }];
+    }
+
     if (followUp.state !== "open") throw new Error(`status does not handle ${followUp.state} yet`);
 
     return [{ kind: "follow-up", state: "open", id: followUp.id, text: followUp.text }];
