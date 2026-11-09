@@ -5068,6 +5068,40 @@ const Xml = (() => {
       );
     });
 
+    test("status renders deferred items with their state, and a note only when there is one", () => {
+      // given
+      const items: StatusItem[] = [
+        { kind: "question", state: "deferred", id: "Q1", text: "q", note: "why" },
+        { kind: "follow-up", state: "deferred", id: "F1", text: "f" },
+        { kind: "option", state: "deferred", id: "Q2a", text: "a" },
+      ];
+
+      // when
+      const xml = status(items);
+
+      // then
+      assert.equal(
+        xml,
+        [
+          "<status>",
+          '  <question state="deferred">',
+          "    <id>Q1</id>",
+          "    <text>q</text>",
+          "    <note>why</note>",
+          "  </question>",
+          '  <follow-up state="deferred">',
+          "    <id>F1</id>",
+          "    <text>f</text>",
+          "  </follow-up>",
+          '  <option state="deferred">',
+          "    <id>Q2a</id>",
+          "    <text>a</text>",
+          "  </option>",
+          "</status>",
+        ].join("\n"),
+      );
+    });
+
     test("status renders an open question with its state and options", () => {
       // given
       const items: StatusItem[] = [
