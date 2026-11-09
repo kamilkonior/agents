@@ -1855,6 +1855,26 @@ const Graph = (() => {
       assert.deepEqual(kept, entries);
     });
 
+    test("filtering ignores an excluded option's own state", () => {
+      // given
+      const entries: TreeEntry[] = [
+        {
+          kind: "question",
+          state: "settled",
+          id: "Q1",
+          text: "q",
+          options: [{ id: "Q1a", text: "a", state: "deferred", children: [] }],
+          children: [],
+        },
+      ];
+
+      // when
+      const kept = filterTree(entries, ["deferred"]);
+
+      // then
+      assert.deepEqual(kept, []);
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
