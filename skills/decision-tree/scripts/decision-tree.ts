@@ -4331,6 +4331,24 @@ const Status = (() => {
       // then
       assert.deepEqual(items, []);
     });
+
+    test("an open question has state open and its live options", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "exclude", target: "Q1b", reason: "not-applicable" },
+      ]);
+
+      // when
+      const items = run(log);
+
+      // then
+      assert.deepEqual(items, [
+        { kind: "question", state: "open", id: "Q1", text: "q", options: [{ id: "Q1a", text: "a" }], children: [] },
+      ]);
+    });
   }
 
   return { run, tests };
