@@ -74,6 +74,7 @@ Some behaviour worth expecting:
 |---|---|
 | `--query next [--trail]` | the one thing to handle now; `--trail` adds the path from the root down to it |
 | `--query tree` | the settled tree, open questions and deferred items |
+| `--query status [--target ID]` | where the decisions stand now: one hierarchy of what's open, settled and deferred; `ID` limits it to one question or follow-up and what's under it, and prints nothing for an item `status` leaves out; prints `<status>` |
 | `--query items [--tag T] [--target ID] [--state S]…` | a flat list of questions and follow-ups, each marked with its state; `T` keeps only items with that tag; `ID` finds one item, in any state unless `S` is given; `S` is `open` (the default), `settled`, `off-path`, `deferred`, `not-applicable`, `frozen` or `all`; an item excluded directly shows its `<note>`, and an item hidden by another names it in `<hidden-by>`; a focus doesn't limit it; prints `<items>` |
 
 ## Output
@@ -131,6 +132,35 @@ Some behaviour worth expecting:
     </question>
   </deferred>
 </tree>
+```
+
+`--query status` is the compact view. Each item has a `state`, and the state decides its body: `open` has `<options>`, `settled` has `<decided>`, and `deferred` has a `<note>` if one was given. Position shows what depends on what: an item inside a decided option goes away if that answer changes, and an item beside `<decided>` stays. Off-path and not-applicable items are left out.
+
+```xml
+<status>
+  <question state="settled">
+    <id>Q1</id>
+    <text>Where do events live?</text>
+    <decided>
+      <option>
+        <id>Q1b</id>
+        <text>a database</text>
+        <question state="open">
+          <id>Q2</id>
+          <text>Which database?</text>
+          <options>
+            <option><id>Q2a</id><text>SQLite</text></option>
+          </options>
+        </question>
+      </option>
+    </decided>
+    <question state="deferred">
+      <id>Q3</id>
+      <text>Multi-region?</text>
+      <note>Legal is deciding</note>
+    </question>
+  </question>
+</status>
 ```
 
 `supersede-question` prints the new question and the old subtree. In the old subtree every question lists all its options, with the selected ones marked, so rejected options can be reconsidered:
@@ -217,7 +247,9 @@ A `<hidden-by>` id can be looked up with `--target`; if it names an option, look
 
 **Find work by topic.** `tag` questions and follow-ups as they come up, list the open ones with `--query items --tag T`, and `focus` the one to work through first.
 
-**Finish.** When `next` is empty, `--query tree` is the record of what was decided, and `<deferred>` is what was left for later.
+**See what depends on an answer.** Before changing a selection, run `--query status --target QID`. Whatever sits inside the decided option goes with it; whatever sits beside `<decided>` stays.
+
+**Finish.** When `next` is empty, `--query status` is the record of what was decided and what was left for later.
 
 ## What the CLI refuses
 
