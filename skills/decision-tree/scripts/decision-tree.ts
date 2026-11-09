@@ -95,12 +95,15 @@ type TaggedData = {
   tags: string[];
 };
 
+type ExcludedOption = OptionData & { state: ExclusionReason; note?: string };
+
 type ListedItem = TaggedData & {
   state: ItemState;
   selected?: OptionData[];
   note?: string;
   hiddenBy?: string;
   trail?: TrailStep[];
+  excludedOptions?: ExcludedOption[];
 };
 
 type SupersedeData = { question: QuestionData; superseded: SupersededItem[] };
@@ -987,6 +990,15 @@ const Graph = (() => {
     throw new DecisionTreeError(`${node.id} is off-path, hidden by ${current.hiddenBy}`);
   }
 
+  function excludedOptions(graph: Graph, question: QuestionNode): ExcludedOption[] {
+    return question.options.flatMap((option) => {
+      const exclusion = graph.exclusions.get(option.id);
+      if (exclusion === undefined) return [];
+
+      return [{ id: option.id, text: option.text, state: exclusion.reason, ...noteOf(graph, option) }];
+    });
+  }
+
   function targetNode(graph: Graph, target: string): QuestionNode | FollowUpNode {
     const wanted = graph.nodes.get(target);
     if (wanted === undefined) throw new DecisionTreeError(`target not found: ${target}`);
@@ -1016,8 +1028,10 @@ const Graph = (() => {
       const note = graph.exclusions.get(node.id)?.note;
       const noteData = note === undefined ? {} : { note };
       const causeData = node.hiddenBy === undefined ? {} : { hiddenBy: node.hiddenBy };
+      const excluded = node.kind === "question" ? excludedOptions(graph, node) : [];
+      const excludedData = excluded.length === 0 ? {} : { excludedOptions: excluded };
 
-      return [{ ...taggedData(graph, node), state, ...selectedData, ...noteData, ...causeData }];
+      return [{ ...taggedData(graph, node), state, ...selectedData, ...noteData, ...causeData, ...excludedData }];
     });
   }
 
