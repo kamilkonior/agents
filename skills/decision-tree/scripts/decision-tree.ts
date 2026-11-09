@@ -71,6 +71,8 @@ type SupersededItem =
 
 type ItemState = "open" | "settled" | "off-path" | "deferred" | "not-applicable" | "frozen";
 
+type NodeState = ItemState | "unset";
+
 type TaggedData = {
   item: { kind: "question"; question: QuestionData } | { kind: "follow-up"; followUp: FollowUpData };
   tags: string[];
@@ -91,6 +93,7 @@ type QuestionNode = {
   kind: "question";
   id: string;
   text: string;
+  state: NodeState;
   parent?: OptionNode | QuestionNode | FollowUpNode;
   options: OptionNode[];
   children: QuestionNode[];
@@ -103,6 +106,7 @@ type OptionNode = {
   kind: "option";
   id: string;
   text: string;
+  state: NodeState;
   question: QuestionNode;
   children: QuestionNode[];
   followUps: FollowUpNode[];
@@ -112,6 +116,7 @@ type FollowUpNode = {
   kind: "follow-up";
   id: string;
   text: string;
+  state: NodeState;
   parent?: OptionNode | QuestionNode | FollowUpNode;
   status: "open" | "promoted";
   children: QuestionNode[];
@@ -496,6 +501,7 @@ const Graph = (() => {
             kind: "question",
             id: event.id,
             text: event.text,
+            state: "unset",
             options: [],
             selected: [],
             children: [],
@@ -520,6 +526,7 @@ const Graph = (() => {
             kind: "option",
             id: event.id,
             text: event.text,
+            state: "unset",
             question,
             children: [],
             followUps: [],
@@ -542,6 +549,7 @@ const Graph = (() => {
             kind: "follow-up",
             id: event.id,
             text: event.text,
+            state: "unset",
             status: "open",
             children: [],
             followUps: [],
@@ -625,6 +633,12 @@ const Graph = (() => {
     }
 
     return graph;
+  }
+
+  function assertStatesAssigned(graph: Graph): void {
+    for (const node of graph.nodes.values()) {
+      if (node.state === "unset") throw new Error(`node ${node.id} has no state`);
+    }
   }
 
   function project(graph: Graph) {
