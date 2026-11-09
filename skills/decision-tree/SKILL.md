@@ -88,7 +88,7 @@ The CLI accepts any valid `--origin` and can't tell when it is the wrong one, so
 | `add-option --origin QID --text T` | adds an option to a question | `<option>` |
 | `add-follow-up --text T [--origin ID]` | records a follow-up | `<follow-up>` |
 | `select-option --target OID…` | selects options of one question | `<selection>` |
-| `promote-follow-up --target FID [--text T] [--option A]…` | turns a follow-up into a question under it, worded as `T` if given | `<question>` |
+| `promote-follow-up --target FID [--text T] [--option A]…` | turns a follow-up into a question under it, worded as `T` if given | `<promote>`: the new question and the follow-up it came from |
 | `supersede-question --target QID --text T [--option A]…` | puts a reworded question in the old one's place, keeping its tags, and freezes the old one | `<supersede>` |
 | `exclude --target ID --reason R [--note N]` | takes a question, option or follow-up out with everything under it; `R` is `deferred` or `not-applicable` | the item |
 | `restore --target ID` | brings an excluded item back with everything under it | the item |

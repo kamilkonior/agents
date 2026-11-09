@@ -105,6 +105,7 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
                                      
   
 
+                                                                      
                                                                          
 
                                                                                          
@@ -3496,7 +3497,7 @@ const PromoteFollowUp = (() => {
     option: { type: "string", multiple: true },
   }         ;
 
-  function run(log     , config                                                       )               {
+  function run(log     , config                                                       )              {
     const target = config.target;
     if (!target) throw new DecisionTreeError("promote-follow-up requires --target");
 
@@ -3510,7 +3511,7 @@ const PromoteFollowUp = (() => {
 
       staged.append({ type: "promote-follow-up", target });
 
-      return question;
+      return { question, promoted: { id: followUp.id, text: followUp.text } };
     });
   }
 
@@ -3560,16 +3561,19 @@ const PromoteFollowUp = (() => {
       const log = Log.memoryLog([...events]);
 
       // when
-      const question = run(log, { target: "F1", option: ["x", "y"] });
+      const promotion = run(log, { target: "F1", option: ["x", "y"] });
 
       // then
-      assert.deepEqual(question, {
-        id: "Q2",
-        text: "f",
-        options: [
-          { id: "Q2a", text: "x" },
-          { id: "Q2b", text: "y" },
-        ],
+      assert.deepEqual(promotion, {
+        question: {
+          id: "Q2",
+          text: "f",
+          options: [
+            { id: "Q2a", text: "x" },
+            { id: "Q2b", text: "y" },
+          ],
+        },
+        promoted: { id: "F1", text: "f" },
       });
       assert.deepEqual(log.read(), [
         ...events,
@@ -3586,10 +3590,13 @@ const PromoteFollowUp = (() => {
       const log = Log.memoryLog([...events]);
 
       // when
-      const question = run(log, { target: "F1", text: "better" });
+      const promotion = run(log, { target: "F1", text: "better" });
 
       // then
-      assert.deepEqual(question, { id: "Q1", text: "better", options: [] });
+      assert.deepEqual(promotion, {
+        question: { id: "Q1", text: "better", options: [] },
+        promoted: { id: "F1", text: "f" },
+      });
       assert.deepEqual(log.read(), [
         ...events,
         { type: "add-question", id: "Q1", text: "better", origin: "F1" },
@@ -5660,6 +5667,16 @@ const Xml = (() => {
     return ["<tree>", ...entries.flatMap(treeLines).map((line) => `  ${line}`), "</tree>"].join("\n");
   }
 
+  function promote(data             )         {
+    const replacement = question(data.question)
+      .split("\n")
+      .map((line) => `  ${line}`);
+
+    return ["<promote>", ...replacement, "  <promoted>", `    ${followUp(data.promoted)}`, "  </promoted>", "</promote>"].join(
+      "\n",
+    );
+  }
+
   function supersede(data               )         {
     const replacement = question(data.question)
       .split("\n")
@@ -6338,6 +6355,33 @@ const Xml = (() => {
       assert.equal(xml, "<follow-up><id>F1</id><text>f</text></follow-up>");
     });
 
+    test("promote renders the new question and the follow-up it came from", () => {
+      // given
+      const data              = {
+        question: { id: "Q2", text: "better", options: [{ id: "Q2a", text: "x" }] },
+        promoted: { id: "F1", text: "f" },
+      };
+
+      // when
+      const xml = promote(data);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<promote>",
+        "  <question>",
+        "    <id>Q2</id>",
+        "    <text>better</text>",
+        "    <options>",
+        "      <option><id>Q2a</id><text>x</text></option>",
+        "    </options>",
+        "  </question>",
+        "  <promoted>",
+        "    <follow-up><id>F1</id><text>f</text></follow-up>",
+        "  </promoted>",
+        "</promote>",
+      ]);
+    });
+
     test("supersede renders the superseded question with every option, the selected one marked", () => {
       // given
       const data                = {
@@ -6581,7 +6625,7 @@ const Xml = (() => {
     return ["<items>", ...list.flatMap(taggedLines).map((line) => `  ${line}`), "</items>"].join("\n");
   }
 
-  return { option, question, selection, followUp, item, next, tree, status, supersede, taggedItem, items, tests };
+  return { option, question, selection, followUp, item, next, tree, status, promote, supersede, taggedItem, items, tests };
 })();
 
 const Cli = (() => {
@@ -6859,7 +6903,7 @@ const Cli = (() => {
 
       case "promote-follow-up": {
         const config = readModeConfig(PromoteFollowUp.options);
-        console.log(Xml.question(PromoteFollowUp.run(log, config)));
+        console.log(Xml.promote(PromoteFollowUp.run(log, config)));
         break;
       }
 
