@@ -6118,10 +6118,25 @@ const Xml = (() => {
     return ["<status>", ...items.flatMap(statusLines).map((line) => `  ${line}`), "</status>"].join("\n");
   }
 
+  function builtTreeLines(entry: TreeEntry): string[] {
+    if (entry.kind === "follow-up") throw new Error("built tree rendering of follow-ups is not built yet");
+
+    const options = entry.options.map((each) => `    ${markedOption(each, each.selected === true)}`);
+    const optionsBlock = options.length === 0 ? optionsLines([]) : ["  <options>", ...options, "  </options>"];
+
+    return [
+      `<question state="${entry.state}">`,
+      `  <id>${entry.id}</id>`,
+      `  <text>${escapeXml(entry.text)}</text>`,
+      ...optionsBlock,
+      "</question>",
+    ];
+  }
+
   function builtTree(entries: TreeEntry[]): string {
     if (entries.length === 0) return "<tree></tree>";
 
-    throw new Error("built tree rendering is not built yet");
+    return ["<tree>", ...entries.flatMap(builtTreeLines).map((line) => `  ${line}`), "</tree>"].join("\n");
   }
 
   function supersededLines(item: SupersededItem): string[] {
