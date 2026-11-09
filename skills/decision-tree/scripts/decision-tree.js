@@ -5245,6 +5245,25 @@ const Tree = (() => {
           error instanceof DecisionTreeError && error.message === "target is not a question or follow-up: Q1a",
       );
     });
+
+    test("with no state the tree shows only open items", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "settled" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "add-question", id: "Q2", text: "open" },
+      ]);
+
+      // when
+      const entries = view(log, {});
+
+      // then
+      assert.deepEqual(
+        entries.map((entry) => entry.id),
+        ["Q2"],
+      );
+    });
   }
 
   return { options, run, tests };
