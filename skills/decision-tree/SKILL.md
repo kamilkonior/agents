@@ -158,7 +158,7 @@ Some behaviour worth expecting:
 </status>
 ```
 
-`supersede-question` prints the new question and the old subtree. In the old subtree every question lists all its options, with the selected ones marked, so rejected options can be reconsidered:
+`supersede-question` prints the new question and the old subtree, in the same shape as `--query tree` with every state included. Everything an option led to sits inside it, including branches not taken, so rejected options can be reconsidered along with what depended on them:
 
 ```xml
 <supersede>
@@ -168,7 +168,7 @@ Some behaviour worth expecting:
     <options></options>
   </question>
   <superseded>
-    <question>
+    <question state="settled">
       <id>Q1</id>
       <text>Where do events live?</text>
       <options>

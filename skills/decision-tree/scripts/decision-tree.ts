@@ -59,16 +59,6 @@ type DeferredItem = {
 
 type TreeData = { items: TreeItem[]; deferred: DeferredItem[] };
 
-type SupersededItem =
-  | {
-      kind: "question";
-      id: string;
-      text: string;
-      options: (OptionData & { selected: boolean })[];
-      children: SupersededItem[];
-    }
-  | { kind: "follow-up"; id: string; text: string };
-
 type ItemState = "open" | "settled" | "off-path" | "deferred" | "not-applicable" | "frozen";
 
 type NodeState = ItemState | "unset";
@@ -125,7 +115,7 @@ type ListedItem = TaggedData & {
   excludedOptions?: ExcludedOption[];
 };
 
-type SupersedeData = { question: QuestionData; superseded: SupersededItem[] };
+type SupersedeData = { question: QuestionData; superseded: TreeEntry[] };
 
 type TrailStep = { kind: "question" | "option" | "follow-up"; id: string; text: string };
 
@@ -821,24 +811,6 @@ const Graph = (() => {
     const graph = build(log);
 
     return project(graph).question(questionNode(graph.nodes, id));
-  }
-
-  function superseded(log: Log, id: string): SupersededItem[] {
-    const graph = build(log);
-
-    function withOptions(item: TreeItem): SupersededItem {
-      if (item.kind === "follow-up") return item;
-
-      const selectedIds = item.kind === "question" ? item.selected.map((option) => option.id) : [];
-      const options = liveOptions(graph, questionNode(graph.nodes, item.id)).map((option) => ({
-        ...option,
-        selected: selectedIds.includes(option.id),
-      }));
-
-      return { kind: "question", id: item.id, text: item.text, options, children: item.children.map(withOptions) };
-    }
-
-    return subtree(log, id).map(withOptions);
   }
 
   function isWithin(node: QuestionNode | FollowUpNode, ancestor: QuestionNode | FollowUpNode): boolean {
@@ -3326,7 +3298,6 @@ const Graph = (() => {
     filterTree,
     status,
     frontier: (log: Log) => frontier(build(log)),
-    superseded,
     hasOpen,
     rejectOffPath,
     trail,
@@ -4336,7 +4307,7 @@ const SupersedeQuestion = (() => {
     const old = Graph.liveNode(log, target, "target");
     if (old.kind !== "question") throw new DecisionTreeError(`target is not a question: ${target}`);
 
-    const superseded = Graph.superseded(log, target);
+    const superseded = Graph.buildTree(log, target);
 
     return Log.transaction(log, (staged) => {
       const question = AddQuestion.run(staged, { text, origin: old.parent?.id, option: config.option });
@@ -4461,21 +4432,28 @@ const SupersedeQuestion = (() => {
       assert.deepEqual(supersede.superseded, [
         {
           kind: "question",
+          state: "settled",
           id: "Q1",
           text: "q1",
           options: [
-            { id: "Q1a", text: "a", selected: true },
-            { id: "Q1b", text: "b", selected: false },
-          ],
-          children: [
             {
-              kind: "question",
-              id: "Q2",
-              text: "q2",
-              options: [{ id: "Q2a", text: "x", selected: false }],
-              children: [],
+              id: "Q1a",
+              text: "a",
+              selected: true,
+              children: [
+                {
+                  kind: "question",
+                  state: "open",
+                  id: "Q2",
+                  text: "q2",
+                  options: [{ id: "Q2a", text: "x", children: [] }],
+                  children: [],
+                },
+              ],
             },
+            { id: "Q1b", text: "b", children: [] },
           ],
+          children: [],
         },
       ]);
     });
@@ -6176,31 +6154,11 @@ const Xml = (() => {
     return ["<tree>", ...entries.flatMap(builtTreeLines).map((line) => `  ${line}`), "</tree>"].join("\n");
   }
 
-  function supersededLines(item: SupersededItem): string[] {
-    if (item.kind === "follow-up") return [followUp(item)];
-
-    const options = item.options.map((each) =>
-      `    ${markedOption(each, each.selected)}`,
-    );
-    const children = item.children.flatMap(supersededLines).map((line) => `  ${line}`);
-
-    return [
-      "<question>",
-      `  <id>${item.id}</id>`,
-      `  <text>${escapeXml(item.text)}</text>`,
-      "  <options>",
-      ...options,
-      "  </options>",
-      ...children,
-      "</question>",
-    ];
-  }
-
   function supersede(data: SupersedeData): string {
     const replacement = question(data.question)
       .split("\n")
       .map((line) => `  ${line}`);
-    const superseded = data.superseded.flatMap(supersededLines).map((line) => `    ${line}`);
+    const superseded = data.superseded.flatMap(builtTreeLines).map((line) => `    ${line}`);
 
     return ["<supersede>", ...replacement, "  <superseded>", ...superseded, "  </superseded>", "</supersede>"].join(
       "\n",
@@ -6881,11 +6839,12 @@ const Xml = (() => {
         superseded: [
           {
             kind: "question",
+            state: "settled",
             id: "Q1",
             text: "q1",
             options: [
-              { id: "Q1a", text: "a", selected: true },
-              { id: "Q1b", text: "b", selected: false },
+              { id: "Q1a", text: "a", selected: true, children: [] },
+              { id: "Q1b", text: "b", children: [] },
             ],
             children: [],
           },
@@ -6904,7 +6863,7 @@ const Xml = (() => {
         "    <options></options>",
         "  </question>",
         "  <superseded>",
-        "    <question>",
+        '    <question state="settled">',
         "      <id>Q1</id>",
         "      <text>q1</text>",
         "      <options>",
