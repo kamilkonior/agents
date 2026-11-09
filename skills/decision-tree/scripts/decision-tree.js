@@ -4260,6 +4260,25 @@ const Items = (() => {
       assert.equal(items.length, 2);
     });
 
+    test("a limit applies after the state filter", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "settled" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "add-question", id: "Q2", text: "open" },
+      ]);
+
+      // when
+      const items = run(log, { state: ["open"], limit: "1" });
+
+      // then
+      assert.deepEqual(
+        items.map((each) => (each.item.kind === "question" ? each.item.question.id : "")),
+        ["Q2"],
+      );
+    });
+
     test("a trail without a target throws", () => {
       // given
       const log = Log.memoryLog();
