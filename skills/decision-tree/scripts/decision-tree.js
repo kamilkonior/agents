@@ -4954,6 +4954,17 @@ const Xml = (() => {
   }
 
   function tests() {
+    test("status renders no items as an empty element", () => {
+      // given
+      const items               = [];
+
+      // when
+      const xml = status(items);
+
+      // then
+      assert.equal(xml, "<status></status>");
+    });
+
     test("option text is escaped", () => {
       // given
       const data             = { id: "Q1a", text: "a < b > c & d" };
