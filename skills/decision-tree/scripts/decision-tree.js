@@ -4619,6 +4619,21 @@ const Status = (() => {
         },
       ]);
     });
+
+    test("a promoted follow-up is invisible and its question takes its place", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-follow-up", id: "F1", text: "f" },
+        { type: "add-question", id: "Q1", text: "q", origin: "F1" },
+        { type: "promote-follow-up", target: "F1" },
+      ]);
+
+      // when
+      const items = run(log);
+
+      // then
+      assert.deepEqual(items, [{ kind: "question", state: "open", id: "Q1", text: "q", options: [], children: [] }]);
+    });
   }
 
   return { run, tests };
