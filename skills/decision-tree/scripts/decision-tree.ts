@@ -1875,6 +1875,43 @@ const Graph = (() => {
       assert.deepEqual(kept, []);
     });
 
+    test("filtering keeps an option but drops an off-path child under it", () => {
+      // given
+      const offPath: TreeEntry = {
+        kind: "question",
+        state: "off-path",
+        id: "Q2",
+        text: "q2",
+        options: [],
+        children: [],
+      };
+      const entries: TreeEntry[] = [
+        {
+          kind: "question",
+          state: "settled",
+          id: "Q1",
+          text: "q1",
+          options: [{ id: "Q1a", text: "a", children: [offPath] }],
+          children: [],
+        },
+      ];
+
+      // when
+      const kept = filterTree(entries, ["settled"]);
+
+      // then
+      assert.deepEqual(kept, [
+        {
+          kind: "question",
+          state: "settled",
+          id: "Q1",
+          text: "q1",
+          options: [{ id: "Q1a", text: "a", children: [] }],
+          children: [],
+        },
+      ]);
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
