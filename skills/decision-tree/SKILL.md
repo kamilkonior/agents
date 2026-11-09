@@ -37,7 +37,7 @@ Results print as XML on stdout. A failed call prints one line on stderr, exits w
 Some behaviour worth expecting:
 
 - If every selected option is excluded, the question opens again. Restoring the option brings the selection back, unless a newer selection replaced it. A question never falls back to an earlier selection.
-- A focus ends for good once its subtree has nothing open, even if new work appears there later. Excluding the focused item ends the focus too, and restoring it doesn't bring the focus back. Superseding the focused question moves the focus to the replacement.
+- A focus ends for good once its subtree has nothing open, even if new work appears there later. Excluding the focused item ends the focus too, and restoring it doesn't bring the focus back. So does a changed answer that takes the focused item off the path, and selecting that answer again doesn't bring it back. Superseding the focused question moves the focus to the replacement.
 
 ## Commands
 
