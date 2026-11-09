@@ -4380,6 +4380,8 @@ const Tree = (() => {
 })();
 
 const Status = (() => {
+  const options = {}         ;
+
   function run(log     )               {
     return Graph.status(log);
   }
@@ -4799,7 +4801,7 @@ const Status = (() => {
     });
   }
 
-  return { run, tests };
+  return { options, run, tests };
 })();
 
 const Xml = (() => {
@@ -5930,6 +5932,12 @@ const Cli = (() => {
         readModeConfig(Tree.options);
         const { items, deferred } = Tree.run(log);
         console.log(Xml.tree(items, deferred));
+        break;
+      }
+
+      case "status": {
+        readModeConfig(Status.options);
+        console.log(Xml.status(Status.run(log)));
         break;
       }
 
