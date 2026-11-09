@@ -6439,6 +6439,42 @@ const Xml = (() => {
       ]);
     });
 
+    test("the built tree renders follow-ups with their state and what they hold", () => {
+      // given
+      const entries: TreeEntry[] = [
+        { kind: "follow-up", state: "open", id: "F1", text: "open", children: [] },
+        {
+          kind: "follow-up",
+          state: "settled",
+          id: "F2",
+          text: "promoted",
+          children: [{ kind: "question", state: "open", id: "Q1", text: "q", options: [], children: [] }],
+        },
+      ];
+
+      // when
+      const xml = builtTree(entries);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<tree>",
+        '  <follow-up state="open">',
+        "    <id>F1</id>",
+        "    <text>open</text>",
+        "  </follow-up>",
+        '  <follow-up state="settled">',
+        "    <id>F2</id>",
+        "    <text>promoted</text>",
+        '    <question state="open">',
+        "      <id>Q1</id>",
+        "      <text>q</text>",
+        "      <options></options>",
+        "    </question>",
+        "  </follow-up>",
+        "</tree>",
+      ]);
+    });
+
     test("status renders no items as an empty element", () => {
       // given
       const items: StatusItem[] = [];
