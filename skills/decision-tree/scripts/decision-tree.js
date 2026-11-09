@@ -4201,7 +4201,8 @@ const Items = (() => {
 
     const given = config.state ?? (config.target === undefined ? undefined : ["all"]);
 
-    const listed = Graph.listed(log, config.tag, chosenStates(given), config.target);
+    const found = Graph.listed(log, config.tag, chosenStates(given), config.target);
+    const listed = config.limit === undefined ? found : found.slice(0, Number(config.limit));
     if (!config.trail || config.target === undefined) return listed;
 
     const steps = Graph.trail(log, config.target);
