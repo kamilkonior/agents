@@ -865,7 +865,7 @@ const Graph = (() => {
       return [{ kind: "question", state: "settled", id: question.id, text: question.text, decided, children }];
     }
 
-    if (question.state !== "open") throw new Error(`status does not handle ${question.state} yet`);
+    if (question.state !== "open") throw new Error(`status reached a ${question.state} item: ${question.id}`);
 
     return [
       {
@@ -880,13 +880,14 @@ const Graph = (() => {
   }
 
   function followUpItems(graph       , followUp              )               {
+    if (followUp.state === "not-applicable") return [];
     if (followUp.state === "settled") return childItems(graph, followUp);
 
     if (followUp.state === "deferred") {
       return [{ kind: "follow-up", state: "deferred", id: followUp.id, text: followUp.text, ...noteOf(graph, followUp) }];
     }
 
-    if (followUp.state !== "open") throw new Error(`status does not handle ${followUp.state} yet`);
+    if (followUp.state !== "open") throw new Error(`status reached a ${followUp.state} item: ${followUp.id}`);
 
     return [{ kind: "follow-up", state: "open", id: followUp.id, text: followUp.text }];
   }
