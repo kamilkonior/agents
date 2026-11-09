@@ -1150,6 +1150,25 @@ const Graph = (() => {
       assert.equal(questionNode(graph.nodes, "Q3").hiddenBy, "Q1b");
     });
 
+    test("once the outer option is selected, the next unchosen option is the blocker", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1b" },
+        { type: "add-option", id: "Q2a", text: "c", origin: "Q2" },
+        { type: "add-question", id: "Q3", text: "q3", origin: "Q2a" },
+        { type: "select-option", targets: ["Q1b"] },
+      ]);
+
+      // when
+      const graph = build(log);
+
+      // then
+      assert.equal(questionNode(graph.nodes, "Q3").hiddenBy, "Q2a");
+    });
+
     test("an excluded question has its reason as its state and hides what is under it", () => {
       // given
       const log = Log.memoryLog([
