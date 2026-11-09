@@ -128,7 +128,7 @@ The CLI accepts any valid `--origin` and can't tell when it is the wrong one, so
 </next>
 ```
 
-`--query status`. The state decides the body: `open` has `<options>`, `settled` has `<decided>`, and `deferred` has a `<note>` if one was given. Inside a decided option means the item goes if that answer changes, and beside `<decided>` means it stays. Off-path and not-applicable items are left out.
+`--query status`. The state decides the body: `open` has `<options>`, `settled` has `<decided>`, with a `<note>` after its options if the selection had one, and `deferred` has a `<note>` if one was given. Inside a decided option means the item goes if that answer changes, and beside `<decided>` means it stays. Off-path and not-applicable items are left out.
 
 ```xml
 <status>

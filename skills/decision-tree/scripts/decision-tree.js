@@ -85,6 +85,7 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
                    
                                                            
                              
+                    
       
 
                                                
@@ -124,6 +125,7 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
                         
                            
                             
+                         
                          
                               
                             
@@ -550,6 +552,7 @@ const Graph = (() => {
 
           const options = event.targets.map((id) => optionNode(nodes, id));
           options[0].question.selected = options;
+          options[0].question.selectionNote = event.note;
           break;
         }
 
@@ -785,7 +788,10 @@ const Graph = (() => {
         children: childItems(graph, option),
       }));
 
-      return [{ kind: "question", state: "settled", id: question.id, text: question.text, decided, children }];
+      const item             = { kind: "question", state: "settled", id: question.id, text: question.text, decided, children };
+      if (question.selectionNote !== undefined) item.note = question.selectionNote;
+
+      return [item];
     }
 
     if (question.state !== "open") throw new Error(`status reached a ${question.state} item: ${question.id}`);
@@ -5143,6 +5149,57 @@ const Status = (() => {
       ]);
     });
 
+    test("a settled question carries the note of its selection", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"], note: "why" },
+      ]);
+
+      // when
+      const items = run(log);
+
+      // then
+      assert.deepEqual(items, [
+        {
+          kind: "question",
+          state: "settled",
+          id: "Q1",
+          text: "q",
+          decided: [{ id: "Q1a", text: "a", children: [] }],
+          children: [],
+          note: "why",
+        },
+      ]);
+    });
+
+    test("a later selection without a note drops the note of the earlier one", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"], note: "why" },
+        { type: "select-option", targets: ["Q1b"] },
+      ]);
+
+      // when
+      const items = run(log);
+
+      // then
+      assert.deepEqual(items, [
+        {
+          kind: "question",
+          state: "settled",
+          id: "Q1",
+          text: "q",
+          decided: [{ id: "Q1b", text: "b", children: [] }],
+          children: [],
+        },
+      ]);
+    });
+
     test("a child hung under the selected option sits inside that decided option", () => {
       // given
       const log = Log.memoryLog([
@@ -5609,6 +5666,7 @@ const Xml = (() => {
         `  <text>${escapeXml(item.text)}</text>`,
         "  <decided>",
         ...item.decided.flatMap(decidedLines).map((line) => `    ${line}`),
+        ...(item.note === undefined ? [] : [`    <note>${escapeXml(item.note)}</note>`]),
         "  </decided>",
         ...children,
         "</question>",
@@ -6086,6 +6144,38 @@ const Xml = (() => {
           "</status>",
         ].join("\n"),
       );
+    });
+
+    test("status renders a selection's note inside decided, after its options", () => {
+      // given
+      const items               = [
+        {
+          kind: "question",
+          state: "settled",
+          id: "Q1",
+          text: "q",
+          decided: [{ id: "Q1a", text: "a", children: [] }],
+          children: [],
+          note: "a < b",
+        },
+      ];
+
+      // when
+      const xml = status(items);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<status>",
+        '  <question state="settled">',
+        "    <id>Q1</id>",
+        "    <text>q</text>",
+        "    <decided>",
+        "      <option><id>Q1a</id><text>a</text></option>",
+        "      <note>a &lt; b</note>",
+        "    </decided>",
+        "  </question>",
+        "</status>",
+      ]);
     });
 
     test("status renders an open follow-up with its state", () => {
