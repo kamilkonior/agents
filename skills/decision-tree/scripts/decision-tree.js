@@ -73,6 +73,8 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
 
                                      
 
+                                               
+
                    
                                                                                                      
                  
@@ -642,20 +644,24 @@ const Graph = (() => {
     graph.roots.forEach((question) => assignQuestion(graph, question, undefined));
   }
 
-  function assignQuestion(graph       , question              , cause                    )       {
+  function assignQuestion(graph       , question              , inherited                    )       {
+    const exclusion = graph.exclusions.get(question.id);
+    const hiding = exclusion === undefined ? inherited : { state: exclusion.reason, by: question.id };
     const selected = liveSelected(graph, question);
 
-    if (cause !== undefined) question.hiddenBy = cause;
-    question.state = cause !== undefined ? "off-path" : selected.length === 0 ? "open" : "settled";
+    if (exclusion === undefined && hiding !== undefined) question.hiddenBy = hiding.by;
+    question.state = hiding?.state ?? (selected.length === 0 ? "open" : "settled");
 
     for (const option of question.options) {
       const onPath = selected.includes(option);
+      const excludedAbove = hiding !== undefined && hiding.state !== "off-path";
+      const below                     = onPath || excludedAbove ? hiding : { state: "off-path", by: option.id };
 
-      option.state = cause !== undefined ? "off-path" : selected.length === 0 ? "open" : onPath ? "settled" : "off-path";
-      option.children.forEach((child) => assignQuestion(graph, child, onPath ? cause : option.id));
+      option.state = hiding?.state ?? (selected.length === 0 ? "open" : onPath ? "settled" : "off-path");
+      option.children.forEach((child) => assignQuestion(graph, child, below));
     }
 
-    question.children.forEach((child) => assignQuestion(graph, child, cause));
+    question.children.forEach((child) => assignQuestion(graph, child, hiding));
   }
 
   function assertStatesAssigned(graph       )       {
