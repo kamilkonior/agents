@@ -4233,6 +4233,17 @@ const Items = (() => {
       ]);
     });
 
+    test("a root target with a trail has no trail field", () => {
+      // given
+      const log = Log.memoryLog([{ type: "add-question", id: "Q1", text: "q" }]);
+
+      // when
+      const items = run(log, { target: "Q1", trail: true });
+
+      // then
+      assert.equal("trail" in items[0], false);
+    });
+
     test("querying with state all returns items in every state", () => {
       // given
       const log = Log.memoryLog([
