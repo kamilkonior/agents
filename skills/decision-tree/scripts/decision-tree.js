@@ -4417,6 +4417,24 @@ const Status = (() => {
       assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "target not found: Q9");
     });
 
+    test("an option as the target throws", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+      ]);
+
+      // when
+      const act = () => run(log, { target: "Q1a" });
+
+      // then
+      assert.throws(
+        act,
+        (error) =>
+          error instanceof DecisionTreeError && error.message === "target is not a question or follow-up: Q1a",
+      );
+    });
+
     test("an open question has state open and its live options", () => {
       // given
       const log = Log.memoryLog([
