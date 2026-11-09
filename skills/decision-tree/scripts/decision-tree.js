@@ -5007,6 +5007,39 @@ const Xml = (() => {
       assert.equal(xml, "<status></status>");
     });
 
+    test("status renders a decided option with no children on one line", () => {
+      // given
+      const items               = [
+        {
+          kind: "question",
+          state: "settled",
+          id: "Q1",
+          text: "q",
+          decided: [{ id: "Q1a", text: "a", children: [] }],
+          children: [],
+        },
+      ];
+
+      // when
+      const xml = status(items);
+
+      // then
+      assert.equal(
+        xml,
+        [
+          "<status>",
+          '  <question state="settled">',
+          "    <id>Q1</id>",
+          "    <text>q</text>",
+          "    <decided>",
+          "      <option><id>Q1a</id><text>a</text></option>",
+          "    </decided>",
+          "  </question>",
+          "</status>",
+        ].join("\n"),
+      );
+    });
+
     test("status renders an open question with its state and options", () => {
       // given
       const items               = [
