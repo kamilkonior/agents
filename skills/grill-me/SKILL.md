@@ -13,7 +13,7 @@ Where a case isn't covered here, the reasons given decide it.
 
 Before the first call, read `<this skill's directory>/../decision-tree/SKILL.md`. It covers the commands, where items hang, and what each situation does to the tree, none of which is repeated here. The CLI is at `<this skill's directory>/../decision-tree/scripts/decision-tree.js`.
 
-- Keep one log per design at `.grill-me/<topic>.jsonl` in the project root. List `.grill-me/` to find earlier sessions, and call with the same path to resume one.
+- Keep one log per design at `.brain-kit/grill-me/<topic>.jsonl` in the project root. List `.brain-kit/grill-me/` to find earlier sessions, and call with the same path to resume one.
 - Refer to items by id, so "reopen Q3" means the same thing all session.
 - Read whatever you show about the state from the CLI's output, not from memory, so the two can't drift apart.
 - The tree keeps decisions, not facts. Look facts up again on resume.
