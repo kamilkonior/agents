@@ -5102,6 +5102,38 @@ const Xml = (() => {
       );
     });
 
+    test("status escapes every text it renders", () => {
+      // given
+      const text = "<&>";
+      const open             = {
+        kind: "question",
+        state: "open",
+        id: "Q2",
+        text,
+        options: [{ id: "Q2a", text }],
+        children: [],
+      };
+      const items               = [
+        {
+          kind: "question",
+          state: "settled",
+          id: "Q1",
+          text,
+          decided: [{ id: "Q1a", text, children: [open] }],
+          children: [],
+        },
+        { kind: "follow-up", state: "open", id: "F1", text },
+        { kind: "question", state: "deferred", id: "Q3", text, note: text },
+      ];
+
+      // when
+      const xml = status(items);
+
+      // then
+      assert.equal(xml.includes(text), false);
+      assert.equal(xml.split("&lt;&amp;&gt;").length - 1, 7);
+    });
+
     test("status renders an open question with its state and options", () => {
       // given
       const items               = [
