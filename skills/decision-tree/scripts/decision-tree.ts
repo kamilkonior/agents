@@ -6118,6 +6118,10 @@ const Xml = (() => {
     return ["<status>", ...items.flatMap(statusLines).map((line) => `  ${line}`), "</status>"].join("\n");
   }
 
+  function noteLines(note: string | undefined): string[] {
+    return note === undefined ? [] : [`  <note>${escapeXml(note)}</note>`];
+  }
+
   function builtTreeOptionLines(entry: TreeEntryOption): string[] {
     const { state, note } = entry;
 
@@ -6126,13 +6130,12 @@ const Xml = (() => {
     }
 
     const marker = state !== undefined ? ` state="${state}"` : entry.selected === true ? ' selected="true"' : "";
-    const noteLine = note === undefined ? [] : [`  <note>${escapeXml(note)}</note>`];
 
     return [
       `<option${marker}>`,
       `  <id>${entry.id}</id>`,
       `  <text>${escapeXml(entry.text)}</text>`,
-      ...noteLine,
+      ...noteLines(note),
       ...entry.children.flatMap(builtTreeLines).map((line) => `  ${line}`),
       "</option>",
     ];
@@ -6144,6 +6147,7 @@ const Xml = (() => {
         `<follow-up state="${entry.state}">`,
         `  <id>${entry.id}</id>`,
         `  <text>${escapeXml(entry.text)}</text>`,
+        ...noteLines(entry.note),
         ...entry.children.flatMap(builtTreeLines).map((line) => `  ${line}`),
         "</follow-up>",
       ];
@@ -6156,6 +6160,7 @@ const Xml = (() => {
       `<question state="${entry.state}">`,
       `  <id>${entry.id}</id>`,
       `  <text>${escapeXml(entry.text)}</text>`,
+      ...noteLines(entry.note),
       ...optionsBlock,
       ...entry.children.flatMap(builtTreeLines).map((line) => `  ${line}`),
       "</question>",
