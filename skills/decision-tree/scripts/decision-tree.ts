@@ -902,10 +902,21 @@ const Graph = (() => {
     return [{ kind: "follow-up", state: "open", id: followUp.id, text: followUp.text }];
   }
 
+  function shownInStatus(node: QuestionNode | FollowUpNode): boolean {
+    if (node.state === "deferred") return node.hiddenBy === undefined;
+
+    return node.state === "open" || node.state === "settled";
+  }
+
   function status(log: Log, target?: string): StatusItem[] {
     const graph = build(log);
 
-    if (target !== undefined) targetNode(graph, target);
+    if (target !== undefined) {
+      const node = targetNode(graph, target);
+      if (!shownInStatus(node)) return [];
+
+      return node.kind === "question" ? statusItems(graph, node) : followUpItems(graph, node);
+    }
 
     return [
       ...graph.roots.flatMap((question) => statusItems(graph, question)),
