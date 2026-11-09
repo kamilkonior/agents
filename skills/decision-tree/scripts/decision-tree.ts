@@ -4406,6 +4406,17 @@ const Status = (() => {
       assert.deepEqual(items, []);
     });
 
+    test("an unknown target throws", () => {
+      // given
+      const log = Log.memoryLog();
+
+      // when
+      const act = () => run(log, { target: "Q9" });
+
+      // then
+      assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "target not found: Q9");
+    });
+
     test("an open question has state open and its live options", () => {
       // given
       const log = Log.memoryLog([
