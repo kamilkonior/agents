@@ -6328,6 +6328,57 @@ const Xml = (() => {
       ]);
     });
 
+    test("the built tree nests an option's child inside it and the question's own after the options", () => {
+      // given
+      const child = (id: string): TreeEntry => ({
+        kind: "question",
+        state: "open",
+        id,
+        text: id,
+        options: [],
+        children: [],
+      });
+      const entries: TreeEntry[] = [
+        {
+          kind: "question",
+          state: "settled",
+          id: "Q1",
+          text: "q",
+          options: [{ id: "Q1a", text: "a", selected: true, children: [child("Q2")] }],
+          children: [child("Q3")],
+        },
+      ];
+
+      // when
+      const xml = builtTree(entries);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<tree>",
+        '  <question state="settled">',
+        "    <id>Q1</id>",
+        "    <text>q</text>",
+        "    <options>",
+        '      <option selected="true">',
+        "        <id>Q1a</id>",
+        "        <text>a</text>",
+        '        <question state="open">',
+        "          <id>Q2</id>",
+        "          <text>Q2</text>",
+        "          <options></options>",
+        "        </question>",
+        "      </option>",
+        "    </options>",
+        '    <question state="open">',
+        "      <id>Q3</id>",
+        "      <text>Q3</text>",
+        "      <options></options>",
+        "    </question>",
+        "  </question>",
+        "</tree>",
+      ]);
+    });
+
     test("status renders no items as an empty element", () => {
       // given
       const items: StatusItem[] = [];
