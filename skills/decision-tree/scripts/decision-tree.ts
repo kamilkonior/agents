@@ -122,6 +122,7 @@ type FollowUpNode = {
   state: NodeState;
   parent?: OptionNode | QuestionNode | FollowUpNode;
   status: "open" | "promoted";
+  hiddenBy?: string;
   children: QuestionNode[];
   followUps: FollowUpNode[];
 };
@@ -642,19 +643,28 @@ const Graph = (() => {
 
   function assignStates(graph: Graph): void {
     graph.roots.forEach((question) => assignQuestion(graph, question, undefined));
+    graph.rootFollowUps.forEach((followUp) => assignFollowUp(graph, followUp, undefined));
 
     for (const node of graph.nodes.values()) {
       if (node.kind === "question" && node.supersededBy !== undefined) assignQuestion(graph, node, undefined);
     }
   }
 
-  function hidingOf(graph: Graph, question: QuestionNode, inherited: Hiding | undefined): Hiding | undefined {
-    if (question.supersededBy !== undefined) return { state: "frozen", by: question.id };
+  function hidingOf(
+    graph: Graph,
+    node: QuestionNode | FollowUpNode,
+    inherited: Hiding | undefined,
+  ): Hiding | undefined {
+    if (node.kind === "question" && node.supersededBy !== undefined) return { state: "frozen", by: node.id };
     if (inherited?.state === "frozen") return inherited;
 
-    const exclusion = graph.exclusions.get(question.id);
+    const exclusion = graph.exclusions.get(node.id);
 
-    return exclusion === undefined ? inherited : { state: exclusion.reason, by: question.id };
+    return exclusion === undefined ? inherited : { state: exclusion.reason, by: node.id };
+  }
+
+  function offPathBelow(hiding: Hiding | undefined, by: string): Hiding {
+    return hiding !== undefined && hiding.state !== "off-path" ? hiding : { state: "off-path", by };
   }
 
   function assignQuestion(graph: Graph, question: QuestionNode, inherited: Hiding | undefined): void {
@@ -666,14 +676,26 @@ const Graph = (() => {
 
     for (const option of question.options) {
       const onPath = selected.includes(option);
-      const excludedAbove = hiding !== undefined && hiding.state !== "off-path";
-      const below: Hiding | undefined = onPath || excludedAbove ? hiding : { state: "off-path", by: option.id };
+      const below = onPath ? hiding : offPathBelow(hiding, option.id);
 
       option.state = hiding?.state ?? (selected.length === 0 ? "open" : onPath ? "settled" : "off-path");
       option.children.forEach((child) => assignQuestion(graph, child, below));
+      option.followUps.forEach((followUp) => assignFollowUp(graph, followUp, below));
     }
 
     question.children.forEach((child) => assignQuestion(graph, child, hiding));
+    question.followUps.forEach((followUp) => assignFollowUp(graph, followUp, hiding));
+  }
+
+  function assignFollowUp(graph: Graph, followUp: FollowUpNode, inherited: Hiding | undefined): void {
+    const hiding = hidingOf(graph, followUp, inherited);
+    const below = followUp.status === "open" ? offPathBelow(hiding, followUp.id) : hiding;
+
+    if (hiding !== undefined && hiding.by !== followUp.id) followUp.hiddenBy = hiding.by;
+    followUp.state = hiding?.state ?? (followUp.status === "open" ? "open" : "settled");
+
+    followUp.children.forEach((child) => assignQuestion(graph, child, below));
+    followUp.followUps.forEach((nested) => assignFollowUp(graph, nested, below));
   }
 
   function assertStatesAssigned(graph: Graph): void {
