@@ -828,23 +828,26 @@ const Graph = (() => {
       .map((node) => openItem(graph, node));
   }
 
-  function statusItem(graph: Graph, question: QuestionNode): StatusItem {
+  function statusItems(graph: Graph, question: QuestionNode): StatusItem[] {
+    if (question.state === "not-applicable") return [];
     if (question.state !== "open") throw new Error(`status does not handle ${question.state} yet`);
 
-    return {
-      kind: "question",
-      state: "open",
-      id: question.id,
-      text: question.text,
-      options: liveOptions(graph, question),
-      children: [],
-    };
+    return [
+      {
+        kind: "question",
+        state: "open",
+        id: question.id,
+        text: question.text,
+        options: liveOptions(graph, question),
+        children: [],
+      },
+    ];
   }
 
   function status(log: Log): StatusItem[] {
     const graph = build(log);
 
-    return graph.roots.map((question) => statusItem(graph, question));
+    return graph.roots.flatMap((question) => statusItems(graph, question));
   }
 
   function trail(log: Log, id: string): TrailStep[] {
