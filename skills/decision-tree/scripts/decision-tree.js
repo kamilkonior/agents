@@ -4916,6 +4916,12 @@ const Xml = (() => {
     return ["<tree>", ...body, ...out, "</tree>"].join("\n");
   }
 
+  function status(items              )         {
+    if (items.length === 0) return "<status></status>";
+
+    throw new Error("status rendering is not built yet");
+  }
+
   function supersededLines(item                )           {
     if (item.kind === "follow-up") return [followUp(item)];
 
@@ -5433,7 +5439,7 @@ const Xml = (() => {
     return ["<items>", ...list.flatMap(taggedLines).map((line) => `  ${line}`), "</items>"].join("\n");
   }
 
-  return { option, question, selection, followUp, item, next, tree, supersede, taggedItem, items, tests };
+  return { option, question, selection, followUp, item, next, tree, status, supersede, taggedItem, items, tests };
 })();
 
 const Cli = (() => {
