@@ -4643,6 +4643,20 @@ const Status = (() => {
       // then
       assert.deepEqual(items, [{ kind: "question", state: "open", id: "Q1", text: "q", options: [], children: [] }]);
     });
+
+    test("a deferred follow-up has state deferred and its note", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-follow-up", id: "F1", text: "f" },
+        { type: "exclude", target: "F1", reason: "deferred", note: "why" },
+      ]);
+
+      // when
+      const items = run(log);
+
+      // then
+      assert.deepEqual(items, [{ kind: "follow-up", state: "deferred", id: "F1", text: "f", note: "why" }]);
+    });
   }
 
   return { run, tests };
