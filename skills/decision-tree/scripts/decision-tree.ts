@@ -832,8 +832,11 @@ const Graph = (() => {
       .map((node) => openItem(graph, node));
   }
 
-  function childItems(graph: Graph, node: QuestionNode | OptionNode): StatusItem[] {
-    return [...node.children.flatMap((child) => statusItems(graph, child)), ...node.followUps.flatMap(followUpItems)];
+  function childItems(graph: Graph, node: QuestionNode | OptionNode | FollowUpNode): StatusItem[] {
+    return [
+      ...node.children.flatMap((child) => statusItems(graph, child)),
+      ...node.followUps.flatMap((followUp) => followUpItems(graph, followUp)),
+    ];
   }
 
   function statusItems(graph: Graph, question: QuestionNode): StatusItem[] {
@@ -872,7 +875,8 @@ const Graph = (() => {
     ];
   }
 
-  function followUpItems(followUp: FollowUpNode): StatusItem[] {
+  function followUpItems(graph: Graph, followUp: FollowUpNode): StatusItem[] {
+    if (followUp.state === "settled") return childItems(graph, followUp);
     if (followUp.state !== "open") throw new Error(`status does not handle ${followUp.state} yet`);
 
     return [{ kind: "follow-up", state: "open", id: followUp.id, text: followUp.text }];
@@ -881,7 +885,10 @@ const Graph = (() => {
   function status(log: Log): StatusItem[] {
     const graph = build(log);
 
-    return [...graph.roots.flatMap((question) => statusItems(graph, question)), ...graph.rootFollowUps.flatMap(followUpItems)];
+    return [
+      ...graph.roots.flatMap((question) => statusItems(graph, question)),
+      ...graph.rootFollowUps.flatMap((followUp) => followUpItems(graph, followUp)),
+    ];
   }
 
   function trail(log: Log, id: string): TrailStep[] {
