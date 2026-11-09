@@ -4286,6 +4286,27 @@ const Tree = (() => {
   return { options, run, tests };
 })();
 
+const Status = (() => {
+  function run(_log: Log): unknown[] {
+    return [];
+  }
+
+  function tests() {
+    test("status of an empty log has no items", () => {
+      // given
+      const log = Log.memoryLog();
+
+      // when
+      const items = run(log);
+
+      // then
+      assert.deepEqual(items, []);
+    });
+  }
+
+  return { run, tests };
+})();
+
 const Xml = (() => {
   function escapeXml(text: string): string {
     return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
@@ -5113,6 +5134,7 @@ const Cli = (() => {
     Items.tests();
     Next.tests();
     Tree.tests();
+    Status.tests();
     Xml.tests();
   }
 
