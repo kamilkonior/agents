@@ -4658,6 +4658,24 @@ const Status = (() => {
       // then
       assert.deepEqual(items, [{ kind: "follow-up", state: "deferred", id: "F1", text: "f", note: "why" }]);
     });
+
+    test("a not-applicable follow-up is left out", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-follow-up", id: "F1", text: "dropped" },
+        { type: "exclude", target: "F1", reason: "not-applicable" },
+        { type: "add-follow-up", id: "F2", text: "live" },
+      ]);
+
+      // when
+      const items = run(log);
+
+      // then
+      assert.deepEqual(
+        items.map((item) => item.id),
+        ["F2"],
+      );
+    });
   }
 
   return { run, tests };
