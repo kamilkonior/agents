@@ -5490,6 +5490,36 @@ const Xml = (() => {
       );
     });
 
+    test("items renders excluded options after the live ones, with state and escaped note", () => {
+      // given
+      const list: ListedItem[] = [
+        {
+          item: { kind: "question", question: { id: "Q1", text: "q", options: [{ id: "Q1a", text: "a" }] } },
+          tags: [],
+          state: "open",
+          excludedOptions: [{ id: "Q1b", text: "b", state: "deferred", note: "a < b" }],
+        },
+      ];
+
+      // when
+      const xml = items(list);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<items>",
+        '  <question state="open">',
+        "    <id>Q1</id>",
+        "    <text>q</text>",
+        "    <options>",
+        "      <option><id>Q1a</id><text>a</text></option>",
+        '      <option state="deferred"><id>Q1b</id><text>b</text><note>a &lt; b</note></option>',
+        "    </options>",
+        "    <tags></tags>",
+        "  </question>",
+        "</items>",
+      ]);
+    });
+
     test("status renders no items as an empty element", () => {
       // given
       const items: StatusItem[] = [];
