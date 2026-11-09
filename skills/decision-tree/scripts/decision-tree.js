@@ -4916,10 +4916,37 @@ const Xml = (() => {
     return ["<tree>", ...body, ...out, "</tree>"].join("\n");
   }
 
+  function decidedLines(data                                         )           {
+    if (data.children.length === 0) return [option(data)];
+
+    return [
+      "<option>",
+      `  <id>${data.id}</id>`,
+      `  <text>${escapeXml(data.text)}</text>`,
+      ...data.children.flatMap(statusLines).map((line) => `  ${line}`),
+      "</option>",
+    ];
+  }
+
   function statusLines(item            )           {
-    if (item.kind !== "question" || item.state !== "open") throw new Error(`status rendering is not built for ${item.state}`);
+    if (item.kind !== "question" || (item.state !== "open" && item.state !== "settled")) {
+      throw new Error(`status rendering is not built for ${item.state}`);
+    }
 
     const children = item.children.flatMap(statusLines).map((line) => `  ${line}`);
+
+    if (item.state === "settled") {
+      return [
+        '<question state="settled">',
+        `  <id>${item.id}</id>`,
+        `  <text>${escapeXml(item.text)}</text>`,
+        "  <decided>",
+        ...item.decided.flatMap(decidedLines).map((line) => `    ${line}`),
+        "  </decided>",
+        ...children,
+        "</question>",
+      ];
+    }
 
     return [
       '<question state="open">',
