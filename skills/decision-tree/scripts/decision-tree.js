@@ -76,8 +76,16 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
                                                                                  
 
                    
-                                                                                                                         
-                                                                                                
+     
+                       
+                       
+                 
+                   
+                    
+                                
+                               
+     
+                                                                                                               
 
                  
                                                                                   
@@ -962,6 +970,7 @@ const Graph = (() => {
       state: assignedState(question),
       id: question.id,
       text: question.text,
+      ...noteOf(graph, question),
       options,
       children: treeViewChildren(graph, question),
     };
@@ -973,6 +982,7 @@ const Graph = (() => {
       state: assignedState(followUp),
       id: followUp.id,
       text: followUp.text,
+      ...noteOf(graph, followUp),
       children: treeViewChildren(graph, followUp),
     };
   }

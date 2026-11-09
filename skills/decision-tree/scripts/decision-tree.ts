@@ -76,8 +76,16 @@ type NodeState = ItemState | "unset";
 type TreeViewOption = OptionData & { selected?: true; children: TreeViewItem[] };
 
 type TreeViewItem =
-  | { kind: "question"; state: ItemState; id: string; text: string; options: TreeViewOption[]; children: TreeViewItem[] }
-  | { kind: "follow-up"; state: ItemState; id: string; text: string; children: TreeViewItem[] };
+  | {
+      kind: "question";
+      state: ItemState;
+      id: string;
+      text: string;
+      note?: string;
+      options: TreeViewOption[];
+      children: TreeViewItem[];
+    }
+  | { kind: "follow-up"; state: ItemState; id: string; text: string; note?: string; children: TreeViewItem[] };
 
 type StatusItem =
   | { kind: "option"; state: "deferred"; id: string; text: string; note?: string }
@@ -962,6 +970,7 @@ const Graph = (() => {
       state: assignedState(question),
       id: question.id,
       text: question.text,
+      ...noteOf(graph, question),
       options,
       children: treeViewChildren(graph, question),
     };
@@ -973,6 +982,7 @@ const Graph = (() => {
       state: assignedState(followUp),
       id: followUp.id,
       text: followUp.text,
+      ...noteOf(graph, followUp),
       children: treeViewChildren(graph, followUp),
     };
   }
