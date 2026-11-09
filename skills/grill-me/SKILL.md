@@ -16,7 +16,6 @@ Before the first call, read `<this skill's directory>/../decision-tree/SKILL.md`
 - Keep one log per design at `.brain-kit/grill-me/<topic>.jsonl` in the project root. List `.brain-kit/grill-me/` to find earlier sessions, and call with the same path to resume one.
 - Refer to items the user has seen by id, so "reopen Q3" means the same thing all session. Name anything else in words, because an id they've never seen tells them nothing.
 - Read whatever you show about the state from the CLI's output, not from memory, so the two can't drift apart.
-- The tree keeps what the user told you. Facts from the code aren't stored: look them up again on resume, because a saved copy goes stale.
 
 ## Who supplies what
 
@@ -32,7 +31,7 @@ Mark every fact you show as `(checked: <source>)` or `(inferred: <basis>)`, so t
 
 ## Starting
 
-Seed the tree from what the user has already said: one root question per independent topic, each with at least one real option to react to, and a follow-up for anything not ready for options. Unless the user has already said, add one root for what could overturn several decisions, such as the deadline, the load and what the team won't run, because a recommendation made without these is a guess. Add that and the blockers, risks and irreversible choices first, because roots come up in the order they were added. Keep adding as you learn.
+Seed the tree from what the user has already said: one root question per independent topic, each with at least one real option to react to, and a follow-up for anything not ready for options. Unless the user has already said, add one root for what could overturn several decisions, such as the deadline, the load and what the team won't run, because a recommendation made without these is a guess. Add that and the blockers, risks and irreversible choices first, so they come up first. Keep adding as you learn.
 
 ## Each turn
 
@@ -71,38 +70,38 @@ Run `--query next` and ask about the item it returns. Ask one question and nothi
 
 If earlier answers make the request itself unnecessary, say so and recommend that, because the smallest design may be less than what was asked for.
 
-**A follow-up** is asked as one question: draft its options and add "not worth deciding" as the last choice, because a separate turn asking whether it matters gets skipped. If the user picks an option, `promote-follow-up` it with your options, adding `--text` when the note's wording doesn't fit, and select their answer. If not, `exclude` it.
+**A follow-up** is asked as one question: draft its options and add "not worth deciding" as the last choice, because a separate turn asking whether it matters gets skipped. If the user picks an option, promote it and select their answer. If not, `exclude` it.
 
 ## Reading replies
+
+Quoted names are situations in the `decision-tree` skill.
 
 | The user | Do |
 |---|---|
 | picks one or more options | `select-option` them in one call |
-| answers in their own words | `add-option` the answer, then select it |
+| answers in their own words | "A decision was made" |
 | says "yes" | select the recommendation |
 | says "no" | select the alternative, asking for one only if it isn't clear |
 | thinks out loud ("what if…?") | record nothing, reply in less space than the question took, and stay on the same question |
 | replies in a way that matches no option | record nothing until it's clarified |
 | asks a side question | answer it, then ask the same question again |
-| isn't ready to decide | `exclude --reason deferred` with what's blocking them as `--note` |
-| says it doesn't belong to this design | `exclude`: `deferred` if wanted later or out of scope, `not-applicable` if it doesn't matter, with their reason as `--note` |
-| says "wrap up" or "good enough" | `exclude --reason deferred` what `--query items` still lists, then finish |
+| isn't ready to decide | "Not ready to decide" |
+| says it doesn't belong to this design | `exclude` it as `deferred` or `not-applicable`, whichever they mean, with their reason as `--note` |
+| says "wrap up" or "good enough" | "Stopping with items still open", then finish |
 
 Record what a reply opened up without asking first, because an addition costs nothing to undo. Put uncertain topics in as follow-ups. Each point the user raises ends up recorded, so nothing they said is lost.
 
-When a reply gives a reason for a selection, record it with `--rationale`, because why they chose is the one part of a decision that can't be looked up later.
+After promoting, say "F1 is now Q6" in Recorded, so the user can follow an item they've already seen.
 
-After promoting, read the new id from `<promote>` and say "F1 is now Q6" in Recorded, so the user can follow an item they've already seen.
-
-Removal is different, because it takes everything underneath. When you exclude something, say what goes with it, and confirm first if the user didn't ask for it. The exception is an option earlier answers have ruled out with nothing under it: `exclude` it as `not-applicable` and say so in one line.
+Removal is different, because it takes everything underneath. When you exclude something, say what goes with it, and confirm first if the user didn't ask for it. The exception is an option earlier answers have ruled out with nothing under it: "An option no longer applies", said in one line.
 
 ## When the design shifts
 
 - **A changed answer.** Reply with only what changed and what it reopens: "changing Q5 reopens Q8".
-- **A premise changed.** Everything under the question was decided on the old premise, and superseding can't be undone. Preview it with `--query tree --target QID --state all` and ask only whether to replace it. Once it's replaced, show the `<superseded>` subtree with its rationales and ask which decisions still hold, including whether a rejected option is now the better fit. Rebuild those under the new question, along with the open items and the options still viable.
+- **A premise changed.** Follow "The premise of a question changed". After the preview, ask only whether to replace it. Once it's replaced, show the `<superseded>` subtree with its rationales and ask which decisions still hold, including whether a rejected option is now the better fit.
 - **Back again.** `restore` what the user wants to revisit.
 - **"Let's settle X first."** `focus` it.
-- **Resuming.** Look the facts up again and ask the next question with its trail, so it isn't asked cold.
+- **Resuming.** Look the facts up again and ask the next question in context, so it isn't asked cold.
 
 ## Pace
 

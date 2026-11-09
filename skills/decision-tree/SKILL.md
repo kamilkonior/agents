@@ -26,6 +26,7 @@ node <this skill's directory>/scripts/decision-tree.js --log <path> --query <que
 - A **follow-up** is a topic worth raising that isn't ready to be a question. It stays one until it is promoted or excluded.
 - **Ids** are `Q1` for questions, `F1` for follow-ups, and the question's id plus a letter for options (`Q1a`), up to 26 per question. Ids are never reused.
 - `--target` names an existing item. `--origin` says where a new item hangs.
+- **What to store:** what can't be looked up again, such as decisions, the reasons for them and facts only a person knows. Leave out facts that live in code or docs, because a saved copy goes stale.
 
 ### Where an item hangs
 
@@ -51,7 +52,7 @@ The CLI accepts any valid `--origin` and can't tell when it is the wrong one, so
 
 ### What `next` does
 
-`next` returns the first open item in walk order, so let it choose. Under a settled question the order is the answer's questions, the answer's follow-ups, the question's own questions, then its own follow-ups. Root follow-ups come last. Decisions that depend on each other stay together this way.
+`next` returns the first open item in walk order, so let it choose. Roots come up in the order they were added. Under a settled question the order is the answer's questions, the answer's follow-ups, the question's own questions, then its own follow-ups. Root follow-ups come last. Decisions that depend on each other stay together this way, and new work under an answer comes before roots still waiting.
 
 ### Rules the CLI won't warn about
 
@@ -66,16 +67,18 @@ The CLI accepts any valid `--origin` and can't tell when it is the wrong one, so
 | Situation | Do |
 |---|---|
 | Starting a tree | Add one root question per independent topic and a follow-up for anything without options yet. Keep adding as you learn. |
-| A decision was made | `select-option`. If the decision isn't among the options, `add-option` it first. |
+| A decision was made | `select-option`, with `--rationale` if a reason was given, because why it was chosen can't be looked up later. If the decision isn't among the options, `add-option` it first. |
 | The decision opened new topics | Add them under the option that caused them, so they leave if the selection changes. |
 | Not ready to decide | `exclude --reason deferred` with the blocker as `--note`, then `restore` once it clears. An open question stays at the front of `next`, so leaving one open stalls the walk. Everything under it waits too. |
 | Work can go on without the answer | `add-option` "unknown", select it, and hang what follows under it. |
-| A follow-up comes up | `promote-follow-up` to pursue it, otherwise `exclude` it. |
+| A follow-up comes up | To pursue it, `promote-follow-up` with its options, adding `--text` when the note's wording doesn't work as a question. A follow-up can't hold options, so drafts wait until then. `<promote>` gives the new id, and the old one stays as history. Otherwise `exclude` it. |
 | Reconsidering a selection | Run `--query status --target QID` first: what sits inside the decided option goes with it, and what sits beside `<decided>` stays. Then `select-option` again. The old subtree goes off the path and returns if that option is selected again. |
-| The premise of a question changed | `supersede-question` with the corrected wording and any options that still apply, because everything under it was decided on the old premise. Rebuild what still holds from the printed `<superseded>` subtree with the normal ops. What isn't rebuilt stays frozen. |
+| The premise of a question changed | Preview what would freeze with `--query tree --target QID --state all`, because superseding can't be undone. Then `supersede-question` with the corrected wording and any options that still apply, because everything under it was decided on the old premise. Rebuild what still holds from the printed `<superseded>` subtree with the normal ops, along with its open items and the options still viable. What isn't rebuilt stays frozen. |
 | Something doesn't apply | `exclude --reason not-applicable`, with a `--note` if the reason is worth keeping. |
+| An option no longer applies | `exclude` the option with `--reason not-applicable`. It leaves `next`, and the other options keep their letters. |
 | One topic should go first | `focus` it. |
 | Finding work by topic | `tag` items as they come up, list them with `--query items --tag T`, and `focus` the one to do first. |
+| Stopping with items still open | List them with `--query items` and `exclude --reason deferred` each, top-level items first, because what's under an excluded item goes with it and refuses a second exclude. |
 | `next` is empty | `--query status` is the record. Deferred items are still in it and nothing brings them back on its own, so `restore` any that can now be answered. |
 
 ## Commands
