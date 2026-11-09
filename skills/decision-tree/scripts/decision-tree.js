@@ -1177,6 +1177,28 @@ const Graph = (() => {
       assert.deepEqual([graph.nodes.get("Q1a")?.state, child.state, child.hiddenBy], ["deferred", "deferred", "Q1a"]);
     });
 
+    test("the walk order leaves out off-path and excluded questions", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1b" },
+        { type: "add-question", id: "Q3", text: "q3" },
+        { type: "exclude", target: "Q3", reason: "deferred" },
+      ]);
+
+      // when
+      const graph = build(log);
+
+      // then
+      assert.deepEqual(
+        graph.walkOrder.map((node) => node.id),
+        ["Q1"],
+      );
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
