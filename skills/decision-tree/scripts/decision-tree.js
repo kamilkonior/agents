@@ -1004,6 +1004,24 @@ const Graph = (() => {
       );
     });
 
+    test("a question under an unchosen option is off-path, hidden by that option", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1b" },
+      ]);
+
+      // when
+      const graph = build(log);
+
+      // then
+      const question = questionNode(graph.nodes, "Q2");
+      assert.deepEqual([question.state, question.hiddenBy], ["off-path", "Q1b"]);
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
