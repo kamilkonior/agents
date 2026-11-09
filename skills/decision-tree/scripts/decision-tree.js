@@ -632,8 +632,9 @@ const Graph = (() => {
         }
       }
 
-      if (graph.focus !== undefined && !graph.focus.ended && focusOpen(graph, graph.focus.node).length === 0) {
-        graph.focus.ended = true;
+      if (graph.focus !== undefined && !graph.focus.ended) {
+        assignStates(graph);
+        if (openWithin(graph, graph.focus.node).length === 0) graph.focus.ended = true;
       }
     }
 
@@ -818,21 +819,27 @@ const Graph = (() => {
     return subtree(log, id).map(withOptions);
   }
 
-  function openItems(item          )                                            {
-    if (item.kind === "follow-up") return [item];
+  function isWithin(node                             , ancestor                             )          {
+    let current                                                       = node;
+    while (current !== undefined) {
+      if (current.id === ancestor.id) return true;
 
-    const below = item.children.flatMap(openItems);
+      current = current.kind === "option" ? current.question : current.parent;
+    }
 
-    return item.kind === "open-question" ? [item, ...below] : below;
+    return false;
   }
 
-  function focusOpen(graph       , node                             )                                            {
-    if (frozenBy(node) !== undefined) return [];
+  function openItem(graph       , node                             )                                          {
+    if (node.kind === "follow-up") return { kind: "follow-up", id: node.id, text: node.text };
 
-    const { question, followUp } = project(graph);
-    const items = node.kind === "question" ? question(node) : followUp(node);
+    return { kind: "open-question", id: node.id, text: node.text, options: liveOptions(graph, node), children: [] };
+  }
 
-    return items.flatMap(openItems);
+  function openWithin(graph       , ancestor                              )                                            {
+    return graph.walkOrder
+      .filter((node) => node.state === "open" && (ancestor === undefined || isWithin(node, ancestor)))
+      .map((node) => openItem(graph, node));
   }
 
   function trail(log     , id        )              {
@@ -848,13 +855,13 @@ const Graph = (() => {
   }
 
   function hasOpen(log     , node                             )          {
-    return focusOpen(build(log), node).length > 0;
+    return openWithin(build(log), node).length > 0;
   }
 
   function frontier(graph       )                                            {
-    if (graph.focus !== undefined && !graph.focus.ended) return focusOpen(graph, graph.focus.node);
+    const focused = graph.focus !== undefined && !graph.focus.ended ? graph.focus.node : undefined;
 
-    return tree(graph).flatMap(openItems);
+    return openWithin(graph, focused);
   }
 
   function taggedData(graph       , node                             )             {
