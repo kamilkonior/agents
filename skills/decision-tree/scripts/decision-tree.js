@@ -110,6 +110,7 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
              
                
                    
+                    
                          
                            
                             
@@ -685,6 +686,7 @@ const Graph = (() => {
       const optionHiding = hidingOf(graph, option, hiding);
       const below = onPath ? optionHiding : offPathBelow(optionHiding, option.id);
 
+      if (optionHiding !== undefined && optionHiding.by !== option.id) option.hiddenBy = optionHiding.by;
       option.state = optionHiding?.state ?? (selected.length === 0 ? "open" : onPath ? "settled" : "off-path");
       option.children.forEach((child) => assignQuestion(graph, child, below));
       option.followUps.forEach((followUp) => assignFollowUp(graph, followUp, below));
