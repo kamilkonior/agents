@@ -833,14 +833,14 @@ const Graph = (() => {
   function statusItems(graph       , question              )               {
     if (question.state === "not-applicable") return [];
 
+    const children = question.children.flatMap((child) => statusItems(graph, child));
+
     if (question.state === "settled") {
       const decided = liveSelected(graph, question).map((option) => ({
         id: option.id,
         text: option.text,
         children: option.children.flatMap((child) => statusItems(graph, child)),
       }));
-
-      const children = question.children.flatMap((child) => statusItems(graph, child));
 
       return [{ kind: "question", state: "settled", id: question.id, text: question.text, decided, children }];
     }
@@ -854,7 +854,7 @@ const Graph = (() => {
         id: question.id,
         text: question.text,
         options: liveOptions(graph, question),
-        children: [],
+        children,
       },
     ];
   }
