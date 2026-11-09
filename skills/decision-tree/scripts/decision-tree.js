@@ -4478,6 +4478,21 @@ const Status = (() => {
       assert.deepEqual(items, []);
     });
 
+    test("a frozen target has no items", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "old" },
+        { type: "add-question", id: "Q2", text: "new" },
+        { type: "supersede-question", target: "Q1", question: "Q2" },
+      ]);
+
+      // when
+      const items = run(log, { target: "Q1" });
+
+      // then
+      assert.deepEqual(items, []);
+    });
+
     test("an open question has state open and its live options", () => {
       // given
       const log = Log.memoryLog([
