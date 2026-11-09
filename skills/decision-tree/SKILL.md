@@ -92,7 +92,7 @@ The CLI accepts any valid `--origin` and can't tell when it is the wrong one, so
 | `supersede-question --target QID --text T [--option A]…` | puts a reworded question in the old one's place, keeping its tags, and freezes the old one | `<supersede>` |
 | `exclude --target ID --reason R [--note N]` | takes a question, option or follow-up out with everything under it; `R` is `deferred` or `not-applicable` | the item |
 | `restore --target ID` | brings an excluded item back with everything under it | the item |
-| `focus --target ID` | puts a question or follow-up with something open at the head of `next` | the item |
+| `focus --target ID` | puts a question or follow-up with something open at the head of `next`; other queries ignore it | the item |
 | `tag --target ID --tag T…` | adds tags to a question or follow-up | the item |
 | `untag --target ID --tag T…` | removes tags the item has | the item |
 
@@ -101,7 +101,7 @@ The CLI accepts any valid `--origin` and can't tell when it is the wrong one, so
 | `next [--trail]` | the one item to handle now |
 | `status [--target ID]` | where decisions stand: open, settled and deferred items in one compact hierarchy |
 | `tree [--state S]… [--target ID]` | the full structure, with every option of each question |
-| `items [--tag T] [--target ID [--trail]] [--state S]… [--limit N]` | a flat list in walk order, each item with its state; ignores a focus |
+| `items [--tag T] [--target ID [--trail]] [--state S]… [--limit N]` | a flat list in walk order, each item with its state |
 
 - `--state S` is `open` (the default), `settled`, `off-path`, `deferred`, `not-applicable`, `frozen` or `all`. It filters questions and follow-ups, never options. `tree` keeps the ancestors of a match.
 - `--target ID` limits `status` and `tree` to that item and what's under it, and `status` prints nothing for an item it leaves out. In `items` it finds one item, in any state unless `--state` is given.
