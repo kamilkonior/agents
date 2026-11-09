@@ -5315,6 +5315,26 @@ const Tree = (() => {
       // then
       assert.deepEqual(entries, []);
     });
+
+    test("an off-path target appears when its state is asked for", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1b" },
+      ]);
+
+      // when
+      const entries = view(log, { target: "Q2", state: ["off-path"] });
+
+      // then
+      assert.deepEqual(
+        entries.map((entry) => [entry.id, entry.state]),
+        [["Q2", "off-path"]],
+      );
+    });
   }
 
   return { options, run, tests };
