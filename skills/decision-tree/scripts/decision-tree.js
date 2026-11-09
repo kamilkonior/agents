@@ -834,7 +834,11 @@ const Graph = (() => {
     if (question.state === "not-applicable") return [];
 
     if (question.state === "settled") {
-      const decided = liveSelected(graph, question).map(({ id, text }) => ({ id, text, children: [] }));
+      const decided = liveSelected(graph, question).map((option) => ({
+        id: option.id,
+        text: option.text,
+        children: option.children.flatMap((child) => statusItems(graph, child)),
+      }));
 
       return [{ kind: "question", state: "settled", id: question.id, text: question.text, decided, children: [] }];
     }
