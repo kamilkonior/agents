@@ -231,7 +231,7 @@ A `<hidden-by>` id can be looked up with `--target`; if it names an option, look
 
 **Record what a decision opened up.** Add the new questions or follow-ups under the option that caused them, so they disappear if the selection changes.
 
-**Not ready to decide.** Leave the question open and add a follow-up under it describing what's blocking it.
+**Not ready to decide.** An open question stays at the front of `next`, so don't leave one open while waiting. If the answer has to be found out first, `exclude` it with `--reason deferred` and a `--note` saying what's blocking it; `next` moves on, what depends on it is held back with it, and `restore` brings it all back once the answer is known. If the work can go on without knowing, `add-option` "unknown", select it, and hang what follows under that option.
 
 **Handle a follow-up.** To pursue it, `promote-follow-up`, then treat it as any question. Otherwise `exclude` it.
 
