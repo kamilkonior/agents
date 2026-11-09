@@ -639,8 +639,12 @@ const Graph = (() => {
 
   function assignStates(graph       )       {
     for (const question of graph.roots) {
-      question.state = "open";
-      question.options.forEach((option) => (option.state = "open"));
+      const selected = liveSelected(graph, question);
+
+      question.state = selected.length === 0 ? "open" : "settled";
+      for (const option of question.options) {
+        option.state = selected.length === 0 ? "open" : selected.includes(option) ? "settled" : "off-path";
+      }
     }
   }
 
