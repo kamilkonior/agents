@@ -4439,6 +4439,29 @@ const Status = (() => {
         },
       ]);
     });
+
+    test("a question under an unchosen option is left out", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "add-question", id: "Q2", text: "chosen", origin: "Q1a" },
+        { type: "add-question", id: "Q3", text: "unchosen", origin: "Q1b" },
+      ]);
+
+      // when
+      const items = run(log);
+
+      // then
+      assert.deepEqual(
+        items.flatMap((item) => (item.state === "settled" ? item.decided.flatMap((option) => option.children) : [])).map(
+          (child) => child.id,
+        ),
+        ["Q2"],
+      );
+    });
   }
 
   return { run, tests };
