@@ -1481,6 +1481,38 @@ const Graph = (() => {
       assert.deepEqual(items, []);
     });
 
+    test("the tree view nests a question under the selected option that holds it", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+      ]);
+
+      // when
+      const items = treeView(log);
+
+      // then
+      assert.deepEqual(items, [
+        {
+          kind: "question",
+          state: "settled",
+          id: "Q1",
+          text: "q1",
+          options: [
+            {
+              id: "Q1a",
+              text: "a",
+              selected: true,
+              children: [{ kind: "question", state: "open", id: "Q2", text: "q2", options: [], children: [] }],
+            },
+          ],
+          children: [],
+        },
+      ]);
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
