@@ -1834,6 +1834,27 @@ const Graph = (() => {
       assert.deepEqual(kept, entries);
     });
 
+    test("filtering keeps the path through a selected option to an open child", () => {
+      // given
+      const open: TreeEntry = { kind: "question", state: "open", id: "Q2", text: "q2", options: [], children: [] };
+      const entries: TreeEntry[] = [
+        {
+          kind: "question",
+          state: "settled",
+          id: "Q1",
+          text: "q1",
+          options: [{ id: "Q1a", text: "a", selected: true, children: [open] }],
+          children: [],
+        },
+      ];
+
+      // when
+      const kept = filterTree(entries, ["open"]);
+
+      // then
+      assert.deepEqual(kept, entries);
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
