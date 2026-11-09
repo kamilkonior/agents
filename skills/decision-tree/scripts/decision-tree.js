@@ -4766,6 +4766,37 @@ const Status = (() => {
         },
       ]);
     });
+
+    test("two selected options each hold their own child", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a", "Q1b"] },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+        { type: "add-question", id: "Q3", text: "q3", origin: "Q1b" },
+      ]);
+
+      // when
+      const items = run(log);
+
+      // then
+      const question = { kind: "question", state: "open", options: [], children: [] };
+      assert.deepEqual(items, [
+        {
+          kind: "question",
+          state: "settled",
+          id: "Q1",
+          text: "q1",
+          decided: [
+            { id: "Q1a", text: "a", children: [{ ...question, id: "Q2", text: "q2" }] },
+            { id: "Q1b", text: "b", children: [{ ...question, id: "Q3", text: "q3" }] },
+          ],
+          children: [],
+        },
+      ]);
+    });
   }
 
   return { run, tests };
