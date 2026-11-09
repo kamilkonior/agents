@@ -6119,12 +6119,20 @@ const Xml = (() => {
   }
 
   function builtTreeOptionLines(entry: TreeEntryOption): string[] {
-    if (entry.children.length === 0) return [markedOption(entry, entry.selected === true)];
+    const { state, note } = entry;
+
+    if (entry.children.length === 0) {
+      return [state === undefined ? markedOption(entry, entry.selected === true) : excludedOption({ ...entry, state })];
+    }
+
+    const marker = state !== undefined ? ` state="${state}"` : entry.selected === true ? ' selected="true"' : "";
+    const noteLine = note === undefined ? [] : [`  <note>${escapeXml(note)}</note>`];
 
     return [
-      entry.selected === true ? '<option selected="true">' : "<option>",
+      `<option${marker}>`,
       `  <id>${entry.id}</id>`,
       `  <text>${escapeXml(entry.text)}</text>`,
+      ...noteLine,
       ...entry.children.flatMap(builtTreeLines).map((line) => `  ${line}`),
       "</option>",
     ];
