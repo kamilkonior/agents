@@ -6255,6 +6255,17 @@ const Xml = (() => {
       ]);
     });
 
+    test("the built tree renders no entries as an empty element", () => {
+      // given
+      const entries: TreeEntry[] = [];
+
+      // when
+      const xml = builtTree(entries);
+
+      // then
+      assert.equal(xml, "<tree></tree>");
+    });
+
     test("status renders no items as an empty element", () => {
       // given
       const items: StatusItem[] = [];
