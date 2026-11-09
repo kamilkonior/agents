@@ -1741,6 +1741,34 @@ const Graph = (() => {
       ]);
     });
 
+    test("the complete tree puts a superseded question right after its replacement", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "old" },
+        { type: "add-question", id: "Q2", text: "kid", origin: "Q1" },
+        { type: "add-question", id: "Q3", text: "other root" },
+        { type: "add-question", id: "Q4", text: "new" },
+        { type: "supersede-question", target: "Q1", question: "Q4" },
+      ]);
+
+      // when
+      const items = completeTree(log);
+
+      // then
+      assert.deepEqual(
+        items.map((item) => [item.id, item.state]),
+        [
+          ["Q4", "open"],
+          ["Q1", "frozen"],
+          ["Q3", "open"],
+        ],
+      );
+      assert.deepEqual(
+        items[1].children.map((child) => [child.id, child.state]),
+        [["Q2", "frozen"]],
+      );
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
