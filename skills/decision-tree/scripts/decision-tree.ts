@@ -6387,6 +6387,50 @@ const Xml = (() => {
       ]);
     });
 
+    test("the built tree marks excluded options with their state and note", () => {
+      // given
+      const child: TreeEntry = { kind: "question", state: "deferred", id: "Q2", text: "q2", options: [], children: [] };
+      const entries: TreeEntry[] = [
+        {
+          kind: "question",
+          state: "open",
+          id: "Q1",
+          text: "q",
+          options: [
+            { id: "Q1a", text: "a", state: "deferred", note: "why", children: [child] },
+            { id: "Q1b", text: "b", state: "not-applicable", children: [] },
+          ],
+          children: [],
+        },
+      ];
+
+      // when
+      const xml = builtTree(entries);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<tree>",
+        '  <question state="open">',
+        "    <id>Q1</id>",
+        "    <text>q</text>",
+        "    <options>",
+        '      <option state="deferred">',
+        "        <id>Q1a</id>",
+        "        <text>a</text>",
+        "        <note>why</note>",
+        '        <question state="deferred">',
+        "          <id>Q2</id>",
+        "          <text>q2</text>",
+        "          <options></options>",
+        "        </question>",
+        "      </option>",
+        '      <option state="not-applicable"><id>Q1b</id><text>b</text></option>',
+        "    </options>",
+        "  </question>",
+        "</tree>",
+      ]);
+    });
+
     test("status renders no items as an empty element", () => {
       // given
       const items: StatusItem[] = [];
