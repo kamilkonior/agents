@@ -75,14 +75,9 @@ type NodeState = ItemState | "unset";
 
 type TreeViewOption = OptionData & { selected?: true; children: TreeViewItem[] };
 
-type TreeViewItem = {
-  kind: "question";
-  state: ItemState;
-  id: string;
-  text: string;
-  options: TreeViewOption[];
-  children: TreeViewItem[];
-};
+type TreeViewItem =
+  | { kind: "question"; state: ItemState; id: string; text: string; options: TreeViewOption[]; children: TreeViewItem[] }
+  | { kind: "follow-up"; state: ItemState; id: string; text: string; children: TreeViewItem[] };
 
 type StatusItem =
   | { kind: "option"; state: "deferred"; id: string; text: string; note?: string }
@@ -965,10 +960,33 @@ const Graph = (() => {
     };
   }
 
+  function treeViewFollowUp(graph: Graph, followUp: FollowUpNode): TreeViewItem {
+    return {
+      kind: "follow-up",
+      state: assignedState(followUp),
+      id: followUp.id,
+      text: followUp.text,
+      children: [
+        ...followUp.children.map((child) => treeViewQuestion(graph, child)),
+        ...followUp.followUps.map((nested) => treeViewFollowUp(graph, nested)),
+      ],
+    };
+  }
+
   function treeView(log: Log): TreeViewItem[] {
     const graph = build(log);
 
-    return graph.roots.map((question) => treeViewQuestion(graph, question));
+    return [
+      ...graph.roots.map((question) => treeViewQuestion(graph, question)),
+      ...graph.rootFollowUps.map((followUp) => treeViewFollowUp(graph, followUp)),
+    ];
+  }
+
+  function firstViewQuestion(log: Log): Extract<TreeViewItem, { kind: "question" }> {
+    const [item] = treeView(log);
+    if (item?.kind !== "question") throw new Error("the first item of the view is not a question");
+
+    return item;
   }
 
   function trail(log: Log, id: string): TrailStep[] {
@@ -1546,7 +1564,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const [question] = treeView(log);
+      const question = firstViewQuestion(log);
 
       // then
       assert.deepEqual(question.options, [
@@ -1566,7 +1584,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const [question] = treeView(log);
+      const question = firstViewQuestion(log);
 
       // then
       assert.deepEqual(question.options[1].children, [
@@ -1586,7 +1604,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const [question] = treeView(log);
+      const question = firstViewQuestion(log);
 
       // then
       assert.deepEqual(
