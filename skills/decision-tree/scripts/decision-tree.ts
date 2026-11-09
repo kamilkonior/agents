@@ -6480,6 +6480,39 @@ const Xml = (() => {
       ]);
     });
 
+    test("the built tree renders a note right after the text, only when there is one", () => {
+      // given
+      const entries: TreeEntry[] = [
+        { kind: "question", state: "deferred", id: "Q1", text: "q", note: "why", options: [], children: [] },
+        { kind: "follow-up", state: "deferred", id: "F1", text: "f", note: "later", children: [] },
+        { kind: "follow-up", state: "deferred", id: "F2", text: "g", children: [] },
+      ];
+
+      // when
+      const xml = builtTree(entries);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<tree>",
+        '  <question state="deferred">',
+        "    <id>Q1</id>",
+        "    <text>q</text>",
+        "    <note>why</note>",
+        "    <options></options>",
+        "  </question>",
+        '  <follow-up state="deferred">',
+        "    <id>F1</id>",
+        "    <text>f</text>",
+        "    <note>later</note>",
+        "  </follow-up>",
+        '  <follow-up state="deferred">',
+        "    <id>F2</id>",
+        "    <text>g</text>",
+        "  </follow-up>",
+        "</tree>",
+      ]);
+    });
+
     test("status renders no items as an empty element", () => {
       // given
       const items: StatusItem[] = [];
