@@ -4705,7 +4705,7 @@ const Tree = (() => {
     target: { type: "string" },
   }         ;
 
-  function view(log     , config                                       )              {
+  function run(log     , config                                       )              {
     const states = Items.chosenStates(config.state);
 
     return Graph.filterTree(Graph.buildTree(log, config.target), states);
@@ -4717,7 +4717,7 @@ const Tree = (() => {
       const log = Log.memoryLog();
 
       // when
-      const act = () => view(log, { state: ["nope"] });
+      const act = () => run(log, { state: ["nope"] });
 
       // then
       assert.throws(
@@ -4733,7 +4733,7 @@ const Tree = (() => {
       const log = Log.memoryLog();
 
       // when
-      const act = () => view(log, { target: "Q9" });
+      const act = () => run(log, { target: "Q9" });
 
       // then
       assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "target not found: Q9");
@@ -4747,7 +4747,7 @@ const Tree = (() => {
       ]);
 
       // when
-      const act = () => view(log, { target: "Q1a" });
+      const act = () => run(log, { target: "Q1a" });
 
       // then
       assert.throws(
@@ -4767,7 +4767,7 @@ const Tree = (() => {
       ]);
 
       // when
-      const entries = view(log, {});
+      const entries = run(log, {});
 
       // then
       assert.deepEqual(
@@ -4790,7 +4790,7 @@ const Tree = (() => {
       ]);
 
       // when
-      const entries = view(log, { target: "Q2" });
+      const entries = run(log, { target: "Q2" });
 
       // then
       assert.deepEqual(entries, [
@@ -4821,7 +4821,7 @@ const Tree = (() => {
       ]);
 
       // when
-      const entries = view(log, { target: "Q1" });
+      const entries = run(log, { target: "Q1" });
 
       // then
       assert.deepEqual(entries, []);
@@ -4838,7 +4838,7 @@ const Tree = (() => {
       ]);
 
       // when
-      const entries = view(log, { target: "Q2", state: ["off-path"] });
+      const entries = run(log, { target: "Q2", state: ["off-path"] });
 
       // then
       assert.deepEqual(
@@ -4860,7 +4860,7 @@ const Tree = (() => {
       ]);
 
       // when
-      const entries = view(log, { state: ["all"] });
+      const entries = run(log, { state: ["all"] });
 
       // then
       assert.deepEqual(
@@ -4875,7 +4875,7 @@ const Tree = (() => {
     });
   }
 
-  return { options, view, tests };
+  return { options, run, tests };
 })();
 
 const Status = (() => {
@@ -5591,7 +5591,7 @@ const Xml = (() => {
     return note === undefined ? [] : [`  <note>${escapeXml(note)}</note>`];
   }
 
-  function builtTreeOptionLines(entry                 )           {
+  function treeOptionLines(entry                 )           {
     const { state, note } = entry;
 
     if (entry.children.length === 0) {
@@ -5605,24 +5605,24 @@ const Xml = (() => {
       `  <id>${entry.id}</id>`,
       `  <text>${escapeXml(entry.text)}</text>`,
       ...noteLines(note),
-      ...entry.children.flatMap(builtTreeLines).map((line) => `  ${line}`),
+      ...entry.children.flatMap(treeLines).map((line) => `  ${line}`),
       "</option>",
     ];
   }
 
-  function builtTreeLines(entry           )           {
+  function treeLines(entry           )           {
     if (entry.kind === "follow-up") {
       return [
         `<follow-up state="${entry.state}">`,
         `  <id>${entry.id}</id>`,
         `  <text>${escapeXml(entry.text)}</text>`,
         ...noteLines(entry.note),
-        ...entry.children.flatMap(builtTreeLines).map((line) => `  ${line}`),
+        ...entry.children.flatMap(treeLines).map((line) => `  ${line}`),
         "</follow-up>",
       ];
     }
 
-    const options = entry.options.flatMap(builtTreeOptionLines).map((line) => `    ${line}`);
+    const options = entry.options.flatMap(treeOptionLines).map((line) => `    ${line}`);
     const optionsBlock = options.length === 0 ? optionsLines([]) : ["  <options>", ...options, "  </options>"];
 
     return [
@@ -5631,22 +5631,22 @@ const Xml = (() => {
       `  <text>${escapeXml(entry.text)}</text>`,
       ...noteLines(entry.note),
       ...optionsBlock,
-      ...entry.children.flatMap(builtTreeLines).map((line) => `  ${line}`),
+      ...entry.children.flatMap(treeLines).map((line) => `  ${line}`),
       "</question>",
     ];
   }
 
-  function builtTree(entries             )         {
+  function tree(entries             )         {
     if (entries.length === 0) return "<tree></tree>";
 
-    return ["<tree>", ...entries.flatMap(builtTreeLines).map((line) => `  ${line}`), "</tree>"].join("\n");
+    return ["<tree>", ...entries.flatMap(treeLines).map((line) => `  ${line}`), "</tree>"].join("\n");
   }
 
   function supersede(data               )         {
     const replacement = question(data.question)
       .split("\n")
       .map((line) => `  ${line}`);
-    const superseded = data.superseded.flatMap(builtTreeLines).map((line) => `    ${line}`);
+    const superseded = data.superseded.flatMap(treeLines).map((line) => `    ${line}`);
 
     return ["<supersede>", ...replacement, "  <superseded>", ...superseded, "  </superseded>", "</supersede>"].join(
       "\n",
@@ -5758,7 +5758,7 @@ const Xml = (() => {
       const entries              = [];
 
       // when
-      const xml = builtTree(entries);
+      const xml = tree(entries);
 
       // then
       assert.equal(xml, "<tree></tree>");
@@ -5781,7 +5781,7 @@ const Xml = (() => {
       ];
 
       // when
-      const xml = builtTree(entries);
+      const xml = tree(entries);
 
       // then
       assert.deepEqual(xml.split("\n"), [
@@ -5820,7 +5820,7 @@ const Xml = (() => {
       ];
 
       // when
-      const xml = builtTree(entries);
+      const xml = tree(entries);
 
       // then
       assert.deepEqual(xml.split("\n"), [
@@ -5867,7 +5867,7 @@ const Xml = (() => {
       ];
 
       // when
-      const xml = builtTree(entries);
+      const xml = tree(entries);
 
       // then
       assert.deepEqual(xml.split("\n"), [
@@ -5907,7 +5907,7 @@ const Xml = (() => {
       ];
 
       // when
-      const xml = builtTree(entries);
+      const xml = tree(entries);
 
       // then
       assert.deepEqual(xml.split("\n"), [
@@ -5938,7 +5938,7 @@ const Xml = (() => {
       ];
 
       // when
-      const xml = builtTree(entries);
+      const xml = tree(entries);
 
       // then
       assert.deepEqual(xml.split("\n"), [
@@ -5983,7 +5983,7 @@ const Xml = (() => {
       ];
 
       // when
-      const xml = builtTree(entries);
+      const xml = tree(entries);
 
       // then
       assert.equal(xml.includes(text), false);
@@ -6563,7 +6563,7 @@ const Xml = (() => {
     return ["<items>", ...list.flatMap(taggedLines).map((line) => `  ${line}`), "</items>"].join("\n");
   }
 
-  return { option, question, selection, followUp, item, next, builtTree, status, supersede, taggedItem, items, tests };
+  return { option, question, selection, followUp, item, next, tree, status, supersede, taggedItem, items, tests };
 })();
 
 const Cli = (() => {
@@ -6792,7 +6792,7 @@ const Cli = (() => {
 
       case "tree": {
         const config = readModeConfig(Tree.options);
-        console.log(Xml.builtTree(Tree.view(log, config)));
+        console.log(Xml.tree(Tree.run(log, config)));
         break;
       }
 
