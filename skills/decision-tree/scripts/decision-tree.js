@@ -939,6 +939,13 @@ const Graph = (() => {
     ];
   }
 
+  function treeViewChildren(graph       , node                                          )                 {
+    return [
+      ...node.children.map((child) => treeViewQuestion(graph, child)),
+      ...node.followUps.map((followUp) => treeViewFollowUp(graph, followUp)),
+    ];
+  }
+
   function treeViewQuestion(graph       , question              )               {
     const selected = liveSelected(graph, question);
     const options = question.options
@@ -947,7 +954,7 @@ const Graph = (() => {
         id: option.id,
         text: option.text,
         ...(selected.includes(option) ? { selected: true          } : {}),
-        children: option.children.map((child) => treeViewQuestion(graph, child)),
+        children: treeViewChildren(graph, option),
       }));
 
     return {
@@ -956,7 +963,7 @@ const Graph = (() => {
       id: question.id,
       text: question.text,
       options,
-      children: question.children.map((child) => treeViewQuestion(graph, child)),
+      children: treeViewChildren(graph, question),
     };
   }
 
@@ -966,10 +973,7 @@ const Graph = (() => {
       state: assignedState(followUp),
       id: followUp.id,
       text: followUp.text,
-      children: [
-        ...followUp.children.map((child) => treeViewQuestion(graph, child)),
-        ...followUp.followUps.map((nested) => treeViewFollowUp(graph, nested)),
-      ],
+      children: treeViewChildren(graph, followUp),
     };
   }
 
