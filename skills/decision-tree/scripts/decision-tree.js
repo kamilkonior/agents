@@ -700,7 +700,6 @@ const Graph = (() => {
 
   function project(graph       ) {
     const deferred                 = [];
-    const reached = new Set                             ();
 
     function live(node                                          )          {
       return !graph.exclusions.has(node.id);
@@ -722,7 +721,6 @@ const Graph = (() => {
         return [];
       }
 
-      reached.add(node);
       node.options.filter((option) => !live(option)).forEach(noteDeferred);
 
       const selected = node.options.filter((option) => node.selected.includes(option) && live(option));
@@ -754,13 +752,12 @@ const Graph = (() => {
         return [];
       }
 
-      reached.add(node);
       if (node.status === "open") return [{ kind: "follow-up", id: node.id, text: node.text }];
 
       return [...node.children.flatMap(question), ...followUps(node)];
     }
 
-    return { question, followUp, deferred, reached };
+    return { question, followUp, deferred };
   }
 
   function walk(graph       )           {
