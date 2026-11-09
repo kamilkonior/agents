@@ -5213,6 +5213,12 @@ const Xml = (() => {
     return selected ? option(data).replace("<option>", '<option selected="true">') : option(data);
   }
 
+  function excludedOption(data: ExcludedOption): string {
+    const note = data.note === undefined ? "" : `<note>${escapeXml(data.note)}</note>`;
+
+    return `<option state="${data.state}"><id>${data.id}</id><text>${escapeXml(data.text)}</text>${note}</option>`;
+  }
+
   function trailLines(steps: TrailStep[] | undefined): string[] {
     if (steps === undefined) return [];
 
@@ -6142,8 +6148,11 @@ const Xml = (() => {
     if (data.item.kind === "question") {
       const { id, text, options } = data.item.question;
       const selectedIds = (data.selected ?? []).map((each) => each.id);
-      const optionLines = options.map((each) => `    ${markedOption(each, selectedIds.includes(each.id))}`);
-      const optionsBlock = options.length === 0 ? optionsLines([]) : ["  <options>", ...optionLines, "  </options>"];
+      const optionLines = [
+        ...options.map((each) => markedOption(each, selectedIds.includes(each.id))),
+        ...(data.excludedOptions ?? []).map(excludedOption),
+      ].map((line) => `    ${line}`);
+      const optionsBlock = optionLines.length === 0 ? optionsLines([]) : ["  <options>", ...optionLines, "  </options>"];
 
       return [
         `<question${state}>`,
