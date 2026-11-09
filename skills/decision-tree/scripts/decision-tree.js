@@ -1096,6 +1096,27 @@ const Graph = (() => {
       assert.deepEqual([question.state, question.hiddenBy], ["deferred", "Q1"]);
     });
 
+    test("a superseded question and what is under it are frozen", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1" },
+        { type: "add-question", id: "Q3", text: "q3" },
+        { type: "supersede-question", target: "Q1", question: "Q3" },
+      ]);
+
+      // when
+      const graph = build(log);
+
+      // then
+      const superseded = questionNode(graph.nodes, "Q1");
+      const child = questionNode(graph.nodes, "Q2");
+      assert.deepEqual(
+        [superseded.state, superseded.hiddenBy, child.state, child.hiddenBy],
+        ["frozen", undefined, "frozen", "Q1"],
+      );
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
