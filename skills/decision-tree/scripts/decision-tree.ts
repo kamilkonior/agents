@@ -4557,6 +4557,17 @@ const Status = (() => {
       // then
       assert.deepEqual(items, [{ kind: "question", state: "deferred", id: "Q1", text: "q1" }]);
     });
+
+    test("an open follow-up has state open and no body", () => {
+      // given
+      const log = Log.memoryLog([{ type: "add-follow-up", id: "F1", text: "f" }]);
+
+      // when
+      const items = run(log);
+
+      // then
+      assert.deepEqual(items, [{ kind: "follow-up", state: "open", id: "F1", text: "f" }]);
+    });
   }
 
   return { run, tests };
