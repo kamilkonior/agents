@@ -14,7 +14,7 @@ type ExclusionReason = "not-applicable" | "deferred";
 type Event =
   | { type: "add-question"; id: string; text: string; origin?: string }
   | { type: "add-option"; id: string; text: string; origin: string }
-  | { type: "select-option"; targets: string[]; note?: string }
+  | { type: "select-option"; targets: string[]; rationale?: string }
   | { type: "add-follow-up"; id: string; text: string; origin?: string }
   | { type: "promote-follow-up"; target: string }
   | { type: "exclude"; target: string; reason: ExclusionReason; note?: string }
@@ -85,7 +85,7 @@ type StatusItem =
       text: string;
       decided: (OptionData & { children: StatusItem[] })[];
       children: StatusItem[];
-      note?: string;
+      rationale?: string;
     };
 
 type Hiding = { state: ItemState; by: string };
@@ -126,7 +126,7 @@ type QuestionNode = {
   children: QuestionNode[];
   followUps: FollowUpNode[];
   selected: OptionNode[];
-  selectionNote?: string;
+  rationale?: string;
   supersededBy?: QuestionNode;
   supersedes?: QuestionNode;
   hiddenBy?: string;
@@ -552,7 +552,7 @@ const Graph = (() => {
 
           const options = event.targets.map((id) => optionNode(nodes, id));
           options[0].question.selected = options;
-          options[0].question.selectionNote = event.note;
+          options[0].question.rationale = event.rationale;
           break;
         }
 
@@ -789,7 +789,7 @@ const Graph = (() => {
       }));
 
       const item: StatusItem = { kind: "question", state: "settled", id: question.id, text: question.text, decided, children };
-      if (question.selectionNote !== undefined) item.note = question.selectionNote;
+      if (question.rationale !== undefined) item.rationale = question.rationale;
 
       return [item];
     }
@@ -3178,7 +3178,7 @@ const AddOption = (() => {
 const SelectOption = (() => {
   const options = {
     target: { type: "string", multiple: true },
-    note: { type: "string" },
+    rationale: { type: "string" },
   } as const;
 
   function liveOption(log: Log, target: string): OptionNode {
@@ -3190,7 +3190,7 @@ const SelectOption = (() => {
     return option;
   }
 
-  function select(log: Log, targets: string[], note?: string): SelectionData {
+  function select(log: Log, targets: string[], rationale?: string): SelectionData {
     const repeated = targets.find((target, index) => targets.indexOf(target) !== index);
     if (repeated !== undefined) throw new DecisionTreeError(`target is repeated: ${repeated}`);
 
@@ -3202,7 +3202,7 @@ const SelectOption = (() => {
     Graph.rejectOffPath(log, question);
 
     const event: Event = { type: "select-option", targets };
-    if (note !== undefined) event.note = note;
+    if (rationale !== undefined) event.rationale = rationale;
 
     log.append(event);
 
@@ -3212,10 +3212,10 @@ const SelectOption = (() => {
     };
   }
 
-  function run(log: Log, config: { target?: string[]; note?: string }): SelectionData {
+  function run(log: Log, config: { target?: string[]; rationale?: string }): SelectionData {
     if (!config.target) throw new DecisionTreeError("select-option requires --target");
 
-    return select(log, config.target, config.note);
+    return select(log, config.target, config.rationale);
   }
 
   function tests() {
@@ -3361,7 +3361,7 @@ const SelectOption = (() => {
       assert.deepEqual(log.read(), [...events, { type: "select-option", targets: ["Q1a"] }]);
     });
 
-    test("selecting with a note records why on the selection", () => {
+    test("selecting with a rationale records why on the selection", () => {
       // given
       const events: Event[] = [
         { type: "add-question", id: "Q1", text: "q" },
@@ -3370,10 +3370,10 @@ const SelectOption = (() => {
       const log = Log.memoryLog([...events]);
 
       // when
-      run(log, { target: ["Q1a"], note: "why" });
+      run(log, { target: ["Q1a"], rationale: "why" });
 
       // then
-      assert.deepEqual(log.read(), [...events, { type: "select-option", targets: ["Q1a"], note: "why" }]);
+      assert.deepEqual(log.read(), [...events, { type: "select-option", targets: ["Q1a"], rationale: "why" }]);
     });
   }
 
@@ -5149,12 +5149,12 @@ const Status = (() => {
       ]);
     });
 
-    test("a settled question carries the note of its selection", () => {
+    test("a settled question carries the rationale of its selection", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q" },
         { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
-        { type: "select-option", targets: ["Q1a"], note: "why" },
+        { type: "select-option", targets: ["Q1a"], rationale: "why" },
       ]);
 
       // when
@@ -5169,18 +5169,18 @@ const Status = (() => {
           text: "q",
           decided: [{ id: "Q1a", text: "a", children: [] }],
           children: [],
-          note: "why",
+          rationale: "why",
         },
       ]);
     });
 
-    test("a later selection without a note drops the note of the earlier one", () => {
+    test("a later selection without a rationale drops the rationale of the earlier one", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q" },
         { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
         { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
-        { type: "select-option", targets: ["Q1a"], note: "why" },
+        { type: "select-option", targets: ["Q1a"], rationale: "why" },
         { type: "select-option", targets: ["Q1b"] },
       ]);
 
@@ -5666,7 +5666,7 @@ const Xml = (() => {
         `  <text>${escapeXml(item.text)}</text>`,
         "  <decided>",
         ...item.decided.flatMap(decidedLines).map((line) => `    ${line}`),
-        ...(item.note === undefined ? [] : [`    <note>${escapeXml(item.note)}</note>`]),
+        ...(item.rationale === undefined ? [] : [`    <rationale>${escapeXml(item.rationale)}</rationale>`]),
         "  </decided>",
         ...children,
         "</question>",
@@ -6146,7 +6146,7 @@ const Xml = (() => {
       );
     });
 
-    test("status renders a selection's note inside decided, after its options", () => {
+    test("status renders a selection's rationale inside decided, after its options", () => {
       // given
       const items: StatusItem[] = [
         {
@@ -6156,7 +6156,7 @@ const Xml = (() => {
           text: "q",
           decided: [{ id: "Q1a", text: "a", children: [] }],
           children: [],
-          note: "a < b",
+          rationale: "a < b",
         },
       ];
 
@@ -6171,7 +6171,7 @@ const Xml = (() => {
         "    <text>q</text>",
         "    <decided>",
         "      <option><id>Q1a</id><text>a</text></option>",
-        "      <note>a &lt; b</note>",
+        "      <rationale>a &lt; b</rationale>",
         "    </decided>",
         "  </question>",
         "</status>",

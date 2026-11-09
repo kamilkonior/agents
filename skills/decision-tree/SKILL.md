@@ -87,7 +87,7 @@ The CLI accepts any valid `--origin` and can't tell when it is the wrong one, so
 | `add-question --text T [--option A]… [--origin ID]` | adds a question | `<question>` |
 | `add-option --origin QID --text T` | adds an option to a question | `<option>` |
 | `add-follow-up --text T [--origin ID]` | records a follow-up | `<follow-up>` |
-| `select-option --target OID… [--note N]` | selects options of one question; `N` records why | `<selection>` |
+| `select-option --target OID… [--rationale R]` | selects options of one question; `R` records why they were chosen | `<selection>` |
 | `promote-follow-up --target FID [--text T] [--option A]…` | turns a follow-up into a question under it, worded as `T` if given | `<promote>`: the new question and the follow-up it came from |
 | `supersede-question --target QID --text T [--option A]…` | puts a reworded question in the old one's place, keeping its tags, and freezes the old one | `<supersede>` |
 | `exclude --target ID --reason R [--note N]` | takes a question, option or follow-up out with everything under it; `R` is `deferred` or `not-applicable` | the item |
@@ -128,7 +128,7 @@ The CLI accepts any valid `--origin` and can't tell when it is the wrong one, so
 </next>
 ```
 
-`--query status`. The state decides the body: `open` has `<options>`, `settled` has `<decided>`, with a `<note>` after its options if the selection had one, and `deferred` has a `<note>` if one was given. Inside a decided option means the item goes if that answer changes, and beside `<decided>` means it stays. Off-path and not-applicable items are left out.
+`--query status`. The state decides the body: `open` has `<options>`, `settled` has `<decided>`, with a `<rationale>` after its options if the selection had one, and `deferred` has a `<note>` if one was given. Inside a decided option means the item goes if that answer changes, and beside `<decided>` means it stays. Off-path and not-applicable items are left out.
 
 ```xml
 <status>
