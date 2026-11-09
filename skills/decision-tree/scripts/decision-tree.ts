@@ -5194,7 +5194,23 @@ const Tree = (() => {
     return Graph.filterTree(Graph.buildTree(log), states);
   }
 
-  function tests() {}
+  function tests() {
+    test("an unknown state throws", () => {
+      // given
+      const log = Log.memoryLog();
+
+      // when
+      const act = () => view(log, { state: ["nope"] });
+
+      // then
+      assert.throws(
+        act,
+        (error) =>
+          error instanceof DecisionTreeError &&
+          error.message === "state must be open, settled, off-path, deferred, not-applicable, frozen or all: nope",
+      );
+    });
+  }
 
   return { options, run, tests };
 })();
