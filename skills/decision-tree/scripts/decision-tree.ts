@@ -1574,6 +1574,27 @@ const Graph = (() => {
       ]);
     });
 
+    test("the tree view gives two selected options their own children", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a", "Q1b"] },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+        { type: "add-question", id: "Q3", text: "q3", origin: "Q1b" },
+      ]);
+
+      // when
+      const [question] = treeView(log);
+
+      // then
+      assert.deepEqual(
+        question.options.map((option) => option.children.map((child) => child.id)),
+        [["Q2"], ["Q3"]],
+      );
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
