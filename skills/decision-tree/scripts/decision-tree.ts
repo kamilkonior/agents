@@ -936,6 +936,18 @@ const Graph = (() => {
   }
 
   function tests() {
+    test("a node left unset fails the state check", () => {
+      // given
+      const graph = build(Log.memoryLog([{ type: "add-question", id: "Q1", text: "q" }]));
+      questionNode(graph.nodes, "Q1").state = "unset";
+
+      // when
+      const act = () => assertStatesAssigned(graph);
+
+      // then
+      assert.throws(act, (error) => error instanceof Error && error.message === "node Q1 has no state");
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
