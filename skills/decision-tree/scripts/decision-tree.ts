@@ -5308,6 +5308,38 @@ const Xml = (() => {
       );
     });
 
+    test("items renders a follow-up's trail after its tags", () => {
+      // given
+      const list: ListedItem[] = [
+        {
+          item: { kind: "follow-up", followUp: { id: "F1", text: "f" } },
+          tags: [],
+          state: "open",
+          trail: [{ kind: "question", id: "Q1", text: "q" }],
+        },
+      ];
+
+      // when
+      const xml = items(list);
+
+      // then
+      assert.equal(
+        xml,
+        [
+          "<items>",
+          '  <follow-up state="open">',
+          "    <id>F1</id>",
+          "    <text>f</text>",
+          "    <tags></tags>",
+          "    <trail>",
+          "      <question><id>Q1</id><text>q</text></question>",
+          "    </trail>",
+          "  </follow-up>",
+          "</items>",
+        ].join("\n"),
+      );
+    });
+
     test("status renders no items as an empty element", () => {
       // given
       const items: StatusItem[] = [];
