@@ -6281,6 +6281,40 @@ const Xml = (() => {
       assert.equal(xml, "<tree></tree>");
     });
 
+    test("the built tree renders an open question with its state and options", () => {
+      // given
+      const entries: TreeEntry[] = [
+        {
+          kind: "question",
+          state: "open",
+          id: "Q1",
+          text: "q",
+          options: [
+            { id: "Q1a", text: "a", children: [] },
+            { id: "Q1b", text: "b", selected: true, children: [] },
+          ],
+          children: [],
+        },
+      ];
+
+      // when
+      const xml = builtTree(entries);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<tree>",
+        '  <question state="open">',
+        "    <id>Q1</id>",
+        "    <text>q</text>",
+        "    <options>",
+        "      <option><id>Q1a</id><text>a</text></option>",
+        '      <option selected="true"><id>Q1b</id><text>b</text></option>',
+        "    </options>",
+        "  </question>",
+        "</tree>",
+      ]);
+    });
+
     test("status renders no items as an empty element", () => {
       // given
       const items: StatusItem[] = [];
