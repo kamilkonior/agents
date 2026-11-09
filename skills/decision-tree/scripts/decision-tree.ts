@@ -73,24 +73,24 @@ type ItemState = "open" | "settled" | "off-path" | "deferred" | "not-applicable"
 
 type NodeState = ItemState | "unset";
 
-type CompleteTreeOption = OptionData & {
+type TreeEntryOption = OptionData & {
   selected?: true;
   state?: ExclusionReason;
   note?: string;
-  children: CompleteTreeItem[];
+  children: TreeEntry[];
 };
 
-type CompleteTreeItem =
+type TreeEntry =
   | {
       kind: "question";
       state: ItemState;
       id: string;
       text: string;
       note?: string;
-      options: CompleteTreeOption[];
-      children: CompleteTreeItem[];
+      options: TreeEntryOption[];
+      children: TreeEntry[];
     }
-  | { kind: "follow-up"; state: ItemState; id: string; text: string; note?: string; children: CompleteTreeItem[] };
+  | { kind: "follow-up"; state: ItemState; id: string; text: string; note?: string; children: TreeEntry[] };
 
 type StatusItem =
   | { kind: "option"; state: "deferred"; id: string; text: string; note?: string }
@@ -954,14 +954,14 @@ const Graph = (() => {
     ];
   }
 
-  function completeTreeChildren(graph: Graph, node: QuestionNode | OptionNode | FollowUpNode): CompleteTreeItem[] {
+  function childEntries(graph: Graph, node: QuestionNode | OptionNode | FollowUpNode): TreeEntry[] {
     return [
-      ...node.children.flatMap((child) => completeTreeQuestion(graph, child)),
-      ...node.followUps.map((followUp) => completeTreeFollowUp(graph, followUp)),
+      ...node.children.flatMap((child) => questionEntries(graph, child)),
+      ...node.followUps.map((followUp) => followUpEntry(graph, followUp)),
     ];
   }
 
-  function completeTreeQuestion(graph: Graph, question: QuestionNode): CompleteTreeItem[] {
+  function questionEntries(graph: Graph, question: QuestionNode): TreeEntry[] {
     const selected = liveSelected(graph, question);
     const live = question.options
       .filter((option) => !graph.exclusions.has(option.id))
@@ -969,19 +969,19 @@ const Graph = (() => {
         id: option.id,
         text: option.text,
         ...(selected.includes(option) ? { selected: true as const } : {}),
-        children: completeTreeChildren(graph, option),
+        children: childEntries(graph, option),
       }));
     const excluded = question.options.flatMap((option) => {
       const exclusion = graph.exclusions.get(option.id);
       if (exclusion === undefined) return [];
 
-      const children = completeTreeChildren(graph, option);
+      const children = childEntries(graph, option);
 
       return [{ id: option.id, text: option.text, state: exclusion.reason, ...noteOf(graph, option), children }];
     });
     const options = [...live, ...excluded];
 
-    const superseded = question.supersedes === undefined ? [] : completeTreeQuestion(graph, question.supersedes);
+    const superseded = question.supersedes === undefined ? [] : questionEntries(graph, question.supersedes);
 
     return [
       {
@@ -991,35 +991,35 @@ const Graph = (() => {
         text: question.text,
         ...noteOf(graph, question),
         options,
-        children: completeTreeChildren(graph, question),
+        children: childEntries(graph, question),
       },
       ...superseded,
     ];
   }
 
-  function completeTreeFollowUp(graph: Graph, followUp: FollowUpNode): CompleteTreeItem {
+  function followUpEntry(graph: Graph, followUp: FollowUpNode): TreeEntry {
     return {
       kind: "follow-up",
       state: assignedState(followUp),
       id: followUp.id,
       text: followUp.text,
       ...noteOf(graph, followUp),
-      children: completeTreeChildren(graph, followUp),
+      children: childEntries(graph, followUp),
     };
   }
 
-  function completeTree(log: Log): CompleteTreeItem[] {
+  function buildTree(log: Log): TreeEntry[] {
     const graph = build(log);
 
     return [
-      ...graph.roots.flatMap((question) => completeTreeQuestion(graph, question)),
-      ...graph.rootFollowUps.map((followUp) => completeTreeFollowUp(graph, followUp)),
+      ...graph.roots.flatMap((question) => questionEntries(graph, question)),
+      ...graph.rootFollowUps.map((followUp) => followUpEntry(graph, followUp)),
     ];
   }
 
-  function firstCompleteQuestion(log: Log): Extract<CompleteTreeItem, { kind: "question" }> {
-    const [item] = completeTree(log);
-    if (item?.kind !== "question") throw new Error("the first item of the complete tree is not a question");
+  function firstQuestionEntry(log: Log): Extract<TreeEntry, { kind: "question" }> {
+    const [item] = buildTree(log);
+    if (item?.kind !== "question") throw new Error("the first entry of the built tree is not a question");
 
     return item;
   }
@@ -1523,18 +1523,18 @@ const Graph = (() => {
       );
     });
 
-    test("the complete tree of an empty log has no items", () => {
+    test("the built tree of an empty log has no items", () => {
       // given
       const log = Log.memoryLog();
 
       // when
-      const items = completeTree(log);
+      const items = buildTree(log);
 
       // then
       assert.deepEqual(items, []);
     });
 
-    test("the complete tree nests a question under the selected option that holds it", () => {
+    test("the built tree nests a question under the selected option that holds it", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q1" },
@@ -1544,7 +1544,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const items = completeTree(log);
+      const items = buildTree(log);
 
       // then
       assert.deepEqual(items, [
@@ -1566,7 +1566,7 @@ const Graph = (() => {
       ]);
     });
 
-    test("the complete tree keeps a question-level child in the question's children", () => {
+    test("the built tree keeps a question-level child in the question's children", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q1" },
@@ -1574,7 +1574,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const items = completeTree(log);
+      const items = buildTree(log);
 
       // then
       assert.deepEqual(items, [
@@ -1589,7 +1589,7 @@ const Graph = (() => {
       ]);
     });
 
-    test("the complete tree lists every live option and marks only the chosen one", () => {
+    test("the built tree lists every live option and marks only the chosen one", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q" },
@@ -1599,7 +1599,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const question = firstCompleteQuestion(log);
+      const question = firstQuestionEntry(log);
 
       // then
       assert.deepEqual(question.options, [
@@ -1608,7 +1608,7 @@ const Graph = (() => {
       ]);
     });
 
-    test("the complete tree holds an off-path question inside its unchosen option", () => {
+    test("the built tree holds an off-path question inside its unchosen option", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q1" },
@@ -1619,7 +1619,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const question = firstCompleteQuestion(log);
+      const question = firstQuestionEntry(log);
 
       // then
       assert.deepEqual(question.options[1].children, [
@@ -1627,7 +1627,7 @@ const Graph = (() => {
       ]);
     });
 
-    test("the complete tree gives two selected options their own children", () => {
+    test("the built tree gives two selected options their own children", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q1" },
@@ -1639,7 +1639,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const question = firstCompleteQuestion(log);
+      const question = firstQuestionEntry(log);
 
       // then
       assert.deepEqual(
@@ -1648,7 +1648,7 @@ const Graph = (() => {
       );
     });
 
-    test("the complete tree shows a promoted follow-up as a settled step holding its question", () => {
+    test("the built tree shows a promoted follow-up as a settled step holding its question", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-follow-up", id: "F1", text: "f" },
@@ -1657,7 +1657,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const items = completeTree(log);
+      const items = buildTree(log);
 
       // then
       assert.deepEqual(items, [
@@ -1671,7 +1671,7 @@ const Graph = (() => {
       ]);
     });
 
-    test("the complete tree places follow-ups after the questions at their level", () => {
+    test("the built tree places follow-ups after the questions at their level", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q1" },
@@ -1684,7 +1684,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const question = firstCompleteQuestion(log);
+      const question = firstQuestionEntry(log);
 
       // then
       assert.deepEqual(
@@ -1697,7 +1697,7 @@ const Graph = (() => {
       );
     });
 
-    test("the complete tree keeps a deferred question in place with its note and child", () => {
+    test("the built tree keeps a deferred question in place with its note and child", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q1" },
@@ -1706,7 +1706,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const items = completeTree(log);
+      const items = buildTree(log);
 
       // then
       assert.deepEqual(items, [
@@ -1722,7 +1722,7 @@ const Graph = (() => {
       ]);
     });
 
-    test("the complete tree lists an excluded option after the live ones, with its state and note", () => {
+    test("the built tree lists an excluded option after the live ones, with its state and note", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q" },
@@ -1732,7 +1732,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const question = firstCompleteQuestion(log);
+      const question = firstQuestionEntry(log);
 
       // then
       assert.deepEqual(question.options, [
@@ -1741,7 +1741,7 @@ const Graph = (() => {
       ]);
     });
 
-    test("the complete tree puts a superseded question right after its replacement", () => {
+    test("the built tree puts a superseded question right after its replacement", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "old" },
@@ -1752,7 +1752,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const items = completeTree(log);
+      const items = buildTree(log);
 
       // then
       assert.deepEqual(
@@ -1769,7 +1769,7 @@ const Graph = (() => {
       );
     });
 
-    test("the complete tree lists a question superseded twice newest first", () => {
+    test("the built tree lists a question superseded twice newest first", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "first" },
@@ -1780,7 +1780,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const items = completeTree(log);
+      const items = buildTree(log);
 
       // then
       assert.deepEqual(
