@@ -73,6 +73,17 @@ type ItemState = "open" | "settled" | "off-path" | "deferred" | "not-applicable"
 
 type NodeState = ItemState | "unset";
 
+type TreeViewOption = OptionData & { selected?: true; children: TreeViewItem[] };
+
+type TreeViewItem = {
+  kind: "question";
+  state: ItemState;
+  id: string;
+  text: string;
+  options: TreeViewOption[];
+  children: TreeViewItem[];
+};
+
 type StatusItem =
   | { kind: "option"; state: "deferred"; id: string; text: string; note?: string }
   | { kind: "follow-up"; state: "open"; id: string; text: string }
@@ -933,11 +944,31 @@ const Graph = (() => {
     ];
   }
 
-  function treeView(log: Log): unknown[] {
-    const graph = build(log);
-    if (graph.roots.length > 0) throw new Error("the tree view is not built yet");
+  function treeViewQuestion(graph: Graph, question: QuestionNode): TreeViewItem {
+    const selected = liveSelected(graph, question);
+    const options = question.options
+      .filter((option) => !graph.exclusions.has(option.id))
+      .map((option) => ({
+        id: option.id,
+        text: option.text,
+        ...(selected.includes(option) ? { selected: true as const } : {}),
+        children: option.children.map((child) => treeViewQuestion(graph, child)),
+      }));
 
-    return [];
+    return {
+      kind: "question",
+      state: assignedState(question),
+      id: question.id,
+      text: question.text,
+      options,
+      children: [],
+    };
+  }
+
+  function treeView(log: Log): TreeViewItem[] {
+    const graph = build(log);
+
+    return graph.roots.map((question) => treeViewQuestion(graph, question));
   }
 
   function trail(log: Log, id: string): TrailStep[] {

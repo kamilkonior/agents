@@ -73,6 +73,17 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
 
                                      
 
+                                                                                 
+
+                     
+                   
+                   
+             
+               
+                            
+                           
+  
+
                  
                                                                                   
                                                                   
@@ -933,11 +944,31 @@ const Graph = (() => {
     ];
   }
 
-  function treeView(log     )            {
-    const graph = build(log);
-    if (graph.roots.length > 0) throw new Error("the tree view is not built yet");
+  function treeViewQuestion(graph       , question              )               {
+    const selected = liveSelected(graph, question);
+    const options = question.options
+      .filter((option) => !graph.exclusions.has(option.id))
+      .map((option) => ({
+        id: option.id,
+        text: option.text,
+        ...(selected.includes(option) ? { selected: true          } : {}),
+        children: option.children.map((child) => treeViewQuestion(graph, child)),
+      }));
 
-    return [];
+    return {
+      kind: "question",
+      state: assignedState(question),
+      id: question.id,
+      text: question.text,
+      options,
+      children: [],
+    };
+  }
+
+  function treeView(log     )                 {
+    const graph = build(log);
+
+    return graph.roots.map((question) => treeViewQuestion(graph, question));
   }
 
   function trail(log     , id        )              {
