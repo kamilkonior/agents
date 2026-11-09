@@ -1963,6 +1963,28 @@ const Graph = (() => {
       );
     });
 
+    test("filtering by several states keeps entries matching any of them", () => {
+      // given
+      const entry = (id: string, state: ItemState): TreeEntry => ({
+        kind: "question",
+        state,
+        id,
+        text: id,
+        options: [],
+        children: [],
+      });
+      const entries = [entry("Q1", "open"), entry("Q2", "settled"), entry("Q3", "deferred")];
+
+      // when
+      const kept = filterTree(entries, ["open", "deferred"]);
+
+      // then
+      assert.deepEqual(
+        kept.map((each) => each.id),
+        ["Q1", "Q3"],
+      );
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
