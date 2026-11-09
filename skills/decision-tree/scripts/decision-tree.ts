@@ -1020,9 +1020,14 @@ const Graph = (() => {
   function filterTree(entries: TreeEntry[], states: ItemState[]): TreeEntry[] {
     return entries.flatMap((entry) => {
       const children = filterTree(entry.children, states);
-      if (!states.includes(entry.state) && children.length === 0) return [];
+      const options =
+        entry.kind === "question"
+          ? entry.options.map((option) => ({ ...option, children: filterTree(option.children, states) }))
+          : [];
+      const holdsMatch = children.length > 0 || options.some((option) => option.children.length > 0);
+      if (!states.includes(entry.state) && !holdsMatch) return [];
 
-      return [{ ...entry, children }];
+      return [entry.kind === "question" ? { ...entry, options, children } : { ...entry, children }];
     });
   }
 
