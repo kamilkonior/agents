@@ -1223,6 +1223,24 @@ const Graph = (() => {
       );
     });
 
+    test("the walk order has a promoted follow-up before what came from it", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-follow-up", id: "F1", text: "f" },
+        { type: "add-question", id: "Q1", text: "q", origin: "F1" },
+        { type: "promote-follow-up", target: "F1" },
+      ]);
+
+      // when
+      const graph = build(log);
+
+      // then
+      assert.deepEqual(
+        graph.walkOrder.map((node) => node.id),
+        ["F1", "Q1"],
+      );
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
