@@ -100,6 +100,7 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
                             
                          
                               
+                    
   
 
                    
@@ -638,14 +639,23 @@ const Graph = (() => {
   }
 
   function assignStates(graph       )       {
-    for (const question of graph.roots) {
-      const selected = liveSelected(graph, question);
+    graph.roots.forEach((question) => assignQuestion(graph, question, undefined));
+  }
 
-      question.state = selected.length === 0 ? "open" : "settled";
-      for (const option of question.options) {
-        option.state = selected.length === 0 ? "open" : selected.includes(option) ? "settled" : "off-path";
-      }
+  function assignQuestion(graph       , question              , cause                    )       {
+    const selected = liveSelected(graph, question);
+
+    if (cause !== undefined) question.hiddenBy = cause;
+    question.state = cause !== undefined ? "off-path" : selected.length === 0 ? "open" : "settled";
+
+    for (const option of question.options) {
+      const onPath = selected.includes(option);
+
+      option.state = cause !== undefined ? "off-path" : selected.length === 0 ? "open" : onPath ? "settled" : "off-path";
+      option.children.forEach((child) => assignQuestion(graph, child, onPath ? cause : option.id));
     }
+
+    question.children.forEach((child) => assignQuestion(graph, child, cause));
   }
 
   function assertStatesAssigned(graph       )       {
