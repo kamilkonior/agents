@@ -73,19 +73,19 @@ type ItemState = "open" | "settled" | "off-path" | "deferred" | "not-applicable"
 
 type NodeState = ItemState | "unset";
 
-type TreeViewOption = OptionData & { selected?: true; children: TreeViewItem[] };
+type CompleteTreeOption = OptionData & { selected?: true; children: CompleteTreeItem[] };
 
-type TreeViewItem =
+type CompleteTreeItem =
   | {
       kind: "question";
       state: ItemState;
       id: string;
       text: string;
       note?: string;
-      options: TreeViewOption[];
-      children: TreeViewItem[];
+      options: CompleteTreeOption[];
+      children: CompleteTreeItem[];
     }
-  | { kind: "follow-up"; state: ItemState; id: string; text: string; note?: string; children: TreeViewItem[] };
+  | { kind: "follow-up"; state: ItemState; id: string; text: string; note?: string; children: CompleteTreeItem[] };
 
 type StatusItem =
   | { kind: "option"; state: "deferred"; id: string; text: string; note?: string }
@@ -947,14 +947,14 @@ const Graph = (() => {
     ];
   }
 
-  function treeViewChildren(graph: Graph, node: QuestionNode | OptionNode | FollowUpNode): TreeViewItem[] {
+  function completeTreeChildren(graph: Graph, node: QuestionNode | OptionNode | FollowUpNode): CompleteTreeItem[] {
     return [
-      ...node.children.map((child) => treeViewQuestion(graph, child)),
-      ...node.followUps.map((followUp) => treeViewFollowUp(graph, followUp)),
+      ...node.children.map((child) => completeTreeQuestion(graph, child)),
+      ...node.followUps.map((followUp) => completeTreeFollowUp(graph, followUp)),
     ];
   }
 
-  function treeViewQuestion(graph: Graph, question: QuestionNode): TreeViewItem {
+  function completeTreeQuestion(graph: Graph, question: QuestionNode): CompleteTreeItem {
     const selected = liveSelected(graph, question);
     const options = question.options
       .filter((option) => !graph.exclusions.has(option.id))
@@ -962,7 +962,7 @@ const Graph = (() => {
         id: option.id,
         text: option.text,
         ...(selected.includes(option) ? { selected: true as const } : {}),
-        children: treeViewChildren(graph, option),
+        children: completeTreeChildren(graph, option),
       }));
 
     return {
@@ -972,33 +972,33 @@ const Graph = (() => {
       text: question.text,
       ...noteOf(graph, question),
       options,
-      children: treeViewChildren(graph, question),
+      children: completeTreeChildren(graph, question),
     };
   }
 
-  function treeViewFollowUp(graph: Graph, followUp: FollowUpNode): TreeViewItem {
+  function completeTreeFollowUp(graph: Graph, followUp: FollowUpNode): CompleteTreeItem {
     return {
       kind: "follow-up",
       state: assignedState(followUp),
       id: followUp.id,
       text: followUp.text,
       ...noteOf(graph, followUp),
-      children: treeViewChildren(graph, followUp),
+      children: completeTreeChildren(graph, followUp),
     };
   }
 
-  function treeView(log: Log): TreeViewItem[] {
+  function completeTree(log: Log): CompleteTreeItem[] {
     const graph = build(log);
 
     return [
-      ...graph.roots.map((question) => treeViewQuestion(graph, question)),
-      ...graph.rootFollowUps.map((followUp) => treeViewFollowUp(graph, followUp)),
+      ...graph.roots.map((question) => completeTreeQuestion(graph, question)),
+      ...graph.rootFollowUps.map((followUp) => completeTreeFollowUp(graph, followUp)),
     ];
   }
 
-  function firstViewQuestion(log: Log): Extract<TreeViewItem, { kind: "question" }> {
-    const [item] = treeView(log);
-    if (item?.kind !== "question") throw new Error("the first item of the view is not a question");
+  function firstCompleteQuestion(log: Log): Extract<CompleteTreeItem, { kind: "question" }> {
+    const [item] = completeTree(log);
+    if (item?.kind !== "question") throw new Error("the first item of the complete tree is not a question");
 
     return item;
   }
@@ -1502,18 +1502,18 @@ const Graph = (() => {
       );
     });
 
-    test("the tree view of an empty log has no items", () => {
+    test("the complete tree of an empty log has no items", () => {
       // given
       const log = Log.memoryLog();
 
       // when
-      const items = treeView(log);
+      const items = completeTree(log);
 
       // then
       assert.deepEqual(items, []);
     });
 
-    test("the tree view nests a question under the selected option that holds it", () => {
+    test("the complete tree nests a question under the selected option that holds it", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q1" },
@@ -1523,7 +1523,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const items = treeView(log);
+      const items = completeTree(log);
 
       // then
       assert.deepEqual(items, [
@@ -1545,7 +1545,7 @@ const Graph = (() => {
       ]);
     });
 
-    test("the tree view keeps a question-level child in the question's children", () => {
+    test("the complete tree keeps a question-level child in the question's children", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q1" },
@@ -1553,7 +1553,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const items = treeView(log);
+      const items = completeTree(log);
 
       // then
       assert.deepEqual(items, [
@@ -1568,7 +1568,7 @@ const Graph = (() => {
       ]);
     });
 
-    test("the tree view lists every live option and marks only the chosen one", () => {
+    test("the complete tree lists every live option and marks only the chosen one", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q" },
@@ -1578,7 +1578,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const question = firstViewQuestion(log);
+      const question = firstCompleteQuestion(log);
 
       // then
       assert.deepEqual(question.options, [
@@ -1587,7 +1587,7 @@ const Graph = (() => {
       ]);
     });
 
-    test("the tree view holds an off-path question inside its unchosen option", () => {
+    test("the complete tree holds an off-path question inside its unchosen option", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q1" },
@@ -1598,7 +1598,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const question = firstViewQuestion(log);
+      const question = firstCompleteQuestion(log);
 
       // then
       assert.deepEqual(question.options[1].children, [
@@ -1606,7 +1606,7 @@ const Graph = (() => {
       ]);
     });
 
-    test("the tree view gives two selected options their own children", () => {
+    test("the complete tree gives two selected options their own children", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q1" },
@@ -1618,7 +1618,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const question = firstViewQuestion(log);
+      const question = firstCompleteQuestion(log);
 
       // then
       assert.deepEqual(
@@ -1627,7 +1627,7 @@ const Graph = (() => {
       );
     });
 
-    test("the tree view shows a promoted follow-up as a settled step holding its question", () => {
+    test("the complete tree shows a promoted follow-up as a settled step holding its question", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-follow-up", id: "F1", text: "f" },
@@ -1636,7 +1636,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const items = treeView(log);
+      const items = completeTree(log);
 
       // then
       assert.deepEqual(items, [
@@ -1650,7 +1650,7 @@ const Graph = (() => {
       ]);
     });
 
-    test("the tree view places follow-ups after the questions at their level", () => {
+    test("the complete tree places follow-ups after the questions at their level", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q1" },
@@ -1663,7 +1663,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const question = firstViewQuestion(log);
+      const question = firstCompleteQuestion(log);
 
       // then
       assert.deepEqual(
@@ -1676,7 +1676,7 @@ const Graph = (() => {
       );
     });
 
-    test("the tree view keeps a deferred question in place with its note and child", () => {
+    test("the complete tree keeps a deferred question in place with its note and child", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q1" },
@@ -1685,7 +1685,7 @@ const Graph = (() => {
       ]);
 
       // when
-      const items = treeView(log);
+      const items = completeTree(log);
 
       // then
       assert.deepEqual(items, [
