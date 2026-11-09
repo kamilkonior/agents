@@ -4379,6 +4379,31 @@ const Status = (() => {
         ["Q2"],
       );
     });
+
+    test("a settled question has state settled and only its selected options as decided", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", targets: ["Q1b"] },
+      ]);
+
+      // when
+      const items = run(log);
+
+      // then
+      assert.deepEqual(items, [
+        {
+          kind: "question",
+          state: "settled",
+          id: "Q1",
+          text: "q",
+          decided: [{ id: "Q1b", text: "b", children: [] }],
+          children: [],
+        },
+      ]);
+    });
   }
 
   return { run, tests };
