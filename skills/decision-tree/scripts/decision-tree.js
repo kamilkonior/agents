@@ -5335,6 +5335,33 @@ const Tree = (() => {
         [["Q2", "off-path"]],
       );
     });
+
+    test("state all shows every state, frozen included", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "old" },
+        { type: "add-question", id: "Q2", text: "new" },
+        { type: "supersede-question", target: "Q1", question: "Q2" },
+        { type: "add-question", id: "Q3", text: "later" },
+        { type: "exclude", target: "Q3", reason: "deferred" },
+        { type: "add-question", id: "Q4", text: "dropped" },
+        { type: "exclude", target: "Q4", reason: "not-applicable" },
+      ]);
+
+      // when
+      const entries = view(log, { state: ["all"] });
+
+      // then
+      assert.deepEqual(
+        entries.map((entry) => [entry.id, entry.state]),
+        [
+          ["Q2", "open"],
+          ["Q1", "frozen"],
+          ["Q3", "deferred"],
+          ["Q4", "not-applicable"],
+        ],
+      );
+    });
   }
 
   return { options, run, tests };
