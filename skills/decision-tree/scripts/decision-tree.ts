@@ -4716,6 +4716,24 @@ const Status = (() => {
         },
       ]);
     });
+
+    test("a superseded question is left out and its replacement appears", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "old" },
+        { type: "add-question", id: "Q2", text: "new" },
+        { type: "supersede-question", target: "Q1", question: "Q2" },
+      ]);
+
+      // when
+      const items = run(log);
+
+      // then
+      assert.deepEqual(
+        items.map((item) => item.id),
+        ["Q2"],
+      );
+    });
   }
 
   return { run, tests };
