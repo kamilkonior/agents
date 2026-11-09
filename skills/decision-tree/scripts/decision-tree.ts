@@ -73,7 +73,12 @@ type ItemState = "open" | "settled" | "off-path" | "deferred" | "not-applicable"
 
 type NodeState = ItemState | "unset";
 
-type CompleteTreeOption = OptionData & { selected?: true; children: CompleteTreeItem[] };
+type CompleteTreeOption = OptionData & {
+  selected?: true;
+  state?: ExclusionReason;
+  note?: string;
+  children: CompleteTreeItem[];
+};
 
 type CompleteTreeItem =
   | {
@@ -956,7 +961,7 @@ const Graph = (() => {
 
   function completeTreeQuestion(graph: Graph, question: QuestionNode): CompleteTreeItem {
     const selected = liveSelected(graph, question);
-    const options = question.options
+    const live = question.options
       .filter((option) => !graph.exclusions.has(option.id))
       .map((option) => ({
         id: option.id,
@@ -964,6 +969,15 @@ const Graph = (() => {
         ...(selected.includes(option) ? { selected: true as const } : {}),
         children: completeTreeChildren(graph, option),
       }));
+    const excluded = question.options.flatMap((option) => {
+      const exclusion = graph.exclusions.get(option.id);
+      if (exclusion === undefined) return [];
+
+      const children = completeTreeChildren(graph, option);
+
+      return [{ id: option.id, text: option.text, state: exclusion.reason, ...noteOf(graph, option), children }];
+    });
+    const options = [...live, ...excluded];
 
     return {
       kind: "question",
