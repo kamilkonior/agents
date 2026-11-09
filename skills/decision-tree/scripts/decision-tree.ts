@@ -4520,6 +4520,21 @@ const Status = (() => {
         },
       ]);
     });
+
+    test("a deferred question has state deferred and its note, with no options", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "exclude", target: "Q1", reason: "deferred", note: "why" },
+      ]);
+
+      // when
+      const items = run(log);
+
+      // then
+      assert.deepEqual(items, [{ kind: "question", state: "deferred", id: "Q1", text: "q", note: "why" }]);
+    });
   }
 
   return { run, tests };
