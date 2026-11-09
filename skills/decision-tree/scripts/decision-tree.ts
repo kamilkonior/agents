@@ -1536,6 +1536,25 @@ const Graph = (() => {
       ]);
     });
 
+    test("the tree view lists every live option and marks only the chosen one", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", targets: ["Q1b"] },
+      ]);
+
+      // when
+      const [question] = treeView(log);
+
+      // then
+      assert.deepEqual(question.options, [
+        { id: "Q1a", text: "a", children: [] },
+        { id: "Q1b", text: "b", selected: true, children: [] },
+      ]);
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
