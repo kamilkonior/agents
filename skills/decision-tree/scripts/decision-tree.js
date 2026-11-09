@@ -5271,6 +5271,43 @@ const Xml = (() => {
   }
 
   function tests() {
+    test("items renders a trail after the tags, escaped and in order", () => {
+      // given
+      const list               = [
+        {
+          item: { kind: "question", question: { id: "Q2", text: "q2", options: [] } },
+          tags: [],
+          state: "off-path",
+          trail: [
+            { kind: "question", id: "Q1", text: "a < b" },
+            { kind: "option", id: "Q1a", text: "a" },
+          ],
+        },
+      ];
+
+      // when
+      const xml = items(list);
+
+      // then
+      assert.equal(
+        xml,
+        [
+          "<items>",
+          '  <question state="off-path">',
+          "    <id>Q2</id>",
+          "    <text>q2</text>",
+          "    <options></options>",
+          "    <tags></tags>",
+          "    <trail>",
+          "      <question><id>Q1</id><text>a &lt; b</text></question>",
+          "      <option><id>Q1a</id><text>a</text></option>",
+          "    </trail>",
+          "  </question>",
+          "</items>",
+        ].join("\n"),
+      );
+    });
+
     test("status renders no items as an empty element", () => {
       // given
       const items               = [];
