@@ -1250,6 +1250,22 @@ const Graph = (() => {
       );
     });
 
+    test("an option under an excluded question is hidden by that question", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "exclude", target: "Q1", reason: "deferred" },
+      ]);
+
+      // when
+      const graph = build(log);
+
+      // then
+      const option = optionNode(graph.nodes, "Q1a");
+      assert.deepEqual([option.state, option.hiddenBy], ["deferred", "Q1"]);
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
