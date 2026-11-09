@@ -902,8 +902,10 @@ const Graph = (() => {
     return [{ kind: "follow-up", state: "open", id: followUp.id, text: followUp.text }];
   }
 
-  function status(log     )               {
+  function status(log     , target         )               {
     const graph = build(log);
+
+    if (target !== undefined) targetNode(graph, target);
 
     return [
       ...graph.roots.flatMap((question) => statusItems(graph, question)),
@@ -968,14 +970,18 @@ const Graph = (() => {
     throw new DecisionTreeError(`${node.id} is off-path, hidden by ${current.hiddenBy}`);
   }
 
+  function targetNode(graph       , target        )                              {
+    const wanted = graph.nodes.get(target);
+    if (wanted === undefined) throw new DecisionTreeError(`target not found: ${target}`);
+    if (wanted.kind === "option") throw new DecisionTreeError(`target is not a question or follow-up: ${target}`);
+
+    return wanted;
+  }
+
   function listed(log     , tag                    , states             , target         )               {
     const graph = build(log);
 
-    if (target !== undefined) {
-      const wanted = graph.nodes.get(target);
-      if (wanted === undefined) throw new DecisionTreeError(`target not found: ${target}`);
-      if (wanted.kind === "option") throw new DecisionTreeError(`target is not a question or follow-up: ${target}`);
-    }
+    if (target !== undefined) targetNode(graph, target);
 
     const nodes = [...new Set([...graph.walkOrder, ...graph.nodes.values()])];
 
@@ -4380,10 +4386,12 @@ const Tree = (() => {
 })();
 
 const Status = (() => {
-  const options = {}         ;
+  const options = {
+    target: { type: "string" },
+  }         ;
 
-  function run(log     )               {
-    return Graph.status(log);
+  function run(log     , config                      = {})               {
+    return Graph.status(log, config.target);
   }
 
   function tests() {
@@ -5936,8 +5944,8 @@ const Cli = (() => {
       }
 
       case "status": {
-        readModeConfig(Status.options);
-        console.log(Xml.status(Status.run(log)));
+        const config = readModeConfig(Status.options);
+        console.log(Xml.status(Status.run(log, config)));
         break;
       }
 
