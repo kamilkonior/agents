@@ -4228,6 +4228,24 @@ const Items = (() => {
       }
     });
 
+    test("a limit keeps the first items in walk order", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-question", id: "Q2", text: "q2" },
+        { type: "add-question", id: "Q3", text: "q3" },
+      ]);
+
+      // when
+      const items = run(log, { limit: "2" });
+
+      // then
+      assert.deepEqual(
+        items.map((each) => (each.item.kind === "question" ? each.item.question.id : "")),
+        ["Q1", "Q2"],
+      );
+    });
+
     test("a trail without a target throws", () => {
       // given
       const log = Log.memoryLog();
