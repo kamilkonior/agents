@@ -157,7 +157,7 @@ The CLI accepts any valid `--origin` and can't tell when it is the wrong one, so
 </status>
 ```
 
-`--query items --target Q4 --trail`, for an item hidden by the exclusion of Q3. `<hidden-by>` names the item to act on. An item excluded directly has its `<note>` instead, if one was given. Excluded options are listed after the live ones with their state and note, here and in `tree`.
+`--query items --target Q4 --trail`, for an item hidden by the exclusion of Q3. `<hidden-by>` names the item to act on. An item excluded directly has its `<note>` instead, if one was given. A `<rationale>` follows `<options>` if the selection had one. Excluded options are listed after the live ones with their state and note, here and in `tree`.
 
 ```xml
 <items>

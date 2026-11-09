@@ -101,6 +101,7 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
                                 
                    
                           
+                     
                 
                     
                       
@@ -1026,6 +1027,8 @@ const Graph = (() => {
 
       const selected = node.kind === "question" ? liveSelected(graph, node) : [];
       const selectedData = selected.length === 0 ? {} : { selected: selected.map(({ id, text }) => ({ id, text })) };
+      const rationale = node.kind === "question" && selected.length > 0 ? node.rationale : undefined;
+      const rationaleData = rationale === undefined ? {} : { rationale };
 
       const note = graph.exclusions.get(node.id)?.note;
       const noteData = note === undefined ? {} : { note };
@@ -1033,7 +1036,7 @@ const Graph = (() => {
       const excluded = node.kind === "question" ? excludedOptions(graph, node) : [];
       const excludedData = excluded.length === 0 ? {} : { excludedOptions: excluded };
 
-      return [{ ...taggedData(graph, node), state, ...selectedData, ...noteData, ...causeData, ...excludedData }];
+      return [{ ...taggedData(graph, node), state, ...selectedData, ...rationaleData, ...noteData, ...causeData, ...excludedData }];
     });
   }
 
@@ -2542,6 +2545,43 @@ const Graph = (() => {
       // then
       assert.deepEqual(
         items.map((each) => each.note),
+        ["why"],
+      );
+    });
+
+    test("a listed question leaves out the rationale once every selected option is excluded", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"], rationale: "why" },
+        { type: "exclude", target: "Q1a", reason: "not-applicable" },
+      ]);
+
+      // when
+      const items = listed(log, undefined, ["open"]);
+
+      // then
+      assert.deepEqual(
+        items.map((each) => each.rationale),
+        [undefined],
+      );
+    });
+
+    test("a listed question carries the rationale of its selection", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"], rationale: "why" },
+      ]);
+
+      // when
+      const items = listed(log, undefined, ["settled"]);
+
+      // then
+      assert.deepEqual(
+        items.map((each) => each.rationale),
         ["why"],
       );
     });
@@ -6670,6 +6710,40 @@ const Xml = (() => {
       ]);
     });
 
+    test("a listed question renders its rationale, escaped, right after the options and before its note", () => {
+      // given
+      const a = { id: "Q1a", text: "a" };
+      const list               = [
+        {
+          item: { kind: "question", question: { id: "Q1", text: "q", options: [a] } },
+          tags: [],
+          state: "deferred",
+          selected: [a],
+          rationale: "a < b",
+          note: "later",
+        },
+      ];
+
+      // when
+      const xml = items(list);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<items>",
+        '  <question state="deferred">',
+        "    <id>Q1</id>",
+        "    <text>q</text>",
+        "    <options>",
+        '      <option selected="true"><id>Q1a</id><text>a</text></option>',
+        "    </options>",
+        "    <rationale>a &lt; b</rationale>",
+        "    <note>later</note>",
+        "    <tags></tags>",
+        "  </question>",
+        "</items>",
+      ]);
+    });
+
     test("a tagged item renders its note, escaped, before its tags", () => {
       // given
       const list               = [
@@ -6773,6 +6847,7 @@ const Xml = (() => {
         `  <id>${id}</id>`,
         `  <text>${escapeXml(text)}</text>`,
         ...optionsBlock,
+        ...(data.rationale === undefined ? [] : [`  <rationale>${escapeXml(data.rationale)}</rationale>`]),
         ...note,
         ...hidden,
         line,
