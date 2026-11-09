@@ -4527,6 +4527,20 @@ const Status = (() => {
       ]);
     });
 
+    test("a target deferred directly appears with its note", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "exclude", target: "Q1", reason: "deferred", note: "why" },
+      ]);
+
+      // when
+      const items = run(log, { target: "Q1" });
+
+      // then
+      assert.deepEqual(items, [{ kind: "question", state: "deferred", id: "Q1", text: "q", note: "why" }]);
+    });
+
     test("an open question has state open and its live options", () => {
       // given
       const log = Log.memoryLog([
