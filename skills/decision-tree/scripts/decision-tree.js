@@ -1247,6 +1247,28 @@ const Graph = (() => {
       assert.deepEqual([option.state, option.hiddenBy], ["deferred", "Q1"]);
     });
 
+    test("an item both excluded and frozen is refused as frozen", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1" },
+        { type: "exclude", target: "Q2", reason: "deferred" },
+        { type: "add-question", id: "Q3", text: "q3" },
+        { type: "supersede-question", target: "Q1", question: "Q3" },
+      ]);
+
+      // when
+      const act = () => liveNode(log, "Q2", "target");
+
+      // then
+      assert.throws(
+        act,
+        (error) =>
+          error instanceof DecisionTreeError &&
+          error.message === "Q2 is frozen, as its ancestor Q1 was superseded by Q3",
+      );
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
