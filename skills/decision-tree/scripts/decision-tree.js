@@ -4489,6 +4489,29 @@ const Status = (() => {
         },
       ]);
     });
+
+    test("a child hung under an open question sits in its children", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1" },
+      ]);
+
+      // when
+      const items = run(log);
+
+      // then
+      assert.deepEqual(items, [
+        {
+          kind: "question",
+          state: "open",
+          id: "Q1",
+          text: "q1",
+          options: [],
+          children: [{ kind: "question", state: "open", id: "Q2", text: "q2", options: [], children: [] }],
+        },
+      ]);
+    });
   }
 
   return { run, tests };
