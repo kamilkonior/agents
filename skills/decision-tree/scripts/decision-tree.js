@@ -637,6 +637,7 @@ const Graph = (() => {
     }
 
     assignStates(graph);
+    assertStatesAssigned(graph);
 
     return graph;
   }
