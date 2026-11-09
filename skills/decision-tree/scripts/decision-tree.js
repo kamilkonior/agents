@@ -1047,6 +1047,26 @@ const Graph = (() => {
       assert.equal(questionNode(graph.nodes, "Q3").hiddenBy, "Q2a");
     });
 
+    test("an excluded question has its reason as its state and hides what is under it", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1" },
+        { type: "exclude", target: "Q1", reason: "deferred" },
+      ]);
+
+      // when
+      const graph = build(log);
+
+      // then
+      const excluded = questionNode(graph.nodes, "Q1");
+      const child = questionNode(graph.nodes, "Q2");
+      assert.deepEqual(
+        [excluded.state, excluded.hiddenBy, child.state, child.hiddenBy],
+        ["deferred", undefined, "deferred", "Q1"],
+      );
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
