@@ -74,6 +74,7 @@ type ItemState = "open" | "settled" | "off-path" | "deferred" | "not-applicable"
 type NodeState = ItemState | "unset";
 
 type StatusItem =
+  | { kind: "question"; state: "deferred"; id: string; text: string; note?: string }
   | { kind: "question"; state: "open"; id: string; text: string; options: OptionData[]; children: StatusItem[] }
   | {
       kind: "question";
@@ -832,6 +833,13 @@ const Graph = (() => {
 
   function statusItems(graph: Graph, question: QuestionNode): StatusItem[] {
     if (question.state === "not-applicable") return [];
+
+    if (question.state === "deferred") {
+      const note = graph.exclusions.get(question.id)?.note;
+      const noteData = note === undefined ? {} : { note };
+
+      return [{ kind: "question", state: "deferred", id: question.id, text: question.text, ...noteData }];
+    }
 
     const children = question.children.flatMap((child) => statusItems(graph, child));
 

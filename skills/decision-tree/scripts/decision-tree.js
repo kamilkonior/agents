@@ -74,6 +74,7 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
                                      
 
                  
+                                                                                    
                                                                                                                 
      
                        
@@ -832,6 +833,13 @@ const Graph = (() => {
 
   function statusItems(graph       , question              )               {
     if (question.state === "not-applicable") return [];
+
+    if (question.state === "deferred") {
+      const note = graph.exclusions.get(question.id)?.note;
+      const noteData = note === undefined ? {} : { note };
+
+      return [{ kind: "question", state: "deferred", id: question.id, text: question.text, ...noteData }];
+    }
 
     const children = question.children.flatMap((child) => statusItems(graph, child));
 
