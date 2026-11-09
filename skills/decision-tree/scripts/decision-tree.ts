@@ -4916,10 +4916,25 @@ const Xml = (() => {
     return ["<tree>", ...body, ...out, "</tree>"].join("\n");
   }
 
+  function statusLines(item: StatusItem): string[] {
+    if (item.kind !== "question" || item.state !== "open") throw new Error(`status rendering is not built for ${item.state}`);
+
+    const children = item.children.flatMap(statusLines).map((line) => `  ${line}`);
+
+    return [
+      '<question state="open">',
+      `  <id>${item.id}</id>`,
+      `  <text>${escapeXml(item.text)}</text>`,
+      ...optionsLines(item.options),
+      ...children,
+      "</question>",
+    ];
+  }
+
   function status(items: StatusItem[]): string {
     if (items.length === 0) return "<status></status>";
 
-    throw new Error("status rendering is not built yet");
+    return ["<status>", ...items.flatMap(statusLines).map((line) => `  ${line}`), "</status>"].join("\n");
   }
 
   function supersededLines(item: SupersededItem): string[] {
