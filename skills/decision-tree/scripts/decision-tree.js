@@ -840,7 +840,9 @@ const Graph = (() => {
         children: option.children.flatMap((child) => statusItems(graph, child)),
       }));
 
-      return [{ kind: "question", state: "settled", id: question.id, text: question.text, decided, children: [] }];
+      const children = question.children.flatMap((child) => statusItems(graph, child));
+
+      return [{ kind: "question", state: "settled", id: question.id, text: question.text, decided, children }];
     }
 
     if (question.state !== "open") throw new Error(`status does not handle ${question.state} yet`);
