@@ -1224,6 +1224,30 @@ const Graph = (() => {
       );
     });
 
+    test("a focus ends when its question leaves the current path", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+        { type: "add-question", id: "Q3", text: "q3" },
+        { type: "focus", target: "Q2" },
+        { type: "select-option", targets: ["Q1b"] },
+      ]);
+
+      // when
+      const graph = build(log);
+
+      // then
+      assert.equal(graph.focus?.ended, true);
+      assert.deepEqual(
+        frontier(graph).map((item) => item.id),
+        ["Q3"],
+      );
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
