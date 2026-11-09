@@ -64,6 +64,7 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
                    
                     
                                  
+                         
                             
      
                                                                                                             
@@ -880,6 +881,7 @@ const Graph = (() => {
         text: question.text,
         ...noteOf(graph, question),
         options,
+        ...(selected.length > 0 && question.rationale !== undefined ? { rationale: question.rationale } : {}),
         children: childEntries(graph, question),
       },
       ...superseded,
@@ -1648,6 +1650,37 @@ const Graph = (() => {
         { id: "Q1b", text: "b", children: [] },
         { id: "Q1a", text: "a", state: "deferred", note: "why", children: [] },
       ]);
+    });
+
+    test("the built tree leaves out the rationale once every selected option is excluded", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"], rationale: "why" },
+        { type: "exclude", target: "Q1a", reason: "not-applicable" },
+      ]);
+
+      // when
+      const question = firstQuestionEntry(log);
+
+      // then
+      assert.equal(question.rationale, undefined);
+    });
+
+    test("the built tree carries the rationale of a question's selection", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"], rationale: "why" },
+      ]);
+
+      // when
+      const question = firstQuestionEntry(log);
+
+      // then
+      assert.equal(question.rationale, "why");
     });
 
     test("the built tree puts a superseded question right after its replacement", () => {
@@ -5733,6 +5766,7 @@ const Xml = (() => {
       `  <text>${escapeXml(entry.text)}</text>`,
       ...noteLines(entry.note),
       ...optionsBlock,
+      ...(entry.rationale === undefined ? [] : [`  <rationale>${escapeXml(entry.rationale)}</rationale>`]),
       ...entry.children.flatMap(treeLines).map((line) => `  ${line}`),
       "</question>",
     ];
@@ -6070,6 +6104,43 @@ const Xml = (() => {
         "    <id>F2</id>",
         "    <text>g</text>",
         "  </follow-up>",
+        "</tree>",
+      ]);
+    });
+
+    test("the built tree renders a rationale right after the options, before the question's children", () => {
+      // given
+      const entries              = [
+        {
+          kind: "question",
+          state: "settled",
+          id: "Q1",
+          text: "q",
+          options: [{ id: "Q1a", text: "a", selected: true, children: [] }],
+          rationale: "a < b",
+          children: [{ kind: "question", state: "open", id: "Q2", text: "q2", options: [], children: [] }],
+        },
+      ];
+
+      // when
+      const xml = tree(entries);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<tree>",
+        '  <question state="settled">',
+        "    <id>Q1</id>",
+        "    <text>q</text>",
+        "    <options>",
+        '      <option selected="true"><id>Q1a</id><text>a</text></option>',
+        "    </options>",
+        "    <rationale>a &lt; b</rationale>",
+        '    <question state="open">',
+        "      <id>Q2</id>",
+        "      <text>q2</text>",
+        "      <options></options>",
+        "    </question>",
+        "  </question>",
         "</tree>",
       ]);
     });

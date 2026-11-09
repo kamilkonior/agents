@@ -177,7 +177,7 @@ The CLI accepts any valid `--origin` and can't tell when it is the wrong one, so
 </items>
 ```
 
-`supersede-question` on Q1, in a tree holding only Q1 and Q2. `<superseded>` has the same shape as `--query tree` with every state included: the chosen option is marked `selected="true"` and holds its children, and a question's own children follow `<options>`. Branches not taken are included, so rejected options can be reconsidered along with what depended on them. In `tree`, a promoted follow-up appears as a step and a superseded question follows its replacement.
+`supersede-question` on Q1, in a tree holding only Q1 and Q2. `<superseded>` has the same shape as `--query tree` with every state included: the chosen option is marked `selected="true"` and holds its children, a `<rationale>` follows `<options>` if the selection had one, and a question's own children come after that. Branches not taken are included, so rejected options can be reconsidered along with what depended on them. In `tree`, a promoted follow-up appears as a step and a superseded question follows its replacement.
 
 ```xml
 <supersede>
