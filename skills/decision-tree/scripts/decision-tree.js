@@ -6118,10 +6118,22 @@ const Xml = (() => {
     return ["<status>", ...items.flatMap(statusLines).map((line) => `  ${line}`), "</status>"].join("\n");
   }
 
+  function builtTreeOptionLines(entry                 )           {
+    if (entry.children.length === 0) return [markedOption(entry, entry.selected === true)];
+
+    return [
+      entry.selected === true ? '<option selected="true">' : "<option>",
+      `  <id>${entry.id}</id>`,
+      `  <text>${escapeXml(entry.text)}</text>`,
+      ...entry.children.flatMap(builtTreeLines).map((line) => `  ${line}`),
+      "</option>",
+    ];
+  }
+
   function builtTreeLines(entry           )           {
     if (entry.kind === "follow-up") throw new Error("built tree rendering of follow-ups is not built yet");
 
-    const options = entry.options.map((each) => `    ${markedOption(each, each.selected === true)}`);
+    const options = entry.options.flatMap(builtTreeOptionLines).map((line) => `    ${line}`);
     const optionsBlock = options.length === 0 ? optionsLines([]) : ["  <options>", ...options, "  </options>"];
 
     return [
@@ -6129,6 +6141,7 @@ const Xml = (() => {
       `  <id>${entry.id}</id>`,
       `  <text>${escapeXml(entry.text)}</text>`,
       ...optionsBlock,
+      ...entry.children.flatMap(builtTreeLines).map((line) => `  ${line}`),
       "</question>",
     ];
   }
