@@ -5069,6 +5069,16 @@ const Xml = (() => {
     return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
   }
 
+  function trailLines(steps: TrailStep[] | undefined): string[] {
+    if (steps === undefined) return [];
+
+    return [
+      "  <trail>",
+      ...steps.map((step) => `    <${step.kind}><id>${step.id}</id><text>${escapeXml(step.text)}</text></${step.kind}>`),
+      "  </trail>",
+    ];
+  }
+
   function option(data: OptionData): string {
     return `<option><id>${data.id}</id><text>${escapeXml(data.text)}</text></option>`;
   }
@@ -5116,16 +5126,7 @@ const Xml = (() => {
   function next(data: NextData | undefined): string {
     if (data === undefined) return "<next></next>";
 
-    const trail =
-      data.trail === undefined
-        ? []
-        : [
-            "  <trail>",
-            ...data.trail.map(
-              (step) => `    <${step.kind}><id>${step.id}</id><text>${escapeXml(step.text)}</text></${step.kind}>`,
-            ),
-            "  </trail>",
-          ];
+    const trail = trailLines(data.trail);
     const body =
       data.kind === "follow-up"
         ? [`  ${followUp(data.followUp)}`]
@@ -5935,7 +5936,7 @@ const Xml = (() => {
           ? []
           : ["  <selected>", ...data.selected.map((each) => `    ${option(each)}`), "  </selected>"];
 
-      return [`<question${state}>`, ...lines.slice(1, -1), ...selected, ...note, ...hidden, line, "</question>"];
+      return [`<question${state}>`, ...lines.slice(1, -1), ...selected, ...note, ...hidden, line, ...trailLines(data.trail), "</question>"];
     }
 
     const { id, text } = data.item.followUp;
@@ -5947,6 +5948,7 @@ const Xml = (() => {
       ...note,
       ...hidden,
       line,
+      ...trailLines(data.trail),
       "</follow-up>",
     ];
   }
