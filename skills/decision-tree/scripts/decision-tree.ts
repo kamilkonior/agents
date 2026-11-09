@@ -1018,7 +1018,12 @@ const Graph = (() => {
   }
 
   function filterTree(entries: TreeEntry[], states: ItemState[]): TreeEntry[] {
-    return entries.filter((entry) => states.includes(entry.state));
+    return entries.flatMap((entry) => {
+      const children = filterTree(entry.children, states);
+      if (!states.includes(entry.state) && children.length === 0) return [];
+
+      return [{ ...entry, children }];
+    });
   }
 
   function firstQuestionEntry(log: Log): Extract<TreeEntry, { kind: "question" }> {
