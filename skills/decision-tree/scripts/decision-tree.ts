@@ -73,14 +73,16 @@ type ItemState = "open" | "settled" | "off-path" | "deferred" | "not-applicable"
 
 type NodeState = ItemState | "unset";
 
-type StatusItem = {
-  kind: "question";
-  state: "open";
-  id: string;
-  text: string;
-  options: OptionData[];
-  children: StatusItem[];
-};
+type StatusItem =
+  | { kind: "question"; state: "open"; id: string; text: string; options: OptionData[]; children: StatusItem[] }
+  | {
+      kind: "question";
+      state: "settled";
+      id: string;
+      text: string;
+      decided: (OptionData & { children: StatusItem[] })[];
+      children: StatusItem[];
+    };
 
 type Hiding = { state: ItemState; by: string };
 
@@ -830,6 +832,13 @@ const Graph = (() => {
 
   function statusItems(graph: Graph, question: QuestionNode): StatusItem[] {
     if (question.state === "not-applicable") return [];
+
+    if (question.state === "settled") {
+      const decided = liveSelected(graph, question).map(({ id, text }) => ({ id, text, children: [] }));
+
+      return [{ kind: "question", state: "settled", id: question.id, text: question.text, decided, children: [] }];
+    }
+
     if (question.state !== "open") throw new Error(`status does not handle ${question.state} yet`);
 
     return [
