@@ -5033,6 +5033,60 @@ const Xml = (() => {
       );
     });
 
+    test("status renders an answer's child inside the decided option and the question's own after it", () => {
+      // given
+      const child = (id: string): StatusItem => ({
+        kind: "question",
+        state: "open",
+        id,
+        text: id,
+        options: [],
+        children: [],
+      });
+      const items: StatusItem[] = [
+        {
+          kind: "question",
+          state: "settled",
+          id: "Q1",
+          text: "q",
+          decided: [{ id: "Q1a", text: "a", children: [child("Q2")] }],
+          children: [child("Q3")],
+        },
+      ];
+
+      // when
+      const xml = status(items);
+
+      // then
+      assert.equal(
+        xml,
+        [
+          "<status>",
+          '  <question state="settled">',
+          "    <id>Q1</id>",
+          "    <text>q</text>",
+          "    <decided>",
+          "      <option>",
+          "        <id>Q1a</id>",
+          "        <text>a</text>",
+          '        <question state="open">',
+          "          <id>Q2</id>",
+          "          <text>Q2</text>",
+          "          <options></options>",
+          "        </question>",
+          "      </option>",
+          "    </decided>",
+          '    <question state="open">',
+          "      <id>Q3</id>",
+          "      <text>Q3</text>",
+          "      <options></options>",
+          "    </question>",
+          "  </question>",
+          "</status>",
+        ].join("\n"),
+      );
+    });
+
     test("option text is escaped", () => {
       // given
       const data: OptionData = { id: "Q1a", text: "a < b > c & d" };
