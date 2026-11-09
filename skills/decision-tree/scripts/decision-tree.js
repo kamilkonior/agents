@@ -3316,6 +3316,8 @@ const Graph = (() => {
   return {
     tree: (log     ) => tree(build(log)),
     walk: (log     ) => walk(build(log)),
+    buildTree,
+    filterTree,
     status,
     frontier: (log     ) => frontier(build(log)),
     superseded,
@@ -5078,7 +5080,7 @@ const Items = (() => {
     });
   }
 
-  return { options, run, tests };
+  return { options, run, chosenStates, tests };
 })();
 
 const Next = (() => {
@@ -5184,6 +5186,12 @@ const Tree = (() => {
 
   function run(log     )           {
     return Graph.walk(log);
+  }
+
+  function view(log     , config                      )              {
+    const states = Items.chosenStates(config.state);
+
+    return Graph.filterTree(Graph.buildTree(log), states);
   }
 
   function tests() {}
