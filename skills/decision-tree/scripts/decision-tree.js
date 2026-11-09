@@ -1676,6 +1676,31 @@ const Graph = (() => {
       );
     });
 
+    test("the tree view keeps a deferred question in place with its note and child", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1" },
+        { type: "exclude", target: "Q1", reason: "deferred", note: "why" },
+      ]);
+
+      // when
+      const items = treeView(log);
+
+      // then
+      assert.deepEqual(items, [
+        {
+          kind: "question",
+          state: "deferred",
+          id: "Q1",
+          text: "q1",
+          note: "why",
+          options: [],
+          children: [{ kind: "question", state: "deferred", id: "Q2", text: "q2", options: [], children: [] }],
+        },
+      ]);
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
