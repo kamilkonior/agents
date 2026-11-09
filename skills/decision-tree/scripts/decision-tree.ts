@@ -1613,6 +1613,29 @@ const Graph = (() => {
       );
     });
 
+    test("the tree view shows a promoted follow-up as a settled step holding its question", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-follow-up", id: "F1", text: "f" },
+        { type: "add-question", id: "Q1", text: "q", origin: "F1" },
+        { type: "promote-follow-up", target: "F1" },
+      ]);
+
+      // when
+      const items = treeView(log);
+
+      // then
+      assert.deepEqual(items, [
+        {
+          kind: "follow-up",
+          state: "settled",
+          id: "F1",
+          text: "f",
+          children: [{ kind: "question", state: "open", id: "Q1", text: "q", options: [], children: [] }],
+        },
+      ]);
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
