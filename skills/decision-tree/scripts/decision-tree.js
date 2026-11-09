@@ -4246,6 +4246,20 @@ const Items = (() => {
       );
     });
 
+    test("a limit above the number of items returns them all", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-question", id: "Q2", text: "q2" },
+      ]);
+
+      // when
+      const items = run(log, { limit: "5" });
+
+      // then
+      assert.equal(items.length, 2);
+    });
+
     test("a trail without a target throws", () => {
       // given
       const log = Log.memoryLog();
