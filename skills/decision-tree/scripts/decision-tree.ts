@@ -4541,6 +4541,21 @@ const Status = (() => {
       assert.deepEqual(items, [{ kind: "question", state: "deferred", id: "Q1", text: "q", note: "why" }]);
     });
 
+    test("a promoted follow-up as the target renders what came from it", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-follow-up", id: "F1", text: "f" },
+        { type: "add-question", id: "Q1", text: "q", origin: "F1" },
+        { type: "promote-follow-up", target: "F1" },
+      ]);
+
+      // when
+      const items = run(log, { target: "F1" });
+
+      // then
+      assert.deepEqual(items, [{ kind: "question", state: "open", id: "Q1", text: "q", options: [], children: [] }]);
+    });
+
     test("an open question has state open and its live options", () => {
       // given
       const log = Log.memoryLog([
