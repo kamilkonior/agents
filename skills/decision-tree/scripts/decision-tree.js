@@ -961,7 +961,7 @@ const Graph = (() => {
       id: question.id,
       text: question.text,
       options,
-      children: [],
+      children: question.children.map((child) => treeViewQuestion(graph, child)),
     };
   }
 
