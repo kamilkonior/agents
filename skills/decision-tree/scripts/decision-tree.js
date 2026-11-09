@@ -1946,6 +1946,23 @@ const Graph = (() => {
       assert.deepEqual(kept, entries);
     });
 
+    test("filtering by frozen keeps the frozen question and drops its open replacement", () => {
+      // given
+      const entries              = [
+        { kind: "question", state: "open", id: "Q2", text: "new", options: [], children: [] },
+        { kind: "question", state: "frozen", id: "Q1", text: "old", options: [], children: [] },
+      ];
+
+      // when
+      const kept = filterTree(entries, ["frozen"]);
+
+      // then
+      assert.deepEqual(
+        kept.map((entry) => entry.id),
+        ["Q1"],
+      );
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
