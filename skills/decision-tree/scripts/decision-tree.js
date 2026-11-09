@@ -4199,6 +4199,20 @@ const Items = (() => {
       ]);
     });
 
+    test("a target with a trail is still limited by the states asked for", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1" },
+      ]);
+
+      // when
+      const items = run(log, { target: "Q2", trail: true, state: ["settled"] });
+
+      // then
+      assert.deepEqual(items, []);
+    });
+
     test("querying with state all returns items in every state", () => {
       // given
       const log = Log.memoryLog([
