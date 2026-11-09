@@ -1170,6 +1170,23 @@ const Graph = (() => {
       assert.deepEqual([graph.nodes.get("F1")?.state, graph.nodes.get("F2")?.state], ["open", "settled"]);
     });
 
+    test("an excluded option has its reason as its state and hides what is under it", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+        { type: "exclude", target: "Q1a", reason: "deferred" },
+      ]);
+
+      // when
+      const graph = build(log);
+
+      // then
+      const child = questionNode(graph.nodes, "Q2");
+      assert.deepEqual([graph.nodes.get("Q1a")?.state, child.state, child.hiddenBy], ["deferred", "deferred", "Q1a"]);
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
