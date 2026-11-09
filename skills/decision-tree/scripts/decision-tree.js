@@ -4352,6 +4352,24 @@ const Status = (() => {
         { kind: "question", state: "open", id: "Q1", text: "q", options: [{ id: "Q1a", text: "a" }], children: [] },
       ]);
     });
+
+    test("a not-applicable question is left out", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "dropped" },
+        { type: "exclude", target: "Q1", reason: "not-applicable" },
+        { type: "add-question", id: "Q2", text: "live" },
+      ]);
+
+      // when
+      const items = run(log);
+
+      // then
+      assert.deepEqual(
+        items.map((item) => item.id),
+        ["Q2"],
+      );
+    });
   }
 
   return { run, tests };
