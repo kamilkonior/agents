@@ -14,7 +14,7 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
             
                                                                        
                                                                     
-                                                
+                                                               
                                                                         
                                                  
                                                                                
@@ -3172,6 +3172,7 @@ const AddOption = (() => {
 const SelectOption = (() => {
   const options = {
     target: { type: "string", multiple: true },
+    note: { type: "string" },
   }         ;
 
   function liveOption(log     , target        )             {
@@ -3183,7 +3184,7 @@ const SelectOption = (() => {
     return option;
   }
 
-  function select(log     , targets          )                {
+  function select(log     , targets          , note         )                {
     const repeated = targets.find((target, index) => targets.indexOf(target) !== index);
     if (repeated !== undefined) throw new DecisionTreeError(`target is repeated: ${repeated}`);
 
@@ -3194,7 +3195,10 @@ const SelectOption = (() => {
 
     Graph.rejectOffPath(log, question);
 
-    log.append({ type: "select-option", targets });
+    const event        = { type: "select-option", targets };
+    if (note !== undefined) event.note = note;
+
+    log.append(event);
 
     return {
       question: { id: question.id, text: question.text },
@@ -3202,10 +3206,10 @@ const SelectOption = (() => {
     };
   }
 
-  function run(log     , config                       )                {
+  function run(log     , config                                      )                {
     if (!config.target) throw new DecisionTreeError("select-option requires --target");
 
-    return select(log, config.target);
+    return select(log, config.target, config.note);
   }
 
   function tests() {
@@ -3349,6 +3353,21 @@ const SelectOption = (() => {
         options: [{ id: "Q1a", text: "a" }],
       });
       assert.deepEqual(log.read(), [...events, { type: "select-option", targets: ["Q1a"] }]);
+    });
+
+    test("selecting with a note records why on the selection", () => {
+      // given
+      const events          = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      run(log, { target: ["Q1a"], note: "why" });
+
+      // then
+      assert.deepEqual(log.read(), [...events, { type: "select-option", targets: ["Q1a"], note: "why" }]);
     });
   }
 

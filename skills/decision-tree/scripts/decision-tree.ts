@@ -14,7 +14,7 @@ type ExclusionReason = "not-applicable" | "deferred";
 type Event =
   | { type: "add-question"; id: string; text: string; origin?: string }
   | { type: "add-option"; id: string; text: string; origin: string }
-  | { type: "select-option"; targets: string[] }
+  | { type: "select-option"; targets: string[]; note?: string }
   | { type: "add-follow-up"; id: string; text: string; origin?: string }
   | { type: "promote-follow-up"; target: string }
   | { type: "exclude"; target: string; reason: ExclusionReason; note?: string }
@@ -3172,6 +3172,7 @@ const AddOption = (() => {
 const SelectOption = (() => {
   const options = {
     target: { type: "string", multiple: true },
+    note: { type: "string" },
   } as const;
 
   function liveOption(log: Log, target: string): OptionNode {
@@ -3183,7 +3184,7 @@ const SelectOption = (() => {
     return option;
   }
 
-  function select(log: Log, targets: string[]): SelectionData {
+  function select(log: Log, targets: string[], note?: string): SelectionData {
     const repeated = targets.find((target, index) => targets.indexOf(target) !== index);
     if (repeated !== undefined) throw new DecisionTreeError(`target is repeated: ${repeated}`);
 
@@ -3194,7 +3195,10 @@ const SelectOption = (() => {
 
     Graph.rejectOffPath(log, question);
 
-    log.append({ type: "select-option", targets });
+    const event: Event = { type: "select-option", targets };
+    if (note !== undefined) event.note = note;
+
+    log.append(event);
 
     return {
       question: { id: question.id, text: question.text },
@@ -3202,10 +3206,10 @@ const SelectOption = (() => {
     };
   }
 
-  function run(log: Log, config: { target?: string[] }): SelectionData {
+  function run(log: Log, config: { target?: string[]; note?: string }): SelectionData {
     if (!config.target) throw new DecisionTreeError("select-option requires --target");
 
-    return select(log, config.target);
+    return select(log, config.target, config.note);
   }
 
   function tests() {
@@ -3349,6 +3353,21 @@ const SelectOption = (() => {
         options: [{ id: "Q1a", text: "a" }],
       });
       assert.deepEqual(log.read(), [...events, { type: "select-option", targets: ["Q1a"] }]);
+    });
+
+    test("selecting with a note records why on the selection", () => {
+      // given
+      const events: Event[] = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      run(log, { target: ["Q1a"], note: "why" });
+
+      // then
+      assert.deepEqual(log.read(), [...events, { type: "select-option", targets: ["Q1a"], note: "why" }]);
     });
   }
 
