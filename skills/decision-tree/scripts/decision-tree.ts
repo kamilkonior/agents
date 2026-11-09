@@ -957,6 +957,20 @@ const Graph = (() => {
       assert.throws(act, (error) => error instanceof Error && error.message === "node Q1 has no state");
     });
 
+    test("a question with no selection and its options are open", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+      ]);
+
+      // when
+      const graph = build(log);
+
+      // then
+      assert.deepEqual([graph.nodes.get("Q1")?.state, graph.nodes.get("Q1a")?.state], ["open", "open"]);
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
