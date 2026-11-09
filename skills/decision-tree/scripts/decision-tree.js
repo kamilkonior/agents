@@ -4734,6 +4734,38 @@ const Status = (() => {
         ["Q2"],
       );
     });
+
+    test("a deferred question under the selected option sits in place inside it", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+        { type: "exclude", target: "Q2", reason: "deferred", note: "why" },
+      ]);
+
+      // when
+      const items = run(log);
+
+      // then
+      assert.deepEqual(items, [
+        {
+          kind: "question",
+          state: "settled",
+          id: "Q1",
+          text: "q1",
+          decided: [
+            {
+              id: "Q1a",
+              text: "a",
+              children: [{ kind: "question", state: "deferred", id: "Q2", text: "q2", note: "why" }],
+            },
+          ],
+          children: [],
+        },
+      ]);
+    });
   }
 
   return { run, tests };
