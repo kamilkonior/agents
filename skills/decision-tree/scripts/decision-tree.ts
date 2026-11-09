@@ -452,33 +452,11 @@ const Graph = (() => {
     return node;
   }
 
-  function excludedBy(
-    graph: Graph,
-    node: QuestionNode | OptionNode | FollowUpNode,
-  ): QuestionNode | OptionNode | FollowUpNode | undefined {
-    if (graph.exclusions.has(node.id)) return node;
+  function rejectFrozen(graph: Graph, node: QuestionNode | OptionNode | FollowUpNode): void {
+    if (node.state !== "frozen") return;
 
-    const parent = node.kind === "option" ? node.question : node.parent;
-
-    return parent === undefined ? undefined : excludedBy(graph, parent);
-  }
-
-  function frozenBy(node: QuestionNode | OptionNode | FollowUpNode): QuestionNode | undefined {
-    let current: QuestionNode | OptionNode | FollowUpNode | undefined = node;
-    while (current !== undefined) {
-      if (current.kind === "question" && current.supersededBy !== undefined) return current;
-
-      current = current.kind === "option" ? current.question : current.parent;
-    }
-
-    return undefined;
-  }
-
-  function rejectFrozen(node: QuestionNode | OptionNode | FollowUpNode): void {
-    const superseded = frozenBy(node);
-    if (superseded === undefined || superseded.supersededBy === undefined) return;
-
-    const replacement = superseded.supersededBy.id;
+    const superseded = questionNode(graph.nodes, node.hiddenBy ?? node.id);
+    const replacement = superseded.supersededBy?.id;
     if (superseded === node) {
       throw new DecisionTreeError(`${node.id} is frozen, as it was superseded by ${replacement}`);
     }
@@ -931,13 +909,17 @@ const Graph = (() => {
     });
   }
 
+  function isExcluded(node: QuestionNode | OptionNode | FollowUpNode): boolean {
+    return node.state === "deferred" || node.state === "not-applicable";
+  }
+
   function liveNode(log: Log, id: string, role: "origin" | "target"): QuestionNode | OptionNode | FollowUpNode {
     const graph = build(log);
 
     const node = graph.nodes.get(id);
     if (node === undefined) throw new DecisionTreeError(`${role} not found: ${id}`);
-    if (excludedBy(graph, node) !== undefined) throw new DecisionTreeError(`${role} is excluded: ${id}`);
-    rejectFrozen(node);
+    rejectFrozen(graph, node);
+    if (isExcluded(node)) throw new DecisionTreeError(`${role} is excluded: ${id}`);
 
     return node;
   }
@@ -947,12 +929,11 @@ const Graph = (() => {
 
     const node = graph.nodes.get(id);
     if (node === undefined) throw new DecisionTreeError(`target not found: ${id}`);
-    rejectFrozen(node);
+    rejectFrozen(graph, node);
 
-    const excluding = excludedBy(graph, node);
-    if (excluding === undefined) throw new DecisionTreeError(`target is not excluded: ${id}`);
-    if (excluding !== node) {
-      throw new DecisionTreeError(`${id} cannot be restored, as its ancestor ${excluding.id} is excluded`);
+    if (!isExcluded(node)) throw new DecisionTreeError(`target is not excluded: ${id}`);
+    if (node.hiddenBy !== undefined) {
+      throw new DecisionTreeError(`${id} cannot be restored, as its ancestor ${node.hiddenBy} is excluded`);
     }
 
     return node;
