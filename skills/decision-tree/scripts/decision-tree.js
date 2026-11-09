@@ -4210,6 +4210,23 @@ const Items = (() => {
   }
 
   function tests() {
+    test("a limit that is not a positive integer throws", () => {
+      // given
+      const log = Log.memoryLog();
+
+      for (const limit of ["0", "2.5", "abc"]) {
+        // when
+        const act = () => run(log, { limit });
+
+        // then
+        assert.throws(
+          act,
+          (error) =>
+            error instanceof DecisionTreeError && error.message === `items --limit must be a positive integer: ${limit}`,
+        );
+      }
+    });
+
     test("a trail without a target throws", () => {
       // given
       const log = Log.memoryLog();
