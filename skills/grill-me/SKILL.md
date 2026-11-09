@@ -55,7 +55,7 @@ Run `--query next` and ask about the item it returns. Ask one question and nothi
 
 - **Recorded** states what the last reply settled, never a bare "yes". The first turn has none.
 - **The header** has the id and a title that names the subject on its own.
-- **Context** holds at most three facts, each able to change the choice. The rest costs attention and decides nothing.
+- **Context** holds only the facts able to change this choice. The rest costs attention and decides nothing.
 
 **The question.** Ask only if the answer changes the design; anything else becomes a follow-up or is excluded. Give an abstract question a concrete example, such as a command and its output. Use the user's terms and real identifiers. If the text packs in two questions, ask one part at a time and keep the other in the tree. When a question is truly binary, or only one option is viable, word it so "yes" accepts the recommendation.
 
