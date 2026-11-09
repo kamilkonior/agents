@@ -1924,6 +1924,28 @@ const Graph = (() => {
       assert.deepEqual(kept, entries);
     });
 
+    test("filtering by deferred keeps a deferred question and the settled one around it", () => {
+      // given
+      const deferred            = {
+        kind: "question",
+        state: "deferred",
+        id: "Q2",
+        text: "q2",
+        note: "why",
+        options: [],
+        children: [],
+      };
+      const entries              = [
+        { kind: "question", state: "settled", id: "Q1", text: "q1", options: [], children: [deferred] },
+      ];
+
+      // when
+      const kept = filterTree(entries, ["deferred"]);
+
+      // then
+      assert.deepEqual(kept, entries);
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
