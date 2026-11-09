@@ -95,7 +95,13 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
                  
   
 
-                                                                                                               
+                                
+                   
+                          
+                
+                    
+                      
+  
 
                                                                               
 
@@ -4154,7 +4160,12 @@ const Items = (() => {
 
     const given = config.state ?? (config.target === undefined ? undefined : ["all"]);
 
-    return Graph.listed(log, config.tag, chosenStates(given), config.target);
+    const listed = Graph.listed(log, config.tag, chosenStates(given), config.target);
+    if (!config.trail || config.target === undefined) return listed;
+
+    const steps = Graph.trail(log, config.target);
+
+    return steps.length === 0 ? listed : listed.map((item) => ({ ...item, trail: steps }));
   }
 
   function tests() {
