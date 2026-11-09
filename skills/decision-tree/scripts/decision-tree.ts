@@ -1815,6 +1815,20 @@ const Graph = (() => {
       assert.deepEqual(kept, []);
     });
 
+    test("filtering keeps a settled question that holds an open child", () => {
+      // given
+      const open: TreeEntry = { kind: "question", state: "open", id: "Q2", text: "q2", options: [], children: [] };
+      const entries: TreeEntry[] = [
+        { kind: "question", state: "settled", id: "Q1", text: "q1", options: [], children: [open] },
+      ];
+
+      // when
+      const kept = filterTree(entries, ["open"]);
+
+      // then
+      assert.deepEqual(kept, entries);
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
