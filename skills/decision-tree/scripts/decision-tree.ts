@@ -4446,6 +4446,23 @@ const Status = (() => {
       );
     });
 
+    test("an off-path target has no items", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1b" },
+      ]);
+
+      // when
+      const items = run(log, { target: "Q2" });
+
+      // then
+      assert.deepEqual(items, []);
+    });
+
     test("an open question has state open and its live options", () => {
       // given
       const log = Log.memoryLog([
