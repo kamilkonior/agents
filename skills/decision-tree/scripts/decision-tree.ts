@@ -4158,6 +4158,17 @@ const Items = (() => {
   }
 
   function tests() {
+    test("a trail without a target throws", () => {
+      // given
+      const log = Log.memoryLog();
+
+      // when
+      const act = () => run(log, { trail: true });
+
+      // then
+      assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "items --trail requires --target");
+    });
+
     test("querying with state all returns items in every state", () => {
       // given
       const log = Log.memoryLog([
