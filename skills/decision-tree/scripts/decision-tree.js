@@ -4293,6 +4293,22 @@ const Items = (() => {
       );
     });
 
+    test("a question carries its excluded options with their state and note", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "exclude", target: "Q1b", reason: "deferred", note: "why" },
+      ]);
+
+      // when
+      const items = run(log, {});
+
+      // then
+      assert.deepEqual(items[0].excludedOptions, [{ id: "Q1b", text: "b", state: "deferred", note: "why" }]);
+    });
+
     test("a trail without a target throws", () => {
       // given
       const log = Log.memoryLog();
