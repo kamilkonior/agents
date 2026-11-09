@@ -5300,6 +5300,21 @@ const Tree = (() => {
         },
       ]);
     });
+
+    test("a target with nothing open inside has no items by default", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+      ]);
+
+      // when
+      const entries = view(log, { target: "Q1" });
+
+      // then
+      assert.deepEqual(entries, []);
+    });
   }
 
   return { options, run, tests };
