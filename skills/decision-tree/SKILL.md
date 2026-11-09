@@ -14,7 +14,7 @@ node <this skill's directory>/scripts/decision-tree.js --log <path> --op <op> [f
 node <this skill's directory>/scripts/decision-tree.js --log <path> --query <query> [flags]
 ```
 
-Requires Node 20+. `DECISION_TREE_LOG` can stand in for `--log`, which wins if both are set.
+Requires Node 20+. `DECISION_TREE_LOG` can stand in for `--log`, which wins if both are set. In zsh, a command kept in a variable isn't split into words, so `$CLI --op …` fails; a shell function works.
 
 A log is a `.jsonl` file holding one tree with any number of roots. The same path resumes it, several agents can share it, and the tree is rebuilt from it on every call, so a hand edit can corrupt it. Change it only through the CLI.
 
@@ -98,7 +98,6 @@ New work under an answer comes before later roots. An open question stays at the
 |---|---|
 | Not ready to decide | `exclude --reason deferred` with the blocker as `--note` frees the walk, and `restore` brings it back once the blocker clears. Everything under it waits with it. Items waiting on the same person can share a tag, added before the exclude, so `--query items --tag T --state deferred` lists them together. |
 | The premise of a question changed | Patching answers leaves decisions standing on the old premise, while `supersede-question` with corrected wording freezes them. Superseding can't be undone, and `--query tree --target QID --state all` shows exactly what it would freeze. The normal ops rebuild what still holds from `<superseded>`, including open items and viable options. |
-| Reconsidering a selection | `--query status --target QID` shows what depends on the answer before it changes: what's inside the decided option goes with it, and what's beside `<decided>` stays. The old subtree returns if that option is selected again. |
 | Stopping with items still open | A pause needs nothing. To close the tree, `exclude --reason deferred` each open item, top-level items first. |
 | An option no longer applies | `exclude` on the option, with `--reason not-applicable`, removes just that answer. The other options keep their letters. |
 
