@@ -73,7 +73,7 @@ Some behaviour worth expecting:
 | Read | |
 |---|---|
 | `--query next [--trail]` | the one thing to handle now; `--trail` adds the path from the root down to it |
-| `--query tree` | the settled tree, open questions and deferred items |
+| `--query tree [--state S]… [--target ID]` | the full structure: what hangs on what, with every option; `S` as in `items`, default `open`, and an item stays if something inside it matches; `ID` limits it to one question or follow-up; prints `<tree>` |
 | `--query status [--target ID]` | where the decisions stand now: one hierarchy of what's open, settled and deferred; `ID` limits it to one question or follow-up and what's under it, and prints nothing for an item `status` leaves out; prints `<status>` |
 | `--query items [--tag T] [--target ID [--trail]] [--state S]… [--limit N]` | a flat list of questions and follow-ups, each marked with its state; `T` keeps only items with that tag; `ID` finds one item, in any state unless `S` is given; `--trail` adds the path from the root down to that item, even when it's off the path; `N` keeps only the first N matches in walk order, and nothing marks that more exist; `S` is `open` (the default), `settled`, `off-path`, `deferred`, `not-applicable`, `frozen` or `all`, and doesn't filter options; an excluded option appears after the live ones, marked with its state and note; an item excluded directly shows its `<note>`, and an item hidden by another names it in `<hidden-by>`; a focus doesn't limit it; prints `<items>` |
 
@@ -104,33 +104,28 @@ Some behaviour worth expecting:
 <next></next>
 ```
 
-`--query tree` nests the settled path. A settled question has `<selected>`; an open one has `<options>`. Deferred items come last, with their note and where they hung:
+`--query tree` shows the structure. An answer's children sit inside their `<option>`; a question's own children follow `<options>`. Every option of a printed question appears, with chosen ones marked and excluded ones showing their state and note; `--state` applies to questions and follow-ups only. Promoted follow-ups appear as a step, and a superseded question follows its replacement.
 
 ```xml
 <tree>
-  <question>
+  <question state="settled">
     <id>Q1</id>
     <text>Where do events live?</text>
-    <selected>
-      <option><id>Q1b</id><text>a database</text></option>
-    </selected>
-    <question>
-      <id>Q2</id>
-      <text>Which database?</text>
-      <options>
-        <option><id>Q2a</id><text>SQLite</text></option>
-        <option><id>Q2b</id><text>Postgres</text></option>
-      </options>
-    </question>
+    <options>
+      <option><id>Q1a</id><text>files</text></option>
+      <option selected="true">
+        <id>Q1b</id>
+        <text>a database</text>
+        <question state="open">
+          <id>Q2</id>
+          <text>Which database?</text>
+          <options>
+            <option><id>Q2a</id><text>SQLite</text></option>
+          </options>
+        </question>
+      </option>
+    </options>
   </question>
-  <deferred>
-    <question>
-      <id>Q3</id>
-      <text>Multi-region?</text>
-      <note>Legal is deciding</note>
-      <hung-under><id>Q1b</id><text>a database</text></hung-under>
-    </question>
-  </deferred>
 </tree>
 ```
 

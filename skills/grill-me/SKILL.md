@@ -49,4 +49,4 @@ Ask one question per message. `next` already orders the work: it finishes the cu
 
 ## Finishing
 
-When `--query next` prints `<next></next>`, run `--query tree` and summarise the settled design for the user from it: each decision, the chosen answer, and how the decisions nest. List the `<deferred>` section as out-of-scope topics kept for later. Mention the log path so the session can be resumed or reviewed.
+When `--query next` prints `<next></next>`, run `--query status` and summarise the settled design for the user from it: each decision, the chosen answer, and how the decisions nest. List the items with `state="deferred"` as out-of-scope topics kept for later. Mention the log path so the session can be resumed or reviewed.

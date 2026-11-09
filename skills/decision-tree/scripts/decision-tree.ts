@@ -5188,7 +5188,10 @@ const Next = (() => {
 })();
 
 const Tree = (() => {
-  const options = {} as const;
+  const options = {
+    state: { type: "string", multiple: true },
+    target: { type: "string" },
+  } as const;
 
   function run(log: Log): TreeData {
     return Graph.walk(log);
@@ -5364,7 +5367,7 @@ const Tree = (() => {
     });
   }
 
-  return { options, run, tests };
+  return { options, run, view, tests };
 })();
 
 const Status = (() => {
@@ -7470,9 +7473,8 @@ const Cli = (() => {
       }
 
       case "tree": {
-        readModeConfig(Tree.options);
-        const { items, deferred } = Tree.run(log);
-        console.log(Xml.tree(items, deferred));
+        const config = readModeConfig(Tree.options);
+        console.log(Xml.builtTree(Tree.view(log, config)));
         break;
       }
 
