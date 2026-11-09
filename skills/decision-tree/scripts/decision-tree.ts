@@ -882,36 +882,14 @@ const Graph = (() => {
     return node.options.filter((option) => node.selected.includes(option) && !graph.exclusions.has(option.id));
   }
 
-  function offPathCause(graph: Graph, node: QuestionNode | FollowUpNode): OptionNode | FollowUpNode | undefined {
-    const parent = node.parent;
-    if (parent === undefined) return undefined;
-
-    if (parent.kind === "option") {
-      return liveSelected(graph, parent.question).includes(parent) ? offPathCause(graph, parent.question) : parent;
-    }
-    if (parent.kind === "follow-up" && parent.status === "open") return parent;
-
-    return offPathCause(graph, parent);
-  }
-
-  function reachedNodes(graph: Graph): Set<QuestionNode | FollowUpNode> {
-    const { question, followUp, reached } = project(graph);
-
-    graph.roots.forEach(question);
-    graph.rootFollowUps.forEach(followUp);
-
-    return reached;
-  }
-
   function rejectOffPath(log: Log, node: QuestionNode | FollowUpNode): void {
     const graph = build(log);
 
     const current = parentNode(graph.nodes, node.id);
     if (current.kind === "option") throw new Error(`option ${node.id} has no path of its own`);
-    if (reachedNodes(graph).has(current)) return;
+    if (graph.walkOrder.includes(current)) return;
 
-    const cause = offPathCause(graph, current);
-    throw new DecisionTreeError(`${node.id} is off-path, hidden by ${cause?.id}`);
+    throw new DecisionTreeError(`${node.id} is off-path, hidden by ${current.hiddenBy}`);
   }
 
   function listed(log: Log, tag: string | undefined, states: ItemState[], target?: string): ListedItem[] {
@@ -923,9 +901,7 @@ const Graph = (() => {
       if (wanted.kind === "option") throw new DecisionTreeError(`target is not a question or follow-up: ${target}`);
     }
 
-    const reached = reachedNodes(graph);
-
-    const nodes = [...new Set([...reached, ...graph.nodes.values()])];
+    const nodes = [...new Set([...graph.walkOrder, ...graph.nodes.values()])];
 
     return nodes.flatMap((node) => {
       if (node.kind === "option") return [];
