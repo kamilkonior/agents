@@ -4929,12 +4929,20 @@ const Xml = (() => {
   }
 
   function statusLines(item            )           {
-    if (item.kind === "follow-up" && item.state === "open") {
-      return ['<follow-up state="open">', `  <id>${item.id}</id>`, `  <text>${escapeXml(item.text)}</text>`, "</follow-up>"];
+    if (item.state === "deferred") {
+      const note = item.note === undefined ? [] : [`  <note>${escapeXml(item.note)}</note>`];
+
+      return [
+        `<${item.kind} state="deferred">`,
+        `  <id>${item.id}</id>`,
+        `  <text>${escapeXml(item.text)}</text>`,
+        ...note,
+        `</${item.kind}>`,
+      ];
     }
 
-    if (item.kind !== "question" || (item.state !== "open" && item.state !== "settled")) {
-      throw new Error(`status rendering is not built for ${item.state}`);
+    if (item.kind === "follow-up") {
+      return ['<follow-up state="open">', `  <id>${item.id}</id>`, `  <text>${escapeXml(item.text)}</text>`, "</follow-up>"];
     }
 
     const children = item.children.flatMap(statusLines).map((line) => `  ${line}`);
