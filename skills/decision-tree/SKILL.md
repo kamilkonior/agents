@@ -16,9 +16,9 @@ node <this skill's directory>/scripts/decision-tree.js --log <path> --query <que
 
 Requires Node 20+. `DECISION_TREE_LOG` can stand in for `--log`, which wins if both are set.
 
-A log is a `.jsonl` file holding one tree with any number of roots. The same path resumes it, several agents can share it, and the tree is rebuilt from it on every call.
+A log is a `.jsonl` file holding one tree with any number of roots. The same path resumes it, several agents can share it, and the tree is rebuilt from it on every call, so a hand edit can corrupt it. Change it only through the CLI.
 
-Results are XML on stdout. A failed call prints one line on stderr, exits 1 and writes nothing. The item it names is the one in the way: `Q2 is off-path, hidden by Q1b`.
+Results are XML on stdout. A failed call prints one line on stderr, exits 1 and writes nothing. The item it names is the one to act on: `Q2 is off-path, hidden by Q1b` means select `Q1b` first.
 
 ## The tree
 
@@ -73,7 +73,7 @@ New work under an answer comes before later roots. An open question stays at the
 | `add-question --text T [--option A]… [--origin ID]` | Adds a question. |
 | `add-option --origin QID --text T` | Adds an option to a question. |
 | `add-follow-up --text T [--origin ID]` | Records a follow-up. |
-| `select-option --target OID… [--rationale R]` | Makes these options, all of one question, its whole selection, replacing any earlier one and its rationale. `R` records why. |
+| `select-option --target OID… [--rationale R]` | Makes these options, all of one question, its whole selection, replacing any earlier one and its rationale. To add an option to a selection, pass them all again. `R` records why. |
 | `promote-follow-up --target FID [--text T] [--option A]…` | Creates a question under the follow-up, worded as `T` or as the follow-up. The follow-up stays as history under its own id. |
 | `supersede-question --target QID --text T [--option A]…` | Puts a new question in the old one's place, with its tags and only the options given. The old question and everything under it are frozen, and nothing carries over. |
 | `exclude --target ID --reason deferred\|not-applicable [--note N]` | Takes an item and everything under it out of the walk. Nothing under it can change until it is restored. Excluding every selected option reopens the question. |
@@ -92,7 +92,15 @@ New work under an answer comes before later roots. An open question stays at the
 
 `S` is `open` (the default), `settled`, `off-path`, `deferred`, `not-applicable`, `frozen` or `all`. It never filters options, and `tree` keeps the ancestors of a match. `--target` limits `status` and `tree` to that item and what's under it, and `status` prints nothing for an item it leaves out. In `items`, `--target` finds one item in any state unless `--state` is given. `--limit` doesn't say whether more exist. A focus affects only `next`.
 
-`--query tree --target QID --state all` shows exactly what superseding `QID` would freeze.
+## When things get in the way
+
+| Situation | What works |
+|---|---|
+| Not ready to decide | `exclude --reason deferred` with the blocker as `--note` frees the walk, and `restore` brings it back once the blocker clears. Everything under it waits with it. |
+| The premise of a question changed | Patching answers leaves decisions standing on the old premise, while `supersede-question` with corrected wording freezes them. Superseding can't be undone, and `--query tree --target QID --state all` shows exactly what it would freeze. The normal ops rebuild what still holds from `<superseded>`, including open items and viable options. |
+| Reconsidering a selection | `--query status --target QID` shows what depends on the answer before it changes: what's inside the decided option goes with it, and what's beside `<decided>` stays. The old subtree returns if that option is selected again. |
+| Stopping with items still open | A pause needs nothing. To close the tree, `exclude --reason deferred` each open item, top-level items first. |
+| An option no longer applies | `exclude` on the option, with `--reason not-applicable`, removes just that answer. The other options keep their letters. |
 
 ## Output
 
@@ -127,6 +135,7 @@ Position in the XML carries meaning:
 </status>
 ```
 
+- **`next`:** one `<question>` or `<follow-up>`, and a follow-up has no options. `--trail` puts the path to it in `<trail>`.
 - **`status`:** an item inside a decided option goes if that answer changes, and one beside `<decided>` stays. Off-path and not-applicable items are left out, and a deferred item shows only its note.
 - **`tree`:** the chosen option has `selected="true"` and holds its children, `<rationale>` follows `<options>`, and the question's own children come after that. A promoted follow-up appears as a step, and a superseded question follows its replacement.
 - **`items`:** `<rationale>` says why the options were selected, `<note>` why the item was excluded, and `<hidden-by>` names what hides it.
