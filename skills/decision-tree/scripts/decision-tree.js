@@ -1715,6 +1715,25 @@ const Graph = (() => {
       ]);
     });
 
+    test("the complete tree lists an excluded option after the live ones, with its state and note", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "exclude", target: "Q1a", reason: "deferred", note: "why" },
+      ]);
+
+      // when
+      const question = firstCompleteQuestion(log);
+
+      // then
+      assert.deepEqual(question.options, [
+        { id: "Q1b", text: "b", children: [] },
+        { id: "Q1a", text: "a", state: "deferred", note: "why", children: [] },
+      ]);
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
