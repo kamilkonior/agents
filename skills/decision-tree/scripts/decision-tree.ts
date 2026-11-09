@@ -632,7 +632,16 @@ const Graph = (() => {
       }
     }
 
+    assignStates(graph);
+
     return graph;
+  }
+
+  function assignStates(graph: Graph): void {
+    for (const question of graph.roots) {
+      question.state = "open";
+      question.options.forEach((option) => (option.state = "open"));
+    }
   }
 
   function assertStatesAssigned(graph: Graph): void {
