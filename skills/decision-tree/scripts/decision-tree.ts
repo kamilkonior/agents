@@ -145,6 +145,7 @@ type QuestionNode = {
   followUps: FollowUpNode[];
   selected: OptionNode[];
   supersededBy?: QuestionNode;
+  supersedes?: QuestionNode;
   hiddenBy?: string;
 };
 
@@ -622,6 +623,7 @@ const Graph = (() => {
           siblings.splice(siblings.indexOf(replacement), 1);
           siblings.splice(siblings.indexOf(old), 1, replacement);
           old.supersededBy = replacement;
+          replacement.supersedes = old;
           const tags = graph.tags.get(old.id);
           if (tags !== undefined) graph.tags.set(replacement.id, new Set(tags));
           if (graph.focus?.node === old && !graph.focus.ended) graph.focus.node = replacement;
@@ -954,12 +956,12 @@ const Graph = (() => {
 
   function completeTreeChildren(graph: Graph, node: QuestionNode | OptionNode | FollowUpNode): CompleteTreeItem[] {
     return [
-      ...node.children.map((child) => completeTreeQuestion(graph, child)),
+      ...node.children.flatMap((child) => completeTreeQuestion(graph, child)),
       ...node.followUps.map((followUp) => completeTreeFollowUp(graph, followUp)),
     ];
   }
 
-  function completeTreeQuestion(graph: Graph, question: QuestionNode): CompleteTreeItem {
+  function completeTreeQuestion(graph: Graph, question: QuestionNode): CompleteTreeItem[] {
     const selected = liveSelected(graph, question);
     const live = question.options
       .filter((option) => !graph.exclusions.has(option.id))
@@ -979,15 +981,20 @@ const Graph = (() => {
     });
     const options = [...live, ...excluded];
 
-    return {
-      kind: "question",
-      state: assignedState(question),
-      id: question.id,
-      text: question.text,
-      ...noteOf(graph, question),
-      options,
-      children: completeTreeChildren(graph, question),
-    };
+    const superseded = question.supersedes === undefined ? [] : completeTreeQuestion(graph, question.supersedes);
+
+    return [
+      {
+        kind: "question",
+        state: assignedState(question),
+        id: question.id,
+        text: question.text,
+        ...noteOf(graph, question),
+        options,
+        children: completeTreeChildren(graph, question),
+      },
+      ...superseded,
+    ];
   }
 
   function completeTreeFollowUp(graph: Graph, followUp: FollowUpNode): CompleteTreeItem {
@@ -1005,7 +1012,7 @@ const Graph = (() => {
     const graph = build(log);
 
     return [
-      ...graph.roots.map((question) => completeTreeQuestion(graph, question)),
+      ...graph.roots.flatMap((question) => completeTreeQuestion(graph, question)),
       ...graph.rootFollowUps.map((followUp) => completeTreeFollowUp(graph, followUp)),
     ];
   }
