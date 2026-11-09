@@ -4244,6 +4244,20 @@ const Items = (() => {
       assert.equal("trail" in items[0], false);
     });
 
+    test("a nested target without the flag has no trail field", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1" },
+      ]);
+
+      // when
+      const items = run(log, { target: "Q2" });
+
+      // then
+      assert.equal("trail" in items[0], false);
+    });
+
     test("querying with state all returns items in every state", () => {
       // given
       const log = Log.memoryLog([
