@@ -73,6 +73,15 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
 
                                      
 
+                   
+                   
+                
+             
+               
+                        
+                         
+  
+
                                                
 
                    
@@ -817,6 +826,25 @@ const Graph = (() => {
     return graph.walkOrder
       .filter((node) => node.state === "open" && (ancestor === undefined || isWithin(node, ancestor)))
       .map((node) => openItem(graph, node));
+  }
+
+  function statusItem(graph       , question              )             {
+    if (question.state !== "open") throw new Error(`status does not handle ${question.state} yet`);
+
+    return {
+      kind: "question",
+      state: "open",
+      id: question.id,
+      text: question.text,
+      options: liveOptions(graph, question),
+      children: [],
+    };
+  }
+
+  function status(log     )               {
+    const graph = build(log);
+
+    return graph.roots.map((question) => statusItem(graph, question));
   }
 
   function trail(log     , id        )              {
@@ -2597,6 +2625,7 @@ const Graph = (() => {
   return {
     tree: (log     ) => tree(build(log)),
     walk: (log     ) => walk(build(log)),
+    status,
     frontier: (log     ) => frontier(build(log)),
     superseded,
     hasOpen,
@@ -4287,8 +4316,8 @@ const Tree = (() => {
 })();
 
 const Status = (() => {
-  function run(_log     )            {
-    return [];
+  function run(log     )               {
+    return Graph.status(log);
   }
 
   function tests() {

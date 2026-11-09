@@ -73,6 +73,15 @@ type ItemState = "open" | "settled" | "off-path" | "deferred" | "not-applicable"
 
 type NodeState = ItemState | "unset";
 
+type StatusItem = {
+  kind: "question";
+  state: "open";
+  id: string;
+  text: string;
+  options: OptionData[];
+  children: StatusItem[];
+};
+
 type Hiding = { state: ItemState; by: string };
 
 type TaggedData = {
@@ -817,6 +826,25 @@ const Graph = (() => {
     return graph.walkOrder
       .filter((node) => node.state === "open" && (ancestor === undefined || isWithin(node, ancestor)))
       .map((node) => openItem(graph, node));
+  }
+
+  function statusItem(graph: Graph, question: QuestionNode): StatusItem {
+    if (question.state !== "open") throw new Error(`status does not handle ${question.state} yet`);
+
+    return {
+      kind: "question",
+      state: "open",
+      id: question.id,
+      text: question.text,
+      options: liveOptions(graph, question),
+      children: [],
+    };
+  }
+
+  function status(log: Log): StatusItem[] {
+    const graph = build(log);
+
+    return graph.roots.map((question) => statusItem(graph, question));
   }
 
   function trail(log: Log, id: string): TrailStep[] {
@@ -2597,6 +2625,7 @@ const Graph = (() => {
   return {
     tree: (log: Log) => tree(build(log)),
     walk: (log: Log) => walk(build(log)),
+    status,
     frontier: (log: Log) => frontier(build(log)),
     superseded,
     hasOpen,
@@ -4287,8 +4316,8 @@ const Tree = (() => {
 })();
 
 const Status = (() => {
-  function run(_log: Log): unknown[] {
-    return [];
+  function run(log: Log): StatusItem[] {
+    return Graph.status(log);
   }
 
   function tests() {
