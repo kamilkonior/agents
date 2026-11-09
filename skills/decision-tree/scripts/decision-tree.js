@@ -4493,6 +4493,40 @@ const Status = (() => {
       assert.deepEqual(items, []);
     });
 
+    test("a nested target renders only itself and what is under it", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+        { type: "add-option", id: "Q2a", text: "b", origin: "Q2" },
+        { type: "select-option", targets: ["Q2a"] },
+        { type: "add-question", id: "Q3", text: "q3", origin: "Q2a" },
+      ]);
+
+      // when
+      const items = run(log, { target: "Q2" });
+
+      // then
+      assert.deepEqual(items, [
+        {
+          kind: "question",
+          state: "settled",
+          id: "Q2",
+          text: "q2",
+          decided: [
+            {
+              id: "Q2a",
+              text: "b",
+              children: [{ kind: "question", state: "open", id: "Q3", text: "q3", options: [], children: [] }],
+            },
+          ],
+          children: [],
+        },
+      ]);
+    });
+
     test("an open question has state open and its live options", () => {
       // given
       const log = Log.memoryLog([
