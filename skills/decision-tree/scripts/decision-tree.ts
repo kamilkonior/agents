@@ -4535,6 +4535,21 @@ const Status = (() => {
       // then
       assert.deepEqual(items, [{ kind: "question", state: "deferred", id: "Q1", text: "q", note: "why" }]);
     });
+
+    test("a child of a deferred question is left out", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1" },
+        { type: "exclude", target: "Q1", reason: "deferred" },
+      ]);
+
+      // when
+      const items = run(log);
+
+      // then
+      assert.deepEqual(items, [{ kind: "question", state: "deferred", id: "Q1", text: "q1" }]);
+    });
   }
 
   return { run, tests };
