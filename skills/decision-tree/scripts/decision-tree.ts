@@ -1513,6 +1513,29 @@ const Graph = (() => {
       ]);
     });
 
+    test("the tree view keeps a question-level child in the question's children", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1" },
+      ]);
+
+      // when
+      const items = treeView(log);
+
+      // then
+      assert.deepEqual(items, [
+        {
+          kind: "question",
+          state: "open",
+          id: "Q1",
+          text: "q1",
+          options: [],
+          children: [{ kind: "question", state: "open", id: "Q2", text: "q2", options: [], children: [] }],
+        },
+      ]);
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
