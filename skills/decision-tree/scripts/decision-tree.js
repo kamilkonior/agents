@@ -4134,6 +4134,7 @@ const Items = (() => {
     tag: { type: "string" },
     state: { type: "string", multiple: true },
     target: { type: "string" },
+    trail: { type: "boolean" },
   }         ;
 
   const states              = ["open", "settled", "off-path", "deferred", "not-applicable", "frozen"];
@@ -4147,8 +4148,9 @@ const Items = (() => {
     return given.includes("all") ? states : states.filter((state) => given.includes(state));
   }
 
-  function run(log     , config                                                     )               {
+  function run(log     , config                                                                      )               {
     if (config.tag === "") throw new DecisionTreeError("items --tag requires a text");
+    if (config.trail && config.target === undefined) throw new DecisionTreeError("items --trail requires --target");
 
     const given = config.state ?? (config.target === undefined ? undefined : ["all"]);
 
