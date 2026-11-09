@@ -4572,6 +4572,46 @@ const Status = (() => {
       // then
       assert.deepEqual(items, [{ kind: "follow-up", state: "open", id: "F1", text: "f" }]);
     });
+
+    test("follow-ups sit where they hang, after the questions at their level", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "add-follow-up", id: "F1", text: "answer follow-up", origin: "Q1a" },
+        { type: "add-question", id: "Q2", text: "answer child", origin: "Q1a" },
+        { type: "add-follow-up", id: "F2", text: "question follow-up", origin: "Q1" },
+        { type: "add-question", id: "Q3", text: "question child", origin: "Q1" },
+      ]);
+
+      // when
+      const items = run(log);
+
+      // then
+      assert.deepEqual(items, [
+        {
+          kind: "question",
+          state: "settled",
+          id: "Q1",
+          text: "q1",
+          decided: [
+            {
+              id: "Q1a",
+              text: "a",
+              children: [
+                { kind: "question", state: "open", id: "Q2", text: "answer child", options: [], children: [] },
+                { kind: "follow-up", state: "open", id: "F1", text: "answer follow-up" },
+              ],
+            },
+          ],
+          children: [
+            { kind: "question", state: "open", id: "Q3", text: "question child", options: [], children: [] },
+            { kind: "follow-up", state: "open", id: "F2", text: "question follow-up" },
+          ],
+        },
+      ]);
+    });
   }
 
   return { run, tests };
