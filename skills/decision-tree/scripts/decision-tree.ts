@@ -5216,6 +5216,17 @@ const Tree = (() => {
           error.message === "state must be open, settled, off-path, deferred, not-applicable, frozen or all: nope",
       );
     });
+
+    test("an unknown target throws", () => {
+      // given
+      const log = Log.memoryLog();
+
+      // when
+      const act = () => view(log, { target: "Q9" });
+
+      // then
+      assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "target not found: Q9");
+    });
   }
 
   return { options, run, tests };
