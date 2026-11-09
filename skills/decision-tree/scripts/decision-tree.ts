@@ -1169,6 +1169,24 @@ const Graph = (() => {
       assert.equal(questionNode(graph.nodes, "Q3").hiddenBy, "Q2a");
     });
 
+    test("a question under an open follow-up in an off-path branch is hidden by the outer option", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "add-follow-up", id: "F1", text: "f", origin: "Q1b" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "F1" },
+      ]);
+
+      // when
+      const graph = build(log);
+
+      // then
+      assert.equal(questionNode(graph.nodes, "Q2").hiddenBy, "Q1b");
+    });
+
     test("an excluded question has its reason as its state and hides what is under it", () => {
       // given
       const log = Log.memoryLog([
