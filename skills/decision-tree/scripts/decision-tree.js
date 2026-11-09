@@ -4408,6 +4408,37 @@ const Status = (() => {
         },
       ]);
     });
+
+    test("a child hung under the selected option sits inside that decided option", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+      ]);
+
+      // when
+      const items = run(log);
+
+      // then
+      assert.deepEqual(items, [
+        {
+          kind: "question",
+          state: "settled",
+          id: "Q1",
+          text: "q1",
+          decided: [
+            {
+              id: "Q1a",
+              text: "a",
+              children: [{ kind: "question", state: "open", id: "Q2", text: "q2", options: [], children: [] }],
+            },
+          ],
+          children: [],
+        },
+      ]);
+    });
   }
 
   return { run, tests };
