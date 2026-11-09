@@ -669,7 +669,7 @@ const Graph = (() => {
   }
 
   function offPathBelow(hiding: Hiding | undefined, by: string): Hiding {
-    return hiding !== undefined && hiding.state !== "off-path" ? hiding : { state: "off-path", by };
+    return hiding ?? { state: "off-path", by };
   }
 
   function assignQuestion(graph: Graph, question: QuestionNode, inherited: Hiding | undefined): void {
@@ -1131,7 +1131,7 @@ const Graph = (() => {
       assert.deepEqual([question.state, question.hiddenBy], ["off-path", "Q1b"]);
     });
 
-    test("an off-path question is hidden by its nearest unchosen option", () => {
+    test("an off-path question is hidden by its outermost unchosen option", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q1" },
@@ -1147,7 +1147,7 @@ const Graph = (() => {
       const graph = build(log);
 
       // then
-      assert.equal(questionNode(graph.nodes, "Q3").hiddenBy, "Q2a");
+      assert.equal(questionNode(graph.nodes, "Q3").hiddenBy, "Q1b");
     });
 
     test("an excluded question has its reason as its state and hides what is under it", () => {
