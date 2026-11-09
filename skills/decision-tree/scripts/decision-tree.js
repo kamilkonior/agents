@@ -74,6 +74,7 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
                                      
 
                  
+                                                                                  
                                                                   
                                                                                      
                                                                                     
@@ -853,7 +854,16 @@ const Graph = (() => {
       return [{ kind: "question", state: "deferred", id: question.id, text: question.text, ...noteOf(graph, question) }];
     }
 
-    const children = childItems(graph, question);
+    const deferredOptions = question.options
+      .filter((option) => option.state === "deferred")
+      .map((option) => ({
+        kind: "option"         ,
+        state: "deferred"         ,
+        id: option.id,
+        text: option.text,
+        ...noteOf(graph, option),
+      }));
+    const children = [...childItems(graph, question), ...deferredOptions];
 
     if (question.state === "settled") {
       const decided = liveSelected(graph, question).map((option) => ({

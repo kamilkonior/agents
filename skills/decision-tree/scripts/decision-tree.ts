@@ -74,6 +74,7 @@ type ItemState = "open" | "settled" | "off-path" | "deferred" | "not-applicable"
 type NodeState = ItemState | "unset";
 
 type StatusItem =
+  | { kind: "option"; state: "deferred"; id: string; text: string; note?: string }
   | { kind: "follow-up"; state: "open"; id: string; text: string }
   | { kind: "follow-up"; state: "deferred"; id: string; text: string; note?: string }
   | { kind: "question"; state: "deferred"; id: string; text: string; note?: string }
@@ -853,7 +854,16 @@ const Graph = (() => {
       return [{ kind: "question", state: "deferred", id: question.id, text: question.text, ...noteOf(graph, question) }];
     }
 
-    const children = childItems(graph, question);
+    const deferredOptions = question.options
+      .filter((option) => option.state === "deferred")
+      .map((option) => ({
+        kind: "option" as const,
+        state: "deferred" as const,
+        id: option.id,
+        text: option.text,
+        ...noteOf(graph, option),
+      }));
+    const children = [...childItems(graph, question), ...deferredOptions];
 
     if (question.state === "settled") {
       const decided = liveSelected(graph, question).map((option) => ({
