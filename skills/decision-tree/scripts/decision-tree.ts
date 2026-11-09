@@ -74,6 +74,7 @@ type ItemState = "open" | "settled" | "off-path" | "deferred" | "not-applicable"
 type NodeState = ItemState | "unset";
 
 type StatusItem =
+  | { kind: "follow-up"; state: "open"; id: string; text: string }
   | { kind: "question"; state: "deferred"; id: string; text: string; note?: string }
   | { kind: "question"; state: "open"; id: string; text: string; options: OptionData[]; children: StatusItem[] }
   | {
@@ -867,10 +868,16 @@ const Graph = (() => {
     ];
   }
 
+  function followUpItems(followUp: FollowUpNode): StatusItem[] {
+    if (followUp.state !== "open") throw new Error(`status does not handle ${followUp.state} yet`);
+
+    return [{ kind: "follow-up", state: "open", id: followUp.id, text: followUp.text }];
+  }
+
   function status(log: Log): StatusItem[] {
     const graph = build(log);
 
-    return graph.roots.flatMap((question) => statusItems(graph, question));
+    return [...graph.roots.flatMap((question) => statusItems(graph, question)), ...graph.rootFollowUps.flatMap(followUpItems)];
   }
 
   function trail(log: Log, id: string): TrailStep[] {

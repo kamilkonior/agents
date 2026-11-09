@@ -74,6 +74,7 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
                                      
 
                  
+                                                                  
                                                                                     
                                                                                                                 
      
@@ -867,10 +868,16 @@ const Graph = (() => {
     ];
   }
 
+  function followUpItems(followUp              )               {
+    if (followUp.state !== "open") throw new Error(`status does not handle ${followUp.state} yet`);
+
+    return [{ kind: "follow-up", state: "open", id: followUp.id, text: followUp.text }];
+  }
+
   function status(log     )               {
     const graph = build(log);
 
-    return graph.roots.flatMap((question) => statusItems(graph, question));
+    return [...graph.roots.flatMap((question) => statusItems(graph, question)), ...graph.rootFollowUps.flatMap(followUpItems)];
   }
 
   function trail(log     , id        )              {
