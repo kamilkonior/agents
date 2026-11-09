@@ -1797,6 +1797,19 @@ const Graph = (() => {
       );
     });
 
+    test("filtering drops an entry whose state was not asked for", () => {
+      // given
+      const entries: TreeEntry[] = [
+        { kind: "question", state: "settled", id: "Q1", text: "q", options: [], children: [] },
+      ];
+
+      // when
+      const kept = filterTree(entries, ["open"]);
+
+      // then
+      assert.deepEqual(kept, []);
+    });
+
     test("an unknown event type throws", () => {
       // given
       const log = Log.memoryLog([
