@@ -4929,6 +4929,10 @@ const Xml = (() => {
   }
 
   function statusLines(item: StatusItem): string[] {
+    if (item.kind === "follow-up" && item.state === "open") {
+      return ['<follow-up state="open">', `  <id>${item.id}</id>`, `  <text>${escapeXml(item.text)}</text>`, "</follow-up>"];
+    }
+
     if (item.kind !== "question" || (item.state !== "open" && item.state !== "settled")) {
       throw new Error(`status rendering is not built for ${item.state}`);
     }
