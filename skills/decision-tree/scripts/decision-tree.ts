@@ -7586,6 +7586,12 @@ const Cli = (() => {
         console.log(Xml.supersede(SupersedeQuestion.run(log, config)));
         break;
       }
+
+      case "supersede-option": {
+        const config = readModeConfig(SupersedeOption.options);
+        console.log(Xml.supersedeOption(SupersedeOption.run(log, config)));
+        break;
+      }
       default:
         throw new DecisionTreeError(`unknown op: ${op}`);
     }
