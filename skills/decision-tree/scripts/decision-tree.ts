@@ -3618,6 +3618,35 @@ const AddQuestion = (() => {
       assert.deepEqual(question, { id: "Q2", text: "q2", options: [] });
       assert.deepEqual(log.read(), [...events, { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" }]);
     });
+
+    test("question with options under an excluded option stores its options under it", () => {
+      // given
+      const events: Event[] = [
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "exclude", target: "Q1a", reason: "not-applicable" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const question = run(log, { text: "q2", origin: "Q1a", option: ["b", "c"] });
+
+      // then
+      assert.deepEqual(question, {
+        id: "Q2",
+        text: "q2",
+        options: [
+          { id: "Q2a", text: "b" },
+          { id: "Q2b", text: "c" },
+        ],
+      });
+      assert.deepEqual(log.read(), [
+        ...events,
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+        { type: "add-option", id: "Q2a", text: "b", origin: "Q2" },
+        { type: "add-option", id: "Q2b", text: "c", origin: "Q2" },
+      ]);
+    });
   }
 
   return { options, run, tests };
