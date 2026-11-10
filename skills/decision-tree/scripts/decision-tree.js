@@ -3735,6 +3735,11 @@ const ClearSelection = (() => {
 
     const question = Graph.liveNode(log, target, "target");
     if (question.kind !== "question") throw new DecisionTreeError(`target is not a question: ${target}`);
+
+    const hasSelection = Graph.buildTree(log, target)
+      .flatMap((entry) => (entry.kind === "question" ? entry.options : []))
+      .some((option) => option.selected === true);
+    if (!hasSelection) throw new DecisionTreeError(`${target} has no selection`);
   }
 
   function tests() {
@@ -3775,6 +3780,22 @@ const ClearSelection = (() => {
         act,
         (error) => error instanceof DecisionTreeError && error.message === "target is not a question: Q1a",
       );
+      assert.deepEqual(log.read(), events);
+    });
+
+    test("clearing a question with nothing selected throws and appends nothing", () => {
+      // given
+      const events          = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const act = () => run(log, { target: "Q1" });
+
+      // then
+      assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "Q1 has no selection");
       assert.deepEqual(log.read(), events);
     });
   }
