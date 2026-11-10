@@ -505,7 +505,7 @@ const Graph = (() => {
 
   function liveOptions(graph: Graph, question: QuestionNode): OptionData[] {
     return question.options
-      .filter((option) => !graph.exclusions.has(option.id))
+      .filter((option) => !graph.exclusions.has(option.id) && option.supersededBy === undefined)
       .map((option) => ({ id: option.id, text: option.text }));
   }
 
@@ -2140,6 +2140,26 @@ const Graph = (() => {
 
       // then
       assert.deepEqual(open, []);
+    });
+
+    test("an open question on the frontier leaves out a superseded option", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+          { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+          { type: "supersede-option", target: "Q1a", option: "Q1b" },
+        ]),
+      );
+
+      // when
+      const open = frontier(graph);
+
+      // then
+      assert.deepEqual(open, [
+        { kind: "open-question", id: "Q1", text: "q1", options: [{ id: "Q1b", text: "b" }] },
+      ]);
     });
 
     test("a question under the selected option is on the frontier", () => {
