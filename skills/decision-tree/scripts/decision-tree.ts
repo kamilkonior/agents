@@ -3439,7 +3439,7 @@ const AddQuestion = (() => {
   } as const;
 
   function addQuestion(log: Log, text: string, origin?: string): string {
-    if (origin !== undefined) Graph.liveNode(log, origin, "origin");
+    if (origin !== undefined) Graph.unfrozenNode(log, origin, "origin");
 
     const id = Log.nextId(log, "add-question", "Q");
     const event: Event = { type: "add-question", id, text };
@@ -3600,6 +3600,23 @@ const AddQuestion = (() => {
         { type: "add-option", id: "Q2a", text: "b", origin: "Q2" },
         { type: "add-option", id: "Q2b", text: "c", origin: "Q2" },
       ]);
+    });
+
+    test("question under an excluded option is stored with its origin", () => {
+      // given
+      const events: Event[] = [
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "exclude", target: "Q1a", reason: "not-applicable" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const question = run(log, { text: "q2", origin: "Q1a" });
+
+      // then
+      assert.deepEqual(question, { id: "Q2", text: "q2", options: [] });
+      assert.deepEqual(log.read(), [...events, { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" }]);
     });
   }
 
