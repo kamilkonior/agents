@@ -483,10 +483,17 @@ const Graph = (() => {
     return node;
   }
 
+  function supersededNode(nodes                , id        )                            {
+    const node = nodes.get(id);
+    if (node === undefined || node.kind === "follow-up") throw new Error(`log has no question or option ${id}`);
+
+    return node;
+  }
+
   function rejectFrozen(graph       , node                                          )       {
     if (node.state !== "frozen") return;
 
-    const superseded = questionNode(graph.nodes, node.hiddenBy ?? node.id);
+    const superseded = supersededNode(graph.nodes, node.hiddenBy ?? node.id);
     const replacement = superseded.supersededBy?.id;
     if (superseded === node) {
       throw new DecisionTreeError(`${node.id} is frozen, as it was superseded by ${replacement}`);
@@ -2954,6 +2961,25 @@ const Graph = (() => {
         (error) =>
           error instanceof DecisionTreeError &&
           error.message === "Q1a is frozen, as its ancestor Q1 was superseded by Q2",
+      );
+    });
+
+    test("looking up a superseded option throws frozen", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "supersede-option", target: "Q1a", option: "Q1b" },
+      ]);
+
+      // when
+      const act = () => liveNode(log, "Q1a", "target");
+
+      // then
+      assert.throws(
+        act,
+        (error) => error instanceof DecisionTreeError && error.message === "Q1a is frozen, as it was superseded by Q1b",
       );
     });
 
