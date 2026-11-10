@@ -15,6 +15,7 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
                                                                        
                                                                     
                                                                     
+                                               
                                                                         
                                                  
                                                                                
@@ -576,6 +577,13 @@ const Graph = (() => {
           const options = event.targets.map((id) => optionNode(nodes, id));
           options[0].question.selected = options;
           options[0].question.rationale = event.rationale;
+          break;
+        }
+
+        case "clear-selection": {
+          const question = questionNode(nodes, event.target);
+          question.selected = [];
+          question.rationale = undefined;
           break;
         }
 
@@ -2085,6 +2093,25 @@ const Graph = (() => {
 
       // then
       assert.equal(questionNode(graph.nodes, "Q1").selected[0]?.id, "Q1b");
+    });
+
+    test("clearing a selection reopens its question", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"], rationale: "why" },
+        { type: "clear-selection", target: "Q1" },
+      ]);
+
+      // when
+      const graph = build(log);
+
+      // then
+      const question = questionNode(graph.nodes, "Q1");
+      const cleared = optionNode(graph.nodes, "Q1a");
+      assert.deepEqual([question.state, cleared.state], ["open", "open"]);
     });
 
     test("questions without an origin become roots in order", () => {
