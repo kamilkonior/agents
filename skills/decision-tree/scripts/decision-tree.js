@@ -119,8 +119,6 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
                                                                       
                                                                          
 
-                                                                               
-
                                                                    
 
                                                                                          
@@ -4400,7 +4398,7 @@ const SupersedeOption = (() => {
     text: { type: "string" },
   }         ;
 
-  function run(log     , config                                    )                      {
+  function run(log     , config                                    )                  {
     const { target, text } = config;
     if (!target) throw new DecisionTreeError("supersede-option requires --target");
     if (!text) throw new DecisionTreeError("supersede-option requires --text");
@@ -4408,17 +4406,14 @@ const SupersedeOption = (() => {
     const old = Graph.liveNode(log, target, "target");
     if (old.kind !== "option") throw new DecisionTreeError(`target is not an option: ${target}`);
 
-    const superseded = Graph.buildTree(log, old.question.id)
-      .flatMap((entry) => (entry.kind === "question" ? entry.options : []))
-      .find((option) => option.id === target);
-    if (superseded === undefined) throw new Error(`tree of ${old.question.id} has no option ${target}`);
+    const before = Graph.buildTree(log, old.question.id);
 
     return Log.transaction(log, (staged) => {
       const option = AddOption.run(staged, { text, origin: old.question.id });
 
       staged.append({ type: "supersede-option", target, option: option.id });
 
-      return { option, superseded };
+      return { before, after: Graph.buildTree(staged, old.question.id) };
     });
   }
 
@@ -4490,10 +4485,9 @@ const SupersedeOption = (() => {
       const log = Log.memoryLog([...events]);
 
       // when
-      const supersede = run(log, { target: "Q1a", text: "c" });
+      run(log, { target: "Q1a", text: "c" });
 
       // then
-      assert.deepEqual(supersede.option, { id: "Q1c", text: "c" });
       assert.deepEqual(log.read(), [
         ...events,
         { type: "add-option", id: "Q1c", text: "c", origin: "Q1" },
@@ -4501,7 +4495,7 @@ const SupersedeOption = (() => {
       ]);
     });
 
-    test("superseding an option returns it as it stood, selected and with what is under it", () => {
+    test("superseding an option returns its question before and after", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q" },
@@ -4515,11 +4509,45 @@ const SupersedeOption = (() => {
       const supersede = run(log, { target: "Q1a", text: "c" });
 
       // then
-      assert.deepEqual(supersede.superseded, {
-        id: "Q1a",
-        text: "a",
-        selected: true,
-        children: [{ kind: "question", state: "open", id: "Q2", text: "q2", options: [], children: [] }],
+      assert.deepEqual(supersede, {
+        before: [
+          {
+            kind: "question",
+            state: "settled",
+            id: "Q1",
+            text: "q",
+            options: [
+              {
+                id: "Q1a",
+                text: "a",
+                selected: true,
+                children: [{ kind: "question", state: "open", id: "Q2", text: "q2", options: [], children: [] }],
+              },
+              { id: "Q1b", text: "b", children: [] },
+            ],
+            children: [],
+          },
+        ],
+        after: [
+          {
+            kind: "question",
+            state: "open",
+            id: "Q1",
+            text: "q",
+            options: [
+              { id: "Q1b", text: "b", children: [] },
+              { id: "Q1c", text: "c", supersedes: "Q1a", children: [] },
+              {
+                id: "Q1a",
+                text: "a",
+                state: "frozen",
+                supersededBy: "Q1c",
+                children: [{ kind: "question", state: "frozen", id: "Q2", text: "q2", options: [], children: [] }],
+              },
+            ],
+            children: [],
+          },
+        ],
       });
     });
   }
@@ -6277,19 +6305,6 @@ const Xml = (() => {
     );
   }
 
-  function supersedeOption(data                     )         {
-    const superseded = treeOptionLines(data.superseded).map((line) => `    ${line}`);
-
-    return [
-      "<supersede>",
-      `  ${option(data.option)}`,
-      "  <superseded>",
-      ...superseded,
-      "  </superseded>",
-      "</supersede>",
-    ].join("\n");
-  }
-
   function beforeAfter(name        , data                 )         {
     const before = data.before.flatMap(treeLines).map((line) => `    ${line}`);
     const after = data.after.flatMap(treeLines).map((line) => `    ${line}`);
@@ -7295,40 +7310,6 @@ const Xml = (() => {
       ]);
     });
 
-    test("supersede of an option renders the new option, then the superseded one with what is under it", () => {
-      // given
-      const data                      = {
-        option: { id: "Q1c", text: "c" },
-        superseded: {
-          id: "Q1a",
-          text: "a",
-          selected: true,
-          children: [{ kind: "question", state: "open", id: "Q2", text: "q2", options: [], children: [] }],
-        },
-      };
-
-      // when
-      const xml = supersedeOption(data);
-
-      // then
-      assert.deepEqual(xml.split("\n"), [
-        "<supersede>",
-        "  <option><id>Q1c</id><text>c</text></option>",
-        "  <superseded>",
-        '    <option selected="true">',
-        "      <id>Q1a</id>",
-        "      <text>a</text>",
-        '      <question state="open">',
-        "        <id>Q2</id>",
-        "        <text>q2</text>",
-        "        <options></options>",
-        "      </question>",
-        "    </option>",
-        "  </superseded>",
-        "</supersede>",
-      ]);
-    });
-
     test("a before-and-after result renders both trees under the given name", () => {
       // given
       const data                  = {
@@ -7633,7 +7614,7 @@ const Xml = (() => {
     status,
     promote,
     supersede,
-    supersedeOption,
+    beforeAfter,
     taggedItem,
     items,
     tests,
@@ -7958,7 +7939,7 @@ const Cli = (() => {
 
       case "supersede-option": {
         const config = readModeConfig(SupersedeOption.options);
-        console.log(Xml.supersedeOption(SupersedeOption.run(log, config)));
+        console.log(Xml.beforeAfter("supersede", SupersedeOption.run(log, config)));
         break;
       }
       default:
