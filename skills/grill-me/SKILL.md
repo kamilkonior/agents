@@ -38,7 +38,7 @@ The principles below say what to optimize for, and why. Where they pull apart, t
 
 **One decision at a time.** A single question gets a considered answer, several get skimmed, and a compound one gets half an answer.
 
-**Ask what the choice turns on.** When a choice depends on something only the user knows, ask that instead, because the choice usually follows from the answer.
+**Ask what the choice turns on.** When a choice depends on something only the user knows, ask that instead, because the choice usually follows from the answer. To find it, check what your lean assumes: anything you can't look up that would flip it is what the choice turns on.
 
 **A turn weighs what its decision weighs.** An obvious pick gets one line and a lean. A real trade-off gets its options laid out, each with what it guarantees and what it costs.
 
