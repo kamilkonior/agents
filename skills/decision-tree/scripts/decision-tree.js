@@ -644,7 +644,6 @@ const Graph = (() => {
           siblings.splice(siblings.indexOf(old), 1, replacement);
           old.supersededBy = replacement;
           replacement.supersedes = old;
-          if (graph.focus?.node === old && !graph.focus.ended) graph.focus.node = replacement;
           break;
         }
 
@@ -2585,7 +2584,7 @@ const Graph = (() => {
       );
     });
 
-    test("an active focus moves to the question that supersedes its question", () => {
+    test("a supersede-question line alone ends the focus on its question", () => {
       // given
       const graph = build(
         Log.memoryLog([
@@ -2603,7 +2602,7 @@ const Graph = (() => {
       // then
       assert.deepEqual(
         open.map((node) => node.id),
-        ["Q3"],
+        ["Q1", "Q3"],
       );
     });
 
