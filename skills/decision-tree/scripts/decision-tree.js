@@ -6052,8 +6052,9 @@ const Xml = (() => {
 
   function hiddenOption(data              )         {
     const note = data.note === undefined ? "" : `<note>${escapeXml(data.note)}</note>`;
+    const links = linkTags(data).join("");
 
-    return `<option state="${data.state}"><id>${data.id}</id><text>${escapeXml(data.text)}</text>${note}</option>`;
+    return `<option state="${data.state}"><id>${data.id}</id><text>${escapeXml(data.text)}</text>${note}${links}</option>`;
   }
 
   function trailLines(steps                         )           {
@@ -6380,6 +6381,47 @@ const Xml = (() => {
         "    <options>",
         "      <option><id>Q1a</id><text>a</text></option>",
         '      <option state="deferred"><id>Q1b</id><text>b</text><note>a &lt; b</note></option>',
+        "    </options>",
+        "    <tags></tags>",
+        "  </question>",
+        "</items>",
+      ]);
+    });
+
+    test("items renders a superseded option after the live ones, linked to its replacement", () => {
+      // given
+      const list               = [
+        {
+          item: {
+            kind: "question",
+            question: {
+              id: "Q1",
+              text: "q",
+              options: [
+                { id: "Q1b", text: "b" },
+                { id: "Q1c", text: "c" },
+              ],
+            },
+          },
+          tags: [],
+          state: "open",
+          hiddenOptions: [{ id: "Q1a", text: "a", state: "frozen", supersededBy: "Q1c" }],
+        },
+      ];
+
+      // when
+      const xml = items(list);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<items>",
+        '  <question state="open">',
+        "    <id>Q1</id>",
+        "    <text>q</text>",
+        "    <options>",
+        "      <option><id>Q1b</id><text>b</text></option>",
+        "      <option><id>Q1c</id><text>c</text></option>",
+        '      <option state="frozen"><id>Q1a</id><text>a</text><superseded-by><id>Q1c</id></superseded-by></option>',
         "    </options>",
         "    <tags></tags>",
         "  </question>",
