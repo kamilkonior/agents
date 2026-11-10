@@ -54,6 +54,8 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
                                      
                   
                                      
+                      
+                        
                 
                         
   
@@ -146,6 +148,7 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
                     
                          
                             
+                          
                            
                             
   
@@ -647,7 +650,9 @@ const Graph = (() => {
 
         case "supersede-option": {
           const old = optionNode(nodes, event.target);
-          old.supersededBy = optionNode(nodes, event.option);
+          const replacement = optionNode(nodes, event.option);
+          old.supersededBy = replacement;
+          replacement.supersedes = old;
           break;
         }
 
@@ -887,6 +892,13 @@ const Graph = (() => {
     ];
   }
 
+  function optionLinks(option            )                                                 {
+    return {
+      ...(option.supersedes === undefined ? {} : { supersedes: option.supersedes.id }),
+      ...(option.supersededBy === undefined ? {} : { supersededBy: option.supersededBy.id }),
+    };
+  }
+
   function questionEntries(graph       , question              )              {
     const selected = liveSelected(graph, question);
     const live = question.options
@@ -895,6 +907,7 @@ const Graph = (() => {
         id: option.id,
         text: option.text,
         ...(selected.includes(option) ? { selected: true          } : {}),
+        ...optionLinks(option),
         children: childEntries(graph, option),
       }));
     const hidden = question.options.flatMap((option)                    => {
@@ -903,7 +916,7 @@ const Graph = (() => {
 
       const children = childEntries(graph, option);
 
-      return [{ id: option.id, text: option.text, state, ...noteOf(graph, option), children }];
+      return [{ id: option.id, text: option.text, state, ...noteOf(graph, option), ...optionLinks(option), children }];
     });
     const options = [...live, ...hidden];
 
@@ -1755,7 +1768,7 @@ const Graph = (() => {
       ]);
     });
 
-    test("the built tree lists a superseded option after the live ones, frozen with what is under it", () => {
+    test("the built tree links a superseded option and its replacement, and lists the frozen one last", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q" },
@@ -1772,11 +1785,12 @@ const Graph = (() => {
       // then
       assert.deepEqual(question.options, [
         { id: "Q1b", text: "b", children: [] },
-        { id: "Q1c", text: "c", children: [] },
+        { id: "Q1c", text: "c", supersedes: "Q1a", children: [] },
         {
           id: "Q1a",
           text: "a",
           state: "frozen",
+          supersededBy: "Q1c",
           children: [{ kind: "question", state: "frozen", id: "Q2", text: "q2", options: [], children: [] }],
         },
       ]);
