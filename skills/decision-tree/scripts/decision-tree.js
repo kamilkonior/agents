@@ -4180,6 +4180,7 @@ const PromoteFollowUp = (() => {
 
     return Log.transaction(log, (staged) => {
       const followUp = AddFollowUp.open(staged, target);
+      const { tags } = Graph.taggedItem(staged, target);
       const question = AddQuestion.run(staged, {
         text: config.text ?? followUp.text,
         origin: followUp.id,
@@ -4187,6 +4188,7 @@ const PromoteFollowUp = (() => {
       });
 
       staged.append({ type: "promote-follow-up", target });
+      if (tags.length > 0) Tag.run(staged, { target: question.id, tag: tags });
 
       return { question, promoted: { id: followUp.id, text: followUp.text } };
     });
@@ -4278,6 +4280,26 @@ const PromoteFollowUp = (() => {
         ...events,
         { type: "add-question", id: "Q1", text: "better", origin: "F1" },
         { type: "promote-follow-up", target: "F1" },
+      ]);
+    });
+
+    test("promoting a tagged follow-up tags the new question after recording the promotion", () => {
+      // given
+      const events          = [
+        { type: "add-follow-up", id: "F1", text: "f" },
+        { type: "tag", target: "F1", tags: ["t", "u"] },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      run(log, { target: "F1" });
+
+      // then
+      assert.deepEqual(log.read(), [
+        ...events,
+        { type: "add-question", id: "Q1", text: "f", origin: "F1" },
+        { type: "promote-follow-up", target: "F1" },
+        { type: "tag", target: "Q1", tags: ["t", "u"] },
       ]);
     });
   }
