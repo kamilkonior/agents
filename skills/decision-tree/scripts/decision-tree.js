@@ -1211,6 +1211,15 @@ const Graph = (() => {
     return node.state === "deferred" || node.state === "not-applicable";
   }
 
+  function unfrozenNode(log     , id        , role                     )                                           {
+    const graph = build(log);
+
+    const node = parentNode(graph.nodes, id);
+    rejectFrozen(graph, node);
+
+    return node;
+  }
+
   function liveNode(log     , id        , role                     )                                           {
     const graph = build(log);
 
@@ -3180,6 +3189,24 @@ const Graph = (() => {
       assert.equal(node.id, "Q1a");
       assert.equal(node.text, "a");
       assert.equal(node.kind === "option" ? node.question.id : undefined, "Q1");
+    });
+
+    test("looking up a superseded question as unfrozen throws frozen", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-question", id: "Q2", text: "q2" },
+        { type: "supersede-question", target: "Q1", question: "Q2" },
+      ]);
+
+      // when
+      const act = () => unfrozenNode(log, "Q1", "origin");
+
+      // then
+      assert.throws(
+        act,
+        (error) => error instanceof DecisionTreeError && error.message === "Q1 is frozen, as it was superseded by Q2",
+      );
     });
 
     test("looking up an unknown id to restore throws not found", () => {
