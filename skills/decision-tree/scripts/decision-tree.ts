@@ -52,7 +52,7 @@ type NodeState = ItemState | "unset";
 
 type TreeEntryOption = OptionData & {
   selected?: true;
-  state?: ExclusionReason;
+  state?: ExclusionReason | "frozen";
   note?: string;
   children: TreeEntry[];
 };
@@ -97,7 +97,7 @@ type TaggedData = {
   tags: string[];
 };
 
-type ExcludedOption = OptionData & { state: ExclusionReason; note?: string };
+type ExcludedOption = OptionData & { state: ExclusionReason | "frozen"; note?: string };
 
 type ListedItem = TaggedData & {
   state: ItemState;
@@ -870,14 +870,18 @@ const Graph = (() => {
   function questionEntries(graph: Graph, question: QuestionNode): TreeEntry[] {
     const selected = liveSelected(graph, question);
     const live = question.options
-      .filter((option) => !graph.exclusions.has(option.id))
+      .filter((option) => !graph.exclusions.has(option.id) && option.supersededBy === undefined)
       .map((option) => ({
         id: option.id,
         text: option.text,
         ...(selected.includes(option) ? { selected: true as const } : {}),
         children: childEntries(graph, option),
       }));
-    const excluded = question.options.flatMap((option) => {
+    const hidden = question.options.flatMap((option): TreeEntryOption[] => {
+      if (option.supersededBy !== undefined) {
+        return [{ id: option.id, text: option.text, state: "frozen", children: childEntries(graph, option) }];
+      }
+
       const exclusion = graph.exclusions.get(option.id);
       if (exclusion === undefined) return [];
 
@@ -885,7 +889,7 @@ const Graph = (() => {
 
       return [{ id: option.id, text: option.text, state: exclusion.reason, ...noteOf(graph, option), children }];
     });
-    const options = [...live, ...excluded];
+    const options = [...live, ...hidden];
 
     const superseded = question.supersedes === undefined ? [] : questionEntries(graph, question.supersedes);
 
@@ -1732,6 +1736,33 @@ const Graph = (() => {
       assert.deepEqual(question.options, [
         { id: "Q1b", text: "b", children: [] },
         { id: "Q1a", text: "a", state: "deferred", note: "why", children: [] },
+      ]);
+    });
+
+    test("the built tree lists a superseded option after the live ones, frozen with what is under it", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+        { type: "add-option", id: "Q1c", text: "c", origin: "Q1" },
+        { type: "supersede-option", target: "Q1a", option: "Q1c" },
+      ]);
+
+      // when
+      const question = firstQuestionEntry(log);
+
+      // then
+      assert.deepEqual(question.options, [
+        { id: "Q1b", text: "b", children: [] },
+        { id: "Q1c", text: "c", children: [] },
+        {
+          id: "Q1a",
+          text: "a",
+          state: "frozen",
+          children: [{ kind: "question", state: "frozen", id: "Q2", text: "q2", options: [], children: [] }],
+        },
       ]);
     });
 
