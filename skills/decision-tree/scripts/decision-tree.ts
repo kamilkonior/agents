@@ -7968,6 +7968,12 @@ const Cli = (() => {
         break;
       }
 
+      case "clear-selection": {
+        const config = readModeConfig(ClearSelection.options);
+        console.log(Xml.beforeAfter("clear-selection", ClearSelection.run(log, config)));
+        break;
+      }
+
       case "add-follow-up": {
         const config = readModeConfig(AddFollowUp.options);
         console.log(Xml.followUp(AddFollowUp.run(log, config)));
