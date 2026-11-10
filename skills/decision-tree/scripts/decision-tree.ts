@@ -6189,11 +6189,21 @@ const Xml = (() => {
     return note === undefined ? [] : [`  <note>${escapeXml(note)}</note>`];
   }
 
+  function linkTags(links: { supersedes?: string; supersededBy?: string }): string[] {
+    return [
+      ...(links.supersedes === undefined ? [] : [`<supersedes><id>${links.supersedes}</id></supersedes>`]),
+      ...(links.supersededBy === undefined ? [] : [`<superseded-by><id>${links.supersededBy}</id></superseded-by>`]),
+    ];
+  }
+
   function treeOptionLines(entry: TreeEntryOption): string[] {
-    const { state, note } = entry;
+    const { id, text, state, note } = entry;
 
     if (entry.children.length === 0) {
-      return [state === undefined ? markedOption(entry, entry.selected === true) : hiddenOption({ ...entry, state })];
+      const line =
+        state === undefined ? markedOption(entry, entry.selected === true) : hiddenOption({ id, text, state, note });
+
+      return [line.replace("</option>", `${linkTags(entry).join("")}</option>`)];
     }
 
     const marker = state !== undefined ? ` state="${state}"` : entry.selected === true ? ' selected="true"' : "";
@@ -6203,6 +6213,7 @@ const Xml = (() => {
       `  <id>${entry.id}</id>`,
       `  <text>${escapeXml(entry.text)}</text>`,
       ...noteLines(note),
+      ...linkTags(entry).map((line) => `  ${line}`),
       ...entry.children.flatMap(treeLines).map((line) => `  ${line}`),
       "</option>",
     ];
@@ -6509,6 +6520,84 @@ const Xml = (() => {
         "        </question>",
         "      </option>",
         '      <option state="not-applicable"><id>Q1b</id><text>b</text></option>',
+        "    </options>",
+        "  </question>",
+        "</tree>",
+      ]);
+    });
+
+    test("the built tree renders the links between a superseded option and its replacement", () => {
+      // given
+      const child: TreeEntry = { kind: "question", state: "frozen", id: "Q2", text: "q2", options: [], children: [] };
+      const entries: TreeEntry[] = [
+        {
+          kind: "question",
+          state: "open",
+          id: "Q1",
+          text: "q",
+          options: [
+            { id: "Q1c", text: "c", supersedes: "Q1a", children: [] },
+            { id: "Q1a", text: "a", state: "frozen", supersededBy: "Q1c", children: [child] },
+          ],
+          children: [],
+        },
+      ];
+
+      // when
+      const xml = tree(entries);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<tree>",
+        '  <question state="open">',
+        "    <id>Q1</id>",
+        "    <text>q</text>",
+        "    <options>",
+        "      <option><id>Q1c</id><text>c</text><supersedes><id>Q1a</id></supersedes></option>",
+        '      <option state="frozen">',
+        "        <id>Q1a</id>",
+        "        <text>a</text>",
+        "        <superseded-by><id>Q1c</id></superseded-by>",
+        '        <question state="frozen">',
+        "          <id>Q2</id>",
+        "          <text>q2</text>",
+        "          <options></options>",
+        "        </question>",
+        "      </option>",
+        "    </options>",
+        "  </question>",
+        "</tree>",
+      ]);
+    });
+
+    test("the built tree renders the link on a superseded option with nothing under it", () => {
+      // given
+      const entries: TreeEntry[] = [
+        {
+          kind: "question",
+          state: "open",
+          id: "Q1",
+          text: "q",
+          options: [
+            { id: "Q1b", text: "b", supersedes: "Q1a", children: [] },
+            { id: "Q1a", text: "a", state: "frozen", supersededBy: "Q1b", children: [] },
+          ],
+          children: [],
+        },
+      ];
+
+      // when
+      const xml = tree(entries);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<tree>",
+        '  <question state="open">',
+        "    <id>Q1</id>",
+        "    <text>q</text>",
+        "    <options>",
+        "      <option><id>Q1b</id><text>b</text><supersedes><id>Q1a</id></supersedes></option>",
+        '      <option state="frozen"><id>Q1a</id><text>a</text><superseded-by><id>Q1b</id></superseded-by></option>',
         "    </options>",
         "  </question>",
         "</tree>",
