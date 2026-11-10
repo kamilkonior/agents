@@ -4130,7 +4130,7 @@ const AddFollowUp = (() => {
   function add(log     , text        , origin         )         {
     if (!text) throw new DecisionTreeError("follow-up requires a text");
 
-    if (origin !== undefined) Graph.liveNode(log, origin, "origin");
+    if (origin !== undefined) Graph.unfrozenNode(log, origin, "origin");
 
     const id = Log.nextId(log, "add-follow-up", "F");
     const event        = { type: "add-follow-up", id, text };
@@ -4170,23 +4170,6 @@ const AddFollowUp = (() => {
       assert.deepEqual(log.read(), []);
     });
 
-    test("follow-up under an excluded follow-up throws and appends nothing", () => {
-      // given
-      const events          = [
-        { type: "add-question", id: "Q1", text: "q" },
-        { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
-        { type: "exclude", target: "F1", reason: "not-applicable" },
-      ];
-      const log = Log.memoryLog([...events]);
-
-      // when
-      const act = () => add(log, "f2", "F1");
-
-      // then
-      assert.throws(act, DecisionTreeError);
-      assert.deepEqual(log.read(), events);
-    });
-
     test("follow-up under an option is stored with its origin", () => {
       // given
       const events          = [
@@ -4211,6 +4194,26 @@ const AddFollowUp = (() => {
       const events          = [
         { type: "add-question", id: "Q1", text: "q" },
         { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const id = add(log, "f2", "F1");
+
+      // then
+      assert.equal(id, "F2");
+      assert.deepEqual(log.read(), [
+        ...events,
+        { type: "add-follow-up", id: "F2", text: "f2", origin: "F1" },
+      ]);
+    });
+
+    test("follow-up under an excluded follow-up is stored with its origin", () => {
+      // given
+      const events          = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-follow-up", id: "F1", text: "f1", origin: "Q1" },
+        { type: "exclude", target: "F1", reason: "not-applicable" },
       ];
       const log = Log.memoryLog([...events]);
 
