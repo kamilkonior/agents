@@ -5227,7 +5227,7 @@ const Tag = (() => {
     if (!tags) throw new DecisionTreeError(`${op} requires --tag`);
     if (tags.includes("")) throw new DecisionTreeError(`${op} --tag requires a text`);
 
-    const node = Graph.liveNode(log, target, "target");
+    const node = Graph.unfrozenNode(log, target, "target");
     if (node.kind === "option") throw new DecisionTreeError(`target is not a question or follow-up: ${target}`);
 
     return { target, tags };
@@ -5288,6 +5288,25 @@ const Tag = (() => {
         tags: ["a", "b"],
       });
       assert.deepEqual(log.read(), [...events, { type: "tag", target: "Q1", tags: ["a", "b"] }]);
+    });
+
+    test("tagging an excluded question records the tags and returns the item with them", () => {
+      // given
+      const events          = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "exclude", target: "Q1", reason: "deferred" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const tagged = run(log, { target: "Q1", tag: ["legal"] });
+
+      // then
+      assert.deepEqual(tagged, {
+        item: { kind: "question", question: { id: "Q1", text: "q", options: [] } },
+        tags: ["legal"],
+      });
+      assert.deepEqual(log.read(), [...events, { type: "tag", target: "Q1", tags: ["legal"] }]);
     });
   }
 
