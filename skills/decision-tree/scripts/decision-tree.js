@@ -97,7 +97,7 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
                  
   
 
-                                                                                        
+                                                                                      
 
                                 
                    
@@ -106,7 +106,7 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
                 
                     
                       
-                                     
+                                 
   
 
                                                                       
@@ -1016,8 +1016,8 @@ const Graph = (() => {
     throw new DecisionTreeError(`${node.id} is off-path, hidden by ${current.hiddenBy}`);
   }
 
-  function excludedOptions(graph       , question              )                   {
-    return question.options.flatMap((option)                   => {
+  function hiddenOptions(graph       , question              )                 {
+    return question.options.flatMap((option)                 => {
       if (option.supersededBy !== undefined) return [{ id: option.id, text: option.text, state: "frozen" }];
 
       const exclusion = graph.exclusions.get(option.id);
@@ -1058,10 +1058,10 @@ const Graph = (() => {
       const note = graph.exclusions.get(node.id)?.note;
       const noteData = note === undefined ? {} : { note };
       const causeData = node.hiddenBy === undefined ? {} : { hiddenBy: node.hiddenBy };
-      const excluded = node.kind === "question" ? excludedOptions(graph, node) : [];
-      const excludedData = excluded.length === 0 ? {} : { excludedOptions: excluded };
+      const hidden = node.kind === "question" ? hiddenOptions(graph, node) : [];
+      const hiddenData = hidden.length === 0 ? {} : { hiddenOptions: hidden };
 
-      return [{ ...taggedData(graph, node), state, ...selectedData, ...rationaleData, ...noteData, ...causeData, ...excludedData }];
+      return [{ ...taggedData(graph, node), state, ...selectedData, ...rationaleData, ...noteData, ...causeData, ...hiddenData }];
     });
   }
 
@@ -4811,7 +4811,7 @@ const Items = (() => {
       const items = run(log, {});
 
       // then
-      assert.deepEqual(items[0].excludedOptions, [{ id: "Q1b", text: "b", state: "deferred", note: "why" }]);
+      assert.deepEqual(items[0].hiddenOptions, [{ id: "Q1b", text: "b", state: "deferred", note: "why" }]);
     });
 
     test("a question carries its superseded option as frozen", () => {
@@ -4828,7 +4828,7 @@ const Items = (() => {
       const items = run(log, {});
 
       // then
-      assert.deepEqual(items[0].excludedOptions, [{ id: "Q1a", text: "a", state: "frozen" }]);
+      assert.deepEqual(items[0].hiddenOptions, [{ id: "Q1a", text: "a", state: "frozen" }]);
     });
 
     test("a trail without a target throws", () => {
@@ -5953,7 +5953,7 @@ const Xml = (() => {
     return selected ? option(data).replace("<option>", '<option selected="true">') : option(data);
   }
 
-  function excludedOption(data                )         {
+  function hiddenOption(data              )         {
     const note = data.note === undefined ? "" : `<note>${escapeXml(data.note)}</note>`;
 
     return `<option state="${data.state}"><id>${data.id}</id><text>${escapeXml(data.text)}</text>${note}</option>`;
@@ -6096,7 +6096,7 @@ const Xml = (() => {
     const { state, note } = entry;
 
     if (entry.children.length === 0) {
-      return [state === undefined ? markedOption(entry, entry.selected === true) : excludedOption({ ...entry, state })];
+      return [state === undefined ? markedOption(entry, entry.selected === true) : hiddenOption({ ...entry, state })];
     }
 
     const marker = state !== undefined ? ` state="${state}"` : entry.selected === true ? ' selected="true"' : "";
@@ -6255,7 +6255,7 @@ const Xml = (() => {
           item: { kind: "question", question: { id: "Q1", text: "q", options: [{ id: "Q1a", text: "a" }] } },
           tags: [],
           state: "open",
-          excludedOptions: [{ id: "Q1b", text: "b", state: "deferred", note: "a < b" }],
+          hiddenOptions: [{ id: "Q1b", text: "b", state: "deferred", note: "a < b" }],
         },
       ];
 
@@ -7211,7 +7211,7 @@ const Xml = (() => {
       const selectedIds = (data.selected ?? []).map((each) => each.id);
       const optionLines = [
         ...options.map((each) => markedOption(each, selectedIds.includes(each.id))),
-        ...(data.excludedOptions ?? []).map(excludedOption),
+        ...(data.hiddenOptions ?? []).map(hiddenOption),
       ].map((line) => `    ${line}`);
       const optionsBlock = optionLines.length === 0 ? optionsLines([]) : ["  <options>", ...optionLines, "  </options>"];
 
