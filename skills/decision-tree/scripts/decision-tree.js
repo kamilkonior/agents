@@ -4299,7 +4299,10 @@ const SupersedeOption = (() => {
     text: { type: "string" },
   }         ;
 
-  function run(log     , config                                    )                         {
+  function run(
+    log     ,
+    config                                    ,
+  )                                                      {
     const { target, text } = config;
     if (!target) throw new DecisionTreeError("supersede-option requires --target");
     if (!text) throw new DecisionTreeError("supersede-option requires --text");
@@ -4307,12 +4310,17 @@ const SupersedeOption = (() => {
     const old = Graph.liveNode(log, target, "target");
     if (old.kind !== "option") throw new DecisionTreeError(`target is not an option: ${target}`);
 
+    const superseded = Graph.buildTree(log, old.question.id)
+      .flatMap((entry) => (entry.kind === "question" ? entry.options : []))
+      .find((option) => option.id === target);
+    if (superseded === undefined) throw new Error(`tree of ${old.question.id} has no option ${target}`);
+
     return Log.transaction(log, (staged) => {
       const option = AddOption.run(staged, { text, origin: old.question.id });
 
       staged.append({ type: "supersede-option", target, option: option.id });
 
-      return { option };
+      return { option, superseded };
     });
   }
 
@@ -4393,6 +4401,28 @@ const SupersedeOption = (() => {
         { type: "add-option", id: "Q1c", text: "c", origin: "Q1" },
         { type: "supersede-option", target: "Q1a", option: "Q1c" },
       ]);
+    });
+
+    test("superseding an option returns it as it stood, selected and with what is under it", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+        { type: "select-option", targets: ["Q1a"] },
+      ]);
+
+      // when
+      const supersede = run(log, { target: "Q1a", text: "c" });
+
+      // then
+      assert.deepEqual(supersede.superseded, {
+        id: "Q1a",
+        text: "a",
+        selected: true,
+        children: [{ kind: "question", state: "open", id: "Q2", text: "q2", options: [], children: [] }],
+      });
     });
   }
 
