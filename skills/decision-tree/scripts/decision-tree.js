@@ -3217,6 +3217,22 @@ const Graph = (() => {
       assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "origin not found: Q9");
     });
 
+    test("looking up an excluded item as unfrozen returns its node", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "exclude", target: "Q1", reason: "deferred" },
+      ]);
+
+      // when
+      const node = unfrozenNode(log, "Q1", "origin");
+
+      // then
+      assert.equal(node.kind, "question");
+      assert.equal(node.id, "Q1");
+      assert.equal(node.state, "deferred");
+    });
+
     test("looking up an unknown id to restore throws not found", () => {
       // given
       const log = Log.memoryLog();
