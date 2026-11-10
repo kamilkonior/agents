@@ -6239,6 +6239,7 @@ const Xml = (() => {
       `  <id>${entry.id}</id>`,
       `  <text>${escapeXml(entry.text)}</text>`,
       ...noteLines(entry.note),
+      ...linkTags(entry).map((line) => `  ${line}`),
       ...optionsBlock,
       ...(entry.rationale === undefined ? [] : [`  <rationale>${escapeXml(entry.rationale)}</rationale>`]),
       ...entry.children.flatMap(treeLines).map((line) => `  ${line}`),
@@ -6599,6 +6600,35 @@ const Xml = (() => {
         "      <option><id>Q1b</id><text>b</text><supersedes><id>Q1a</id></supersedes></option>",
         '      <option state="frozen"><id>Q1a</id><text>a</text><superseded-by><id>Q1b</id></superseded-by></option>',
         "    </options>",
+        "  </question>",
+        "</tree>",
+      ]);
+    });
+
+    test("the built tree renders the links between a superseded question and its replacement", () => {
+      // given
+      const entries: TreeEntry[] = [
+        { kind: "question", state: "open", id: "Q2", text: "new", supersedes: "Q1", options: [], children: [] },
+        { kind: "question", state: "frozen", id: "Q1", text: "old", supersededBy: "Q2", options: [], children: [] },
+      ];
+
+      // when
+      const xml = tree(entries);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<tree>",
+        '  <question state="open">',
+        "    <id>Q2</id>",
+        "    <text>new</text>",
+        "    <supersedes><id>Q1</id></supersedes>",
+        "    <options></options>",
+        "  </question>",
+        '  <question state="frozen">',
+        "    <id>Q1</id>",
+        "    <text>old</text>",
+        "    <superseded-by><id>Q2</id></superseded-by>",
+        "    <options></options>",
         "  </question>",
         "</tree>",
       ]);
