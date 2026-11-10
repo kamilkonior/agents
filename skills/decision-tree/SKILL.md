@@ -74,12 +74,13 @@ New work under an answer comes before later roots. An open question stays at the
 | `add-option --origin QID --text T` | Adds an option to a question. |
 | `add-follow-up --text T [--origin ID]` | Records a follow-up. |
 | `select-option --target OID… [--rationale R]` | Makes these options, all of one question, its whole selection, replacing any earlier one and its rationale. To add an option to a selection, pass them all again. `R` records why. |
+| `clear-selection --target QID` | Withdraws a question's whole selection and its rationale. The question is open again with every option still on offer. What hung under the answer goes off the path, and returns if that option is selected again. Fails if nothing is selected. |
 | `promote-follow-up --target FID [--text T] [--option A]…` | Creates a question under the follow-up, worded as `T` or as the follow-up. The follow-up stays as history under its own id. |
 | `supersede-question --target QID --text T [--option A]…` | Puts a new question in the old one's place, with its tags and only the options given. The old question and everything under it are frozen, and nothing carries over. |
 | `supersede-option --target OID --text T` | Adds a new option to the same question, with the next free letter, and freezes the old option and everything under it. Nothing carries over. If the old option was selected, the question's whole selection is dropped and the question is open again. |
 | `exclude --target ID --reason deferred\|not-applicable [--note N]` | Takes an item and everything under it out of the walk. Nothing under it can change until it is restored. Excluding every selected option reopens the question. |
-| `restore --target ID` | Brings back the item the exclusion was made on, with everything under it. A selection returns unless a newer one replaced it. |
-| `focus --target ID` | Puts an item with something open at the head of `next`. Only the latest focus counts. It ends when nothing is open inside it, or its item is excluded or goes off the path, and it never comes back. Superseding moves it to the replacement. |
+| `restore --target ID` | Brings back the item the exclusion was made on, with everything under it. A selection returns unless a newer one replaced it or it was cleared. |
+| `focus --target ID` | Puts an item with something open at the head of `next`. Only the latest focus counts. It ends when nothing is open inside it, or its item is excluded or goes off the path, and it never comes back. Superseding the focused question moves it to the replacement. |
 | `tag` / `untag --target ID --tag T…` | Adds or removes tags on a question or follow-up. |
 
 ## Queries
@@ -98,10 +99,11 @@ New work under an answer comes before later roots. An open question stays at the
 | Situation | What works |
 |---|---|
 | Not ready to decide | `exclude --reason deferred` with the blocker as `--note` frees the walk, and `restore` brings it back once the blocker clears. Everything under it waits with it. Items waiting on the same person can share a tag, added before the exclude, so `--query items --tag T --state deferred` lists them together. |
-| The premise of a question changed | Patching answers leaves decisions standing on the old premise, while `supersede-question` with corrected wording freezes them. Superseding can't be undone, and `--query tree --target QID --state all` shows exactly what it would freeze. The normal ops rebuild what still holds from `<superseded>`, including open items and viable options. |
+| The premise of a question changed | Patching answers leaves decisions standing on the old premise, while `supersede-question` with corrected wording freezes them. Superseding can't be undone, and `--query tree --target QID --state all` shows exactly what it would freeze. The normal ops rebuild what still holds from `<before>`, including open items and viable options. |
 | Stopping with items still open | A pause needs nothing. To close the tree, `exclude --reason deferred` each open item, top-level items first. |
 | An option no longer applies | `exclude` on the option, with `--reason not-applicable`, removes just that answer. The other options keep their letters. |
-| An option's meaning changed | Rewording isn't possible, and `exclude` would leave what was decided under the old wording restorable. `supersede-option` with the corrected wording freezes the old option and what hung under it. It can't be undone, and the normal ops rebuild what still holds from `<superseded>`. |
+| An option's meaning changed | Rewording isn't possible, and `exclude` would leave what was decided under the old wording restorable. `supersede-option` with the corrected wording freezes the old option and what hung under it. It can't be undone, and the normal ops rebuild what still holds from `<before>`. |
+| An answer is in doubt | `clear-selection` reopens the question without removing or replacing anything. `exclude` on the chosen option also reopens it, but takes that option off the offer. |
 
 ## Output
 
@@ -137,9 +139,8 @@ Position in the XML carries meaning:
 ```
 
 - **`next`:** one `<question>` or `<follow-up>`, and a follow-up has no options. `--trail` puts the path to it in `<trail>`.
-- **`status`:** an item inside a decided option goes if that answer changes, and one beside `<decided>` stays. Off-path and not-applicable items are left out, and a deferred item shows only its note.
-- **`tree`:** the chosen option has `selected="true"` and holds its children, `<rationale>` follows `<options>`, and the question's own children come after that. A promoted follow-up appears as a step, and a superseded question follows its replacement. An excluded or superseded option comes after the live ones, with its `state`.
-- **`items`:** `<rationale>` says why the options were selected, `<note>` why the item was excluded, and `<hidden-by>` names what hides it.
+- **`status`:** an item inside a decided option goes if that answer changes, and one beside `<decided>` stays. Off-path, not-applicable and frozen items are left out, and a deferred item shows only its note.
+- **`tree`:** the chosen option has `selected="true"` and holds its children, `<rationale>` follows `<options>`, and the question's own children come after that. A promoted follow-up appears as a step, and a superseded question follows its replacement. An excluded or superseded option comes after the live ones, with its `state`. A replacement carries `<supersedes>` and what it replaced carries `<superseded-by>`, each with the other's id.
+- **`items`:** `<rationale>` says why the options were selected, `<note>` why the item was excluded, and `<hidden-by>` names what hides it. `<supersedes>` and `<superseded-by>` appear on a listed question, and `<superseded-by>` on a hidden option.
 - **`promote-follow-up`:** `<promote>` holds the new question and, in `<promoted>`, the follow-up it came from.
-- **`supersede-question`:** `<supersede>` holds the new question and, in `<superseded>`, the old subtree in `tree` shape with every state.
-- **`supersede-option`:** `<supersede>` holds the new option and, in `<superseded>`, the old option as it stood, with what was under it. `selected="true"` on it means the question's selection was dropped.
+- **`supersede-question`, `supersede-option`, `clear-selection`:** `<before>` holds the question as it stood and `<after>` as it is now, both in `tree` shape with every state.
