@@ -3713,13 +3713,13 @@ const AddOption = (() => {
     return id;
   }
 
-  function run(log     , config                                    )             {
+  function run(log     , config                                    )                         {
     if (!config.text) throw new DecisionTreeError("add-option requires --text");
     if (!config.origin) throw new DecisionTreeError("add-option requires --origin");
 
     const id = add(log, config.text, config.origin);
 
-    return { id, text: config.text };
+    return { id, text: config.text, ...Graph.itemState(log, id) };
   }
 
   function tests() {
@@ -3845,6 +3845,20 @@ const AddOption = (() => {
         ...events,
         { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
       ]);
+    });
+
+    test("an option added to an excluded question returns its state and the question that hides it", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "exclude", target: "Q1", reason: "deferred" },
+      ]);
+
+      // when
+      const option = run(log, { text: "a", origin: "Q1" });
+
+      // then
+      assert.deepEqual(option, { id: "Q1a", text: "a", state: "deferred", hiddenBy: "Q1" });
     });
   }
 
