@@ -988,6 +988,8 @@ const Graph = (() => {
   }
 
   function liveSelected(graph: Graph, node: QuestionNode): OptionNode[] {
+    if (node.selected.some((option) => option.supersededBy !== undefined)) return [];
+
     return node.options.filter((option) => node.selected.includes(option) && !graph.exclusions.has(option.id));
   }
 
@@ -1293,6 +1295,26 @@ const Graph = (() => {
         [superseded.state, superseded.hiddenBy, child.state, child.hiddenBy, replacement.state],
         ["frozen", undefined, "frozen", "Q1a", "open"],
       );
+    });
+
+    test("superseding a selected option reopens its question", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a", "Q1b"], rationale: "both" },
+        { type: "add-option", id: "Q1c", text: "c", origin: "Q1" },
+        { type: "supersede-option", target: "Q1a", option: "Q1c" },
+      ]);
+
+      // when
+      const graph = build(log);
+
+      // then
+      const question = questionNode(graph.nodes, "Q1");
+      const stillSelected = optionNode(graph.nodes, "Q1b");
+      assert.deepEqual([question.state, stillSelected.state], ["open", "open"]);
     });
 
     test("a question under an open follow-up is off-path, hidden by the follow-up", () => {
