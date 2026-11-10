@@ -112,6 +112,8 @@ type ListedItem = TaggedData & {
 type PromoteData = { question: QuestionData; promoted: FollowUpData };
 type SupersedeData = { question: QuestionData; superseded: TreeEntry[] };
 
+type SupersedeOptionData = { option: OptionData; superseded: TreeEntryOption };
+
 type TrailStep = { kind: "question" | "option" | "follow-up"; id: string; text: string };
 
 type NextData = (
@@ -4299,10 +4301,7 @@ const SupersedeOption = (() => {
     text: { type: "string" },
   } as const;
 
-  function run(
-    log: Log,
-    config: { target?: string; text?: string },
-  ): { option: OptionData; superseded: TreeEntryOption } {
+  function run(log: Log, config: { target?: string; text?: string }): SupersedeOptionData {
     const { target, text } = config;
     if (!target) throw new DecisionTreeError("supersede-option requires --target");
     if (!text) throw new DecisionTreeError("supersede-option requires --text");
@@ -6166,6 +6165,19 @@ const Xml = (() => {
     );
   }
 
+  function supersedeOption(data: SupersedeOptionData): string {
+    const superseded = treeOptionLines(data.superseded).map((line) => `    ${line}`);
+
+    return [
+      "<supersede>",
+      `  ${option(data.option)}`,
+      "  <superseded>",
+      ...superseded,
+      "  </superseded>",
+      "</supersede>",
+    ].join("\n");
+  }
+
   function tests() {
     test("items renders a trail after the tags, escaped and in order", () => {
       // given
@@ -6973,6 +6985,40 @@ const Xml = (() => {
       ]);
     });
 
+    test("supersede of an option renders the new option, then the superseded one with what is under it", () => {
+      // given
+      const data: SupersedeOptionData = {
+        option: { id: "Q1c", text: "c" },
+        superseded: {
+          id: "Q1a",
+          text: "a",
+          selected: true,
+          children: [{ kind: "question", state: "open", id: "Q2", text: "q2", options: [], children: [] }],
+        },
+      };
+
+      // when
+      const xml = supersedeOption(data);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<supersede>",
+        "  <option><id>Q1c</id><text>c</text></option>",
+        "  <superseded>",
+        '    <option selected="true">',
+        "      <id>Q1a</id>",
+        "      <text>a</text>",
+        '      <question state="open">',
+        "        <id>Q2</id>",
+        "        <text>q2</text>",
+        "        <options></options>",
+        "      </question>",
+        "    </option>",
+        "  </superseded>",
+        "</supersede>",
+      ]);
+    });
+
     test("tagged items render multi-line with their tags last, escaped", () => {
       // given
       const list: ListedItem[] = [
@@ -7207,7 +7253,22 @@ const Xml = (() => {
     return ["<items>", ...list.flatMap(taggedLines).map((line) => `  ${line}`), "</items>"].join("\n");
   }
 
-  return { option, question, selection, followUp, item, next, tree, status, promote, supersede, taggedItem, items, tests };
+  return {
+    option,
+    question,
+    selection,
+    followUp,
+    item,
+    next,
+    tree,
+    status,
+    promote,
+    supersede,
+    supersedeOption,
+    taggedItem,
+    items,
+    tests,
+  };
 })();
 
 const Cli = (() => {
