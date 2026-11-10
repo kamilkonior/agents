@@ -1015,7 +1015,9 @@ const Graph = (() => {
   }
 
   function excludedOptions(graph: Graph, question: QuestionNode): ExcludedOption[] {
-    return question.options.flatMap((option) => {
+    return question.options.flatMap((option): ExcludedOption[] => {
+      if (option.supersededBy !== undefined) return [{ id: option.id, text: option.text, state: "frozen" }];
+
       const exclusion = graph.exclusions.get(option.id);
       if (exclusion === undefined) return [];
 
@@ -4781,6 +4783,23 @@ const Items = (() => {
 
       // then
       assert.deepEqual(items[0].excludedOptions, [{ id: "Q1b", text: "b", state: "deferred", note: "why" }]);
+    });
+
+    test("a question carries its superseded option as frozen", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "add-option", id: "Q1c", text: "c", origin: "Q1" },
+        { type: "supersede-option", target: "Q1a", option: "Q1c" },
+      ]);
+
+      // when
+      const items = run(log, {});
+
+      // then
+      assert.deepEqual(items[0].excludedOptions, [{ id: "Q1a", text: "a", state: "frozen" }]);
     });
 
     test("a trail without a target throws", () => {
