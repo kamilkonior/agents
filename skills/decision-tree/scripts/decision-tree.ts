@@ -505,9 +505,19 @@ const Graph = (() => {
     );
   }
 
+  function optionHiding(graph: Graph, option: OptionNode): "frozen" | ExclusionReason | undefined {
+    if (option.supersededBy !== undefined) return "frozen";
+
+    return graph.exclusions.get(option.id)?.reason;
+  }
+
+  function isLiveOption(graph: Graph, option: OptionNode): boolean {
+    return optionHiding(graph, option) === undefined;
+  }
+
   function liveOptions(graph: Graph, question: QuestionNode): OptionData[] {
     return question.options
-      .filter((option) => !graph.exclusions.has(option.id) && option.supersededBy === undefined)
+      .filter((option) => isLiveOption(graph, option))
       .map((option) => ({ id: option.id, text: option.text }));
   }
 
@@ -872,7 +882,7 @@ const Graph = (() => {
   function questionEntries(graph: Graph, question: QuestionNode): TreeEntry[] {
     const selected = liveSelected(graph, question);
     const live = question.options
-      .filter((option) => !graph.exclusions.has(option.id) && option.supersededBy === undefined)
+      .filter((option) => isLiveOption(graph, option))
       .map((option) => ({
         id: option.id,
         text: option.text,
@@ -880,16 +890,12 @@ const Graph = (() => {
         children: childEntries(graph, option),
       }));
     const hidden = question.options.flatMap((option): TreeEntryOption[] => {
-      if (option.supersededBy !== undefined) {
-        return [{ id: option.id, text: option.text, state: "frozen", children: childEntries(graph, option) }];
-      }
-
-      const exclusion = graph.exclusions.get(option.id);
-      if (exclusion === undefined) return [];
+      const state = optionHiding(graph, option);
+      if (state === undefined) return [];
 
       const children = childEntries(graph, option);
 
-      return [{ id: option.id, text: option.text, state: exclusion.reason, ...noteOf(graph, option), children }];
+      return [{ id: option.id, text: option.text, state, ...noteOf(graph, option), children }];
     });
     const options = [...live, ...hidden];
 
@@ -1018,12 +1024,10 @@ const Graph = (() => {
 
   function hiddenOptions(graph: Graph, question: QuestionNode): HiddenOption[] {
     return question.options.flatMap((option): HiddenOption[] => {
-      if (option.supersededBy !== undefined) return [{ id: option.id, text: option.text, state: "frozen" }];
+      const state = optionHiding(graph, option);
+      if (state === undefined) return [];
 
-      const exclusion = graph.exclusions.get(option.id);
-      if (exclusion === undefined) return [];
-
-      return [{ id: option.id, text: option.text, state: exclusion.reason, ...noteOf(graph, option) }];
+      return [{ id: option.id, text: option.text, state, ...noteOf(graph, option) }];
     });
   }
 
