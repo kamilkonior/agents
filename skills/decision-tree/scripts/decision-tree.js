@@ -1317,6 +1317,26 @@ const Graph = (() => {
       assert.deepEqual([question.state, stillSelected.state], ["open", "open"]);
     });
 
+    test("superseding an unselected option keeps its question's selection", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"], rationale: "why" },
+        { type: "add-option", id: "Q1c", text: "c", origin: "Q1" },
+        { type: "supersede-option", target: "Q1b", option: "Q1c" },
+      ]);
+
+      // when
+      const graph = build(log);
+
+      // then
+      const question = questionNode(graph.nodes, "Q1");
+      const selected = optionNode(graph.nodes, "Q1a");
+      assert.deepEqual([question.state, selected.state], ["settled", "settled"]);
+    });
+
     test("a question under an open follow-up is off-path, hidden by the follow-up", () => {
       // given
       const log = Log.memoryLog([
