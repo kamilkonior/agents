@@ -1128,6 +1128,10 @@ const Graph = (() => {
     return node.hiddenBy === undefined ? { state } : { state, hiddenBy: node.hiddenBy };
   }
 
+  function itemState(log: Log, id: string): StateData {
+    return stateData(parentNode(build(log).nodes, id));
+  }
+
   function taggedData(graph: Graph, node: QuestionNode | FollowUpNode): TaggedData & StateData {
     const tags = [...(graph.tags.get(node.id) ?? [])];
 
@@ -3451,6 +3455,7 @@ const Graph = (() => {
     liveNode,
     excludedNode,
     itemData,
+    itemState,
     taggedItem,
     listed,
     tests,
@@ -4213,12 +4218,12 @@ const AddFollowUp = (() => {
     return id;
   }
 
-  function run(log: Log, config: { text?: string; origin?: string }): FollowUpData {
+  function run(log: Log, config: { text?: string; origin?: string }): FollowUpData & StateData {
     if (!config.text) throw new DecisionTreeError("add-follow-up requires --text");
 
     const id = add(log, config.text, config.origin);
 
-    return { id, text: config.text };
+    return { id, text: config.text, ...Graph.itemState(log, id) };
   }
 
   function open(log: Log, id: string): FollowUpNode {
@@ -4310,6 +4315,22 @@ const AddFollowUp = (() => {
       // then
       assert.equal(id, "F1");
       assert.deepEqual(log.read(), [{ type: "add-follow-up", id: "F1", text: "f" }]);
+    });
+
+    test("a follow-up added under an unselected option returns off-path and the option that hides it", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+      ]);
+
+      // when
+      const followUp = run(log, { text: "f", origin: "Q1b" });
+
+      // then
+      assert.deepEqual(followUp, { id: "F1", text: "f", state: "off-path", hiddenBy: "Q1b" });
     });
 
     test("an excluded follow-up is not open", () => {
