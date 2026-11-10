@@ -67,6 +67,8 @@ type TreeEntry =
       id: string;
       text: string;
       note?: string;
+      supersedes?: string;
+      supersededBy?: string;
       options: TreeEntryOption[];
       rationale?: string;
       children: TreeEntry[];
@@ -892,10 +894,10 @@ const Graph = (() => {
     ];
   }
 
-  function optionLinks(option: OptionNode): { supersedes?: string; supersededBy?: string } {
+  function supersedeLinks(node: QuestionNode | OptionNode): { supersedes?: string; supersededBy?: string } {
     return {
-      ...(option.supersedes === undefined ? {} : { supersedes: option.supersedes.id }),
-      ...(option.supersededBy === undefined ? {} : { supersededBy: option.supersededBy.id }),
+      ...(node.supersedes === undefined ? {} : { supersedes: node.supersedes.id }),
+      ...(node.supersededBy === undefined ? {} : { supersededBy: node.supersededBy.id }),
     };
   }
 
@@ -907,7 +909,7 @@ const Graph = (() => {
         id: option.id,
         text: option.text,
         ...(selected.includes(option) ? { selected: true as const } : {}),
-        ...optionLinks(option),
+        ...supersedeLinks(option),
         children: childEntries(graph, option),
       }));
     const hidden = question.options.flatMap((option): TreeEntryOption[] => {
@@ -916,7 +918,7 @@ const Graph = (() => {
 
       const children = childEntries(graph, option);
 
-      return [{ id: option.id, text: option.text, state, ...noteOf(graph, option), ...optionLinks(option), children }];
+      return [{ id: option.id, text: option.text, state, ...noteOf(graph, option), ...supersedeLinks(option), children }];
     });
     const options = [...live, ...hidden];
 
@@ -929,6 +931,7 @@ const Graph = (() => {
         id: question.id,
         text: question.text,
         ...noteOf(graph, question),
+        ...supersedeLinks(question),
         options,
         ...(selected.length > 0 && question.rationale !== undefined ? { rationale: question.rationale } : {}),
         children: childEntries(graph, question),
@@ -1853,6 +1856,24 @@ const Graph = (() => {
         items[1].children.map((child) => [child.id, child.state]),
         [["Q2", "frozen"]],
       );
+    });
+
+    test("the built tree links a superseded question and its replacement", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "old" },
+        { type: "add-question", id: "Q2", text: "new" },
+        { type: "supersede-question", target: "Q1", question: "Q2" },
+      ]);
+
+      // when
+      const items = buildTree(log);
+
+      // then
+      assert.deepEqual(items, [
+        { kind: "question", state: "open", id: "Q2", text: "new", supersedes: "Q1", options: [], children: [] },
+        { kind: "question", state: "frozen", id: "Q1", text: "old", supersededBy: "Q2", options: [], children: [] },
+      ]);
     });
 
     test("the built tree lists a question superseded twice newest first", () => {
