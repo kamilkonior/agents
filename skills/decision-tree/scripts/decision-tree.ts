@@ -3233,6 +3233,24 @@ const Graph = (() => {
       assert.equal(node.state, "deferred");
     });
 
+    test("looking up an item under an excluded option as unfrozen returns its node", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+        { type: "exclude", target: "Q1a", reason: "not-applicable" },
+      ]);
+
+      // when
+      const node = unfrozenNode(log, "Q2", "target");
+
+      // then
+      assert.equal(node.kind, "question");
+      assert.equal(node.id, "Q2");
+      assert.equal(node.state, "not-applicable");
+    });
+
     test("looking up an unknown id to restore throws not found", () => {
       // given
       const log = Log.memoryLog();
