@@ -78,7 +78,7 @@ New work under an answer comes before later roots. An open question stays at the
 | `promote-follow-up --target FID [--text T] [--option A]…` | Creates a question under the follow-up, worded as `T` or as the follow-up, with the follow-up's tags. The follow-up stays as history under its own id. |
 | `supersede-question --target QID --text T [--option A]…` | Puts a new question in the old one's place, with its tags, the focus if it held it, and only the options given. The old question and everything under it are frozen; no answers or children carry over. |
 | `supersede-option --target OID --text T` | Adds a new option to the same question, with the next free letter, and freezes the old option and everything under it. Nothing carries over. If the old option was selected, the question's whole selection is dropped and the question is open again. |
-| `exclude --target ID --reason deferred\|not-applicable [--note N]` | Takes an item and everything under it out of the walk. Nothing under it can change until it is restored. Excluding every selected option reopens the question. |
+| `exclude --target ID --reason deferred\|not-applicable [--note N]` | Takes an item and everything under it out of the walk. Until it is restored, the item and what is under it accept only `add-question`, `add-option`, `add-follow-up`, `tag` and `untag`. What is added stays hidden with it. Excluding every selected option reopens the question. |
 | `restore --target ID` | Brings back the item the exclusion was made on, with everything under it. A selection returns unless a newer one replaced it or it was cleared. |
 | `focus --target ID` | Puts an item with something open at the head of `next`. Only the latest focus counts. It ends when nothing is open inside it, or its item is excluded or goes off the path, and it never comes back. Superseding the focused question moves it to the replacement. |
 | `tag` / `untag --target ID --tag T…` | Adds or removes tags on a question or follow-up. |
@@ -98,7 +98,7 @@ New work under an answer comes before later roots. An open question stays at the
 
 | Situation | What works |
 |---|---|
-| Not ready to decide | `exclude --reason deferred` with the blocker as `--note` frees the walk, and `restore` brings it back once the blocker clears. Everything under it waits with it. Items waiting on the same person can share a tag, added before the exclude, so `--query items --tag T --state deferred` lists them together. |
+| Not ready to decide | `exclude --reason deferred` with the blocker as `--note` frees the walk, and `restore` brings it back once the blocker clears. Everything under it waits with it. Items waiting on the same person can share a tag, so `--query items --tag T --state deferred` lists them together. |
 | The premise of a question changed | Patching answers leaves decisions standing on the old premise, while `supersede-question` with corrected wording freezes them. Superseding can't be undone, and `--query tree --target QID --state all` shows exactly what it would freeze. The normal ops rebuild what still holds from `<before>`, including open items and viable options. |
 | Stopping with items still open | A pause needs nothing. To close the tree, `exclude --reason deferred` each open item, top-level items first. |
 | An option no longer applies | `exclude` on the option, with `--reason not-applicable`, removes just that answer. The other options keep their letters. |

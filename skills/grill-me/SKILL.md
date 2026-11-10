@@ -124,7 +124,7 @@ Each design has one log at `.brain-kit/grill-me/<topic>.jsonl` in the project ro
 | a proposed default | the question deferred, tagged `default`, with the proposal as the note |
 | a topic that isn't ready for options | a follow-up |
 
-Tag a question before you defer it, because a deferred item can't change. When the user accepts a default, restore the question and select the option.
+When the user accepts a default, restore the question and select the option.
 
 - **Resuming.** Look the facts up again. Then open with a few lines on what is settled, before the next question.
 - **Order.** `next` offers a sensible order. What could overturn the most overrides it.
