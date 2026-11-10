@@ -6725,8 +6725,11 @@ const Xml = (() => {
     ].join("\n");
   }
 
-  function followUp(data              )         {
-    return `<follow-up><id>${data.id}</id><text>${escapeXml(data.text)}</text></follow-up>`;
+  function followUp(data                                   )         {
+    const state = data.state === undefined ? "" : ` state="${data.state}"`;
+    const hidden = data.hiddenBy === undefined ? "" : `<hidden-by><id>${data.hiddenBy}</id></hidden-by>`;
+
+    return `<follow-up${state}><id>${data.id}</id><text>${escapeXml(data.text)}</text>${hidden}</follow-up>`;
   }
 
   function item(data          )         {
@@ -7803,6 +7806,20 @@ const Xml = (() => {
 
       // then
       assert.equal(xml, "<follow-up><id>F1</id><text>a &lt; b &gt; c &amp; d</text></follow-up>");
+    });
+
+    test("a follow-up with a state renders the state, and what hides it after its text", () => {
+      // given
+      const data                           = { id: "F1", text: "f", state: "off-path", hiddenBy: "Q1b" };
+
+      // when
+      const xml = followUp(data);
+
+      // then
+      assert.equal(
+        xml,
+        '<follow-up state="off-path"><id>F1</id><text>f</text><hidden-by><id>Q1b</id></hidden-by></follow-up>',
+      );
     });
 
     test("next with a follow-up wraps the follow-up line", () => {
