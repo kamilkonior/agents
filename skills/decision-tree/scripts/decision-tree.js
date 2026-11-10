@@ -653,6 +653,12 @@ const Graph = (() => {
         case "supersede-option": {
           const old = optionNode(nodes, event.target);
           const replacement = optionNode(nodes, event.option);
+          if (old.question.selected.includes(old)) {
+            throw new DecisionTreeError(
+              `${old.id} is still selected: supersede-option needs a clear-selection on ${old.question.id} first`,
+            );
+          }
+
           old.supersededBy = replacement;
           replacement.supersedes = old;
           break;
@@ -1031,8 +1037,6 @@ const Graph = (() => {
   }
 
   function liveSelected(graph       , node              )               {
-    if (node.selected.some((option) => option.supersededBy !== undefined)) return [];
-
     return node.options.filter((option) => node.selected.includes(option) && !graph.exclusions.has(option.id));
   }
 
@@ -1343,7 +1347,7 @@ const Graph = (() => {
       );
     });
 
-    test("superseding a selected option reopens its question", () => {
+    test("a supersede-option on a selected option without a clear-selection first throws", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q1" },
@@ -1355,12 +1359,15 @@ const Graph = (() => {
       ]);
 
       // when
-      const graph = build(log);
+      const act = () => build(log);
 
       // then
-      const question = questionNode(graph.nodes, "Q1");
-      const stillSelected = optionNode(graph.nodes, "Q1b");
-      assert.deepEqual([question.state, stillSelected.state], ["open", "open"]);
+      assert.throws(
+        act,
+        (error) =>
+          error instanceof DecisionTreeError &&
+          error.message === "Q1a is still selected: supersede-option needs a clear-selection on Q1 first",
+      );
     });
 
     test("superseding an unselected option keeps its question's selection", () => {
