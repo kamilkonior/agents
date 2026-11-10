@@ -20,6 +20,7 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
                                                                                
                                        
                                                                     
+                                                                
                                      
                                                    
                                                       
@@ -141,6 +142,7 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
                    
                     
                          
+                            
                            
                             
   
@@ -616,6 +618,12 @@ const Graph = (() => {
           break;
         }
 
+        case "supersede-option": {
+          const old = optionNode(nodes, event.target);
+          old.supersededBy = optionNode(nodes, event.option);
+          break;
+        }
+
         case "tag": {
           const tags = graph.tags.get(event.target) ?? new Set        ();
           event.tags.forEach((tag) => tags.add(tag));
@@ -670,7 +678,7 @@ const Graph = (() => {
     node                                          ,
     inherited                    ,
   )                     {
-    if (node.kind === "question" && node.supersededBy !== undefined) return { state: "frozen", by: node.id };
+    if (node.kind !== "follow-up" && node.supersededBy !== undefined) return { state: "frozen", by: node.id };
     if (inherited?.state === "frozen") return inherited;
 
     const exclusion = graph.exclusions.get(node.id);
@@ -1261,6 +1269,29 @@ const Graph = (() => {
       assert.deepEqual(
         [superseded.state, superseded.hiddenBy, child.state, child.hiddenBy],
         ["frozen", undefined, "frozen", "Q1"],
+      );
+    });
+
+    test("a superseded option and what is under it are frozen", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "supersede-option", target: "Q1a", option: "Q1b" },
+      ]);
+
+      // when
+      const graph = build(log);
+
+      // then
+      const superseded = optionNode(graph.nodes, "Q1a");
+      const child = questionNode(graph.nodes, "Q2");
+      const replacement = optionNode(graph.nodes, "Q1b");
+      assert.deepEqual(
+        [superseded.state, superseded.hiddenBy, child.state, child.hiddenBy, replacement.state],
+        ["frozen", undefined, "frozen", "Q1a", "open"],
       );
     });
 
