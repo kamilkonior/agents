@@ -3481,7 +3481,7 @@ const AddQuestion = (() => {
     return id;
   }
 
-  function run(
+  function add(
     log: Log,
     config: { text?: string; origin?: string; option?: string[] },
   ): QuestionData {
@@ -3497,6 +3497,15 @@ const AddQuestion = (() => {
 
       return { id, text, options };
     });
+  }
+
+  function run(
+    log: Log,
+    config: { text?: string; origin?: string; option?: string[] },
+  ): QuestionData & StateData {
+    const question = add(log, config);
+
+    return { ...question, ...Graph.itemState(log, question.id) };
   }
 
   function tests() {
@@ -3563,7 +3572,7 @@ const AddQuestion = (() => {
       const log = Log.memoryLog();
 
       // when
-      const act = () => run(log, { text: "q", option: ["a", ""] });
+      const act = () => add(log, { text: "q", option: ["a", ""] });
 
       // then
       assert.throws(act, DecisionTreeError);
@@ -3575,7 +3584,7 @@ const AddQuestion = (() => {
       const log = Log.memoryLog();
 
       // when
-      const question = run(log, { text: "q" });
+      const question = add(log, { text: "q" });
 
       // then
       assert.deepEqual(question, { id: "Q1", text: "q", options: [] });
@@ -3587,7 +3596,7 @@ const AddQuestion = (() => {
       const log = Log.memoryLog();
 
       // when
-      const question = run(log, { text: "q", option: ["a", "b"] });
+      const question = add(log, { text: "q", option: ["a", "b"] });
 
       // then
       assert.deepEqual(question, {
@@ -3614,7 +3623,7 @@ const AddQuestion = (() => {
       const log = Log.memoryLog([...events]);
 
       // when
-      const question = run(log, { text: "q2", option: ["b", "c"] });
+      const question = add(log, { text: "q2", option: ["b", "c"] });
 
       // then
       assert.deepEqual(question, {
@@ -3643,7 +3652,7 @@ const AddQuestion = (() => {
       const log = Log.memoryLog([...events]);
 
       // when
-      const question = run(log, { text: "q2", origin: "Q1a" });
+      const question = add(log, { text: "q2", origin: "Q1a" });
 
       // then
       assert.deepEqual(question, { id: "Q2", text: "q2", options: [] });
@@ -3660,7 +3669,7 @@ const AddQuestion = (() => {
       const log = Log.memoryLog([...events]);
 
       // when
-      const question = run(log, { text: "q2", origin: "Q1a", option: ["b", "c"] });
+      const question = add(log, { text: "q2", origin: "Q1a", option: ["b", "c"] });
 
       // then
       assert.deepEqual(question, {
@@ -3678,9 +3687,25 @@ const AddQuestion = (() => {
         { type: "add-option", id: "Q2b", text: "c", origin: "Q2" },
       ]);
     });
+
+    test("a question added under an unselected option returns off-path and the option that hides it", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+      ]);
+
+      // when
+      const question = run(log, { text: "q2", origin: "Q1b" });
+
+      // then
+      assert.deepEqual(question, { id: "Q2", text: "q2", options: [], state: "off-path", hiddenBy: "Q1b" });
+    });
   }
 
-  return { options, run, tests };
+  return { options, add, run, tests };
 })();
 
 const AddOption = (() => {
@@ -4380,7 +4405,7 @@ const PromoteFollowUp = (() => {
     return Log.transaction(log, (staged) => {
       const followUp = AddFollowUp.open(staged, target);
       const { tags } = Graph.taggedItem(staged, target);
-      const question = AddQuestion.run(staged, {
+      const question = AddQuestion.add(staged, {
         text: config.text ?? followUp.text,
         origin: followUp.id,
         option: config.option,
@@ -4769,7 +4794,7 @@ const SupersedeQuestion = (() => {
     const focused = Graph.activeFocus(log) === target;
 
     return Log.transaction(log, (staged) => {
-      const question = AddQuestion.run(staged, { text, origin: old.parent?.id, option: config.option });
+      const question = AddQuestion.add(staged, { text, origin: old.parent?.id, option: config.option });
 
       staged.append({ type: "supersede-question", target, question: question.id });
       if (tags.length > 0) Tag.run(staged, { target: question.id, tag: tags });
