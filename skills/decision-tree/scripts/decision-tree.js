@@ -1214,18 +1214,15 @@ const Graph = (() => {
   function unfrozenNode(log     , id        , role                     )                                           {
     const graph = build(log);
 
-    const node = parentNode(graph.nodes, id);
+    const node = graph.nodes.get(id);
+    if (node === undefined) throw new DecisionTreeError(`${role} not found: ${id}`);
     rejectFrozen(graph, node);
 
     return node;
   }
 
   function liveNode(log     , id        , role                     )                                           {
-    const graph = build(log);
-
-    const node = graph.nodes.get(id);
-    if (node === undefined) throw new DecisionTreeError(`${role} not found: ${id}`);
-    rejectFrozen(graph, node);
+    const node = unfrozenNode(log, id, role);
     if (isExcluded(node)) throw new DecisionTreeError(`${role} is excluded: ${id}`);
 
     return node;
@@ -3207,6 +3204,17 @@ const Graph = (() => {
         act,
         (error) => error instanceof DecisionTreeError && error.message === "Q1 is frozen, as it was superseded by Q2",
       );
+    });
+
+    test("looking up an unknown id as unfrozen throws not found for its role", () => {
+      // given
+      const log = Log.memoryLog();
+
+      // when
+      const act = () => unfrozenNode(log, "Q9", "origin");
+
+      // then
+      assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "origin not found: Q9");
     });
 
     test("looking up an unknown id to restore throws not found", () => {
