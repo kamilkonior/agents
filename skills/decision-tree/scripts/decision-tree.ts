@@ -6429,6 +6429,47 @@ const Xml = (() => {
       ]);
     });
 
+    test("items renders the links between a superseded question and its replacement", () => {
+      // given
+      const list: ListedItem[] = [
+        {
+          item: { kind: "question", question: { id: "Q2", text: "new", options: [] } },
+          tags: [],
+          state: "open",
+          supersedes: "Q1",
+        },
+        {
+          item: { kind: "question", question: { id: "Q1", text: "old", options: [] } },
+          tags: [],
+          state: "frozen",
+          supersededBy: "Q2",
+        },
+      ];
+
+      // when
+      const xml = items(list);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<items>",
+        '  <question state="open">',
+        "    <id>Q2</id>",
+        "    <text>new</text>",
+        "    <options></options>",
+        "    <supersedes><id>Q1</id></supersedes>",
+        "    <tags></tags>",
+        "  </question>",
+        '  <question state="frozen">',
+        "    <id>Q1</id>",
+        "    <text>old</text>",
+        "    <options></options>",
+        "    <superseded-by><id>Q2</id></superseded-by>",
+        "    <tags></tags>",
+        "  </question>",
+        "</items>",
+      ]);
+    });
+
     test("the built tree renders no entries as an empty element", () => {
       // given
       const entries: TreeEntry[] = [];
@@ -7463,6 +7504,7 @@ const Xml = (() => {
     const state = data.state === undefined ? "" : ` state="${data.state}"`;
     const note = data.note === undefined ? [] : [`  <note>${escapeXml(data.note)}</note>`];
     const hidden = data.hiddenBy === undefined ? [] : [`  <hidden-by><id>${data.hiddenBy}</id></hidden-by>`];
+    const links = linkTags(data).map((tag) => `  ${tag}`);
 
     if (data.item.kind === "question") {
       const { id, text, options } = data.item.question;
@@ -7481,6 +7523,7 @@ const Xml = (() => {
         ...(data.rationale === undefined ? [] : [`  <rationale>${escapeXml(data.rationale)}</rationale>`]),
         ...note,
         ...hidden,
+        ...links,
         line,
         ...trailLines(data.trail),
         "</question>",
