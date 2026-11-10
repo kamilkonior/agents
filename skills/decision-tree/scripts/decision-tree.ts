@@ -1014,10 +1014,16 @@ const Graph = (() => {
     return openWithin(build(log), node).length > 0;
   }
 
-  function frontier(graph: Graph): OpenItem[] {
-    const focused = graph.focus !== undefined && !graph.focus.ended ? graph.focus.node : undefined;
+  function focusedNode(graph: Graph): QuestionNode | FollowUpNode | undefined {
+    return graph.focus !== undefined && !graph.focus.ended ? graph.focus.node : undefined;
+  }
 
-    return openWithin(graph, focused);
+  function activeFocus(graph: Graph): string | undefined {
+    return focusedNode(graph)?.id;
+  }
+
+  function frontier(graph: Graph): OpenItem[] {
+    return openWithin(graph, focusedNode(graph));
   }
 
   function taggedData(graph: Graph, node: QuestionNode | FollowUpNode): TaggedData {
@@ -2673,6 +2679,42 @@ const Graph = (() => {
       assert.deepEqual(items, [
         { item: { kind: "question", question: { id: "Q2", text: "open", options: [] } }, tags: ["t"], state: "open" },
       ]);
+    });
+
+    test("an ended focus is not the active focus", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+          { type: "focus", target: "Q1" },
+          { type: "select-option", targets: ["Q1a"] },
+        ]),
+      );
+
+      // when
+      const active = activeFocus(graph);
+
+      // then
+      assert.equal(active, undefined);
+    });
+
+    test("the active focus is the item the latest focus names while something is open under it", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "q1" },
+          { type: "add-question", id: "Q2", text: "q2" },
+          { type: "focus", target: "Q1" },
+          { type: "focus", target: "Q2" },
+        ]),
+      );
+
+      // when
+      const active = activeFocus(graph);
+
+      // then
+      assert.equal(active, "Q2");
     });
 
     test("the tag query is not limited by an active focus", () => {
