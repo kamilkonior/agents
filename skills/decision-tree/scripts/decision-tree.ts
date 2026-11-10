@@ -4247,8 +4247,9 @@ const SupersedeOption = (() => {
   } as const;
 
   function run(log: Log, config: { target?: string; text?: string }): void {
-    const { target } = config;
+    const { target, text } = config;
     if (!target) throw new DecisionTreeError("supersede-option requires --target");
+    if (!text) throw new DecisionTreeError("supersede-option requires --text");
   }
 
   function tests() {
@@ -4267,6 +4268,25 @@ const SupersedeOption = (() => {
       assert.throws(
         act,
         (error) => error instanceof DecisionTreeError && error.message === "supersede-option requires --target",
+      );
+      assert.deepEqual(log.read(), events);
+    });
+
+    test("superseding an option without a text throws and appends nothing", () => {
+      // given
+      const events: Event[] = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const act = () => run(log, { target: "Q1a" });
+
+      // then
+      assert.throws(
+        act,
+        (error) => error instanceof DecisionTreeError && error.message === "supersede-option requires --text",
       );
       assert.deepEqual(log.read(), events);
     });
