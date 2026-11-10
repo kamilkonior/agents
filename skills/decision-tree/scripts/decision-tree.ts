@@ -558,7 +558,7 @@ const Log = (() => {
     });
   }
 
-  return { fileLog, memoryLog, locked, nextId, transaction, tests };
+  return { fileLog, memoryLog, locked, nextId, stamped, transaction, tests };
 })();
 
 const Graph = (() => {
@@ -8150,7 +8150,12 @@ const Cli = (() => {
       return;
     }
 
-    Log.locked(mode.log, () => console.log(runOp(log, mode.op)));
+    Log.locked(mode.log, () => {
+      const stampedLog = Log.stamped(log, { op: mode.op, now: Date.now });
+      const output = Log.transaction(stampedLog, (staged) => runOp(staged, mode.op));
+
+      console.log(output);
+    });
   }
 
   function runQuery(log: Log, query: string) {
