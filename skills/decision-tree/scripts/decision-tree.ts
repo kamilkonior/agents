@@ -2983,6 +2983,28 @@ const Graph = (() => {
       );
     });
 
+    test("looking up an item under a superseded option throws frozen", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "supersede-option", target: "Q1a", option: "Q1b" },
+      ]);
+
+      // when
+      const act = () => liveNode(log, "Q2", "target");
+
+      // then
+      assert.throws(
+        act,
+        (error) =>
+          error instanceof DecisionTreeError &&
+          error.message === "Q2 is frozen, as its ancestor Q1a was superseded by Q1b",
+      );
+    });
+
     test("looking up a frozen excluded item to restore throws frozen", () => {
       // given
       const log = Log.memoryLog([
