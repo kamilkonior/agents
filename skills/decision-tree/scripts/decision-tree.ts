@@ -110,6 +110,8 @@ type ListedItem = TaggedData & {
   rationale?: string;
   note?: string;
   hiddenBy?: string;
+  supersedes?: string;
+  supersededBy?: string;
   trail?: TrailStep[];
   hiddenOptions?: HiddenOption[];
 };
@@ -1086,10 +1088,11 @@ const Graph = (() => {
       const note = graph.exclusions.get(node.id)?.note;
       const noteData = note === undefined ? {} : { note };
       const causeData = node.hiddenBy === undefined ? {} : { hiddenBy: node.hiddenBy };
+      const linkData = node.kind === "question" ? supersedeLinks(node) : {};
       const hidden = node.kind === "question" ? hiddenOptions(graph, node) : [];
       const hiddenData = hidden.length === 0 ? {} : { hiddenOptions: hidden };
 
-      return [{ ...taggedData(graph, node), state, ...selectedData, ...rationaleData, ...noteData, ...causeData, ...hiddenData }];
+      return [{ ...taggedData(graph, node), state, ...selectedData, ...rationaleData, ...noteData, ...causeData, ...linkData, ...hiddenData }];
     });
   }
 
@@ -2826,6 +2829,27 @@ const Graph = (() => {
       );
     });
 
+    test("a listed superseded question and its replacement link to each other", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "old" },
+        { type: "add-question", id: "Q2", text: "new" },
+        { type: "supersede-question", target: "Q1", question: "Q2" },
+      ]);
+
+      // when
+      const items = listed(log, undefined, ["open", "frozen"]);
+
+      // then
+      assert.deepEqual(
+        items.map((each) => [each.state, each.supersedes, each.supersededBy]),
+        [
+          ["open", "Q1", undefined],
+          ["frozen", undefined, "Q2"],
+        ],
+      );
+    });
+
     test("an off-path tagged item is hidden by the unselected option above it", () => {
       // given
       const log = Log.memoryLog([
@@ -2926,7 +2950,12 @@ const Graph = (() => {
 
       // then
       assert.deepEqual(items, [
-        { item: { kind: "question", question: { id: "Q2", text: "q2", options: [] } }, tags: ["t"], state: "open" },
+        {
+          item: { kind: "question", question: { id: "Q2", text: "q2", options: [] } },
+          tags: ["t"],
+          state: "open",
+          supersedes: "Q1",
+        },
       ]);
     });
 
