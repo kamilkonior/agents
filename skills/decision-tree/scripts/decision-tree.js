@@ -6710,8 +6710,17 @@ const Xml = (() => {
     ];
   }
 
-  function option(data            )         {
-    return `<option><id>${data.id}</id><text>${escapeXml(data.text)}</text></option>`;
+  function stateParts(data                    )                                        {
+    const attribute = data.state === undefined ? "" : ` state="${data.state}"`;
+    const hidden = data.hiddenBy === undefined ? "" : `<hidden-by><id>${data.hiddenBy}</id></hidden-by>`;
+
+    return { attribute, hidden };
+  }
+
+  function option(data                                 )         {
+    const { attribute, hidden } = stateParts(data);
+
+    return `<option${attribute}><id>${data.id}</id><text>${escapeXml(data.text)}</text>${hidden}</option>`;
   }
 
   function optionsLines(options              )           {
@@ -6740,10 +6749,9 @@ const Xml = (() => {
   }
 
   function followUp(data                                   )         {
-    const state = data.state === undefined ? "" : ` state="${data.state}"`;
-    const hidden = data.hiddenBy === undefined ? "" : `<hidden-by><id>${data.hiddenBy}</id></hidden-by>`;
+    const { attribute, hidden } = stateParts(data);
 
-    return `<follow-up${state}><id>${data.id}</id><text>${escapeXml(data.text)}</text>${hidden}</follow-up>`;
+    return `<follow-up${attribute}><id>${data.id}</id><text>${escapeXml(data.text)}</text>${hidden}</follow-up>`;
   }
 
   function item(data          )         {
@@ -7729,6 +7737,17 @@ const Xml = (() => {
 
       // then
       assert.equal(xml, "<option><id>Q1a</id><text>a &lt; b &gt; c &amp; d</text></option>");
+    });
+
+    test("an option with a state renders the state, and what hides it after its text", () => {
+      // given
+      const data                         = { id: "Q1a", text: "a", state: "deferred", hiddenBy: "Q1" };
+
+      // when
+      const xml = option(data);
+
+      // then
+      assert.equal(xml, '<option state="deferred"><id>Q1a</id><text>a</text><hidden-by><id>Q1</id></hidden-by></option>');
     });
 
     test("question without options renders empty options", () => {
