@@ -644,8 +644,6 @@ const Graph = (() => {
           siblings.splice(siblings.indexOf(old), 1, replacement);
           old.supersededBy = replacement;
           replacement.supersedes = old;
-          const tags = graph.tags.get(old.id);
-          if (tags !== undefined) graph.tags.set(replacement.id, new Set(tags));
           if (graph.focus?.node === old && !graph.focus.ended) graph.focus.node = replacement;
           break;
         }
@@ -3012,7 +3010,7 @@ const Graph = (() => {
       assert.deepEqual(steps, []);
     });
 
-    test("a superseding question keeps the old question's tags", () => {
+    test("a supersede-question line alone does not tag the replacement", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q1" },
@@ -3025,14 +3023,7 @@ const Graph = (() => {
       const items = listed(log, "t", ["open"]);
 
       // then
-      assert.deepEqual(items, [
-        {
-          item: { kind: "question", question: { id: "Q2", text: "q2", options: [] } },
-          tags: ["t"],
-          state: "open",
-          supersedes: "Q1",
-        },
-      ]);
+      assert.deepEqual(items, []);
     });
 
     test("looking up an unknown id throws not found for its role", () => {
