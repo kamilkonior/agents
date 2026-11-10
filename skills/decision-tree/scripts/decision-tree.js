@@ -102,7 +102,7 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
                  
   
 
-                                                                                      
+                                                                                                             
 
                                 
                    
@@ -1053,7 +1053,9 @@ const Graph = (() => {
       const state = optionHiding(graph, option);
       if (state === undefined) return [];
 
-      return [{ id: option.id, text: option.text, state, ...noteOf(graph, option) }];
+      const supersededBy = option.supersededBy === undefined ? {} : { supersededBy: option.supersededBy.id };
+
+      return [{ id: option.id, text: option.text, state, ...noteOf(graph, option), ...supersededBy }];
     });
   }
 
@@ -4909,7 +4911,7 @@ const Items = (() => {
       assert.deepEqual(items[0].hiddenOptions, [{ id: "Q1b", text: "b", state: "deferred", note: "why" }]);
     });
 
-    test("a question carries its superseded option as frozen", () => {
+    test("a question carries its superseded option as frozen, linked to its replacement", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q" },
@@ -4923,7 +4925,7 @@ const Items = (() => {
       const items = run(log, {});
 
       // then
-      assert.deepEqual(items[0].hiddenOptions, [{ id: "Q1a", text: "a", state: "frozen" }]);
+      assert.deepEqual(items[0].hiddenOptions, [{ id: "Q1a", text: "a", state: "frozen", supersededBy: "Q1c" }]);
     });
 
     test("a trail without a target throws", () => {
