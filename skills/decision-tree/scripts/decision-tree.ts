@@ -117,8 +117,6 @@ type ListedItem = TaggedData & {
 };
 
 type PromoteData = { question: QuestionData; promoted: FollowUpData };
-type SupersedeData = { question: QuestionData; superseded: TreeEntry[] };
-
 type BeforeAfterData = { before: TreeEntry[]; after: TreeEntry[] };
 
 type TrailStep = { kind: "question" | "option" | "follow-up"; id: string; text: string };
@@ -4229,7 +4227,7 @@ const SupersedeQuestion = (() => {
     option: { type: "string", multiple: true },
   } as const;
 
-  function run(log: Log, config: { target?: string; text?: string; option?: string[] }): SupersedeData {
+  function run(log: Log, config: { target?: string; text?: string; option?: string[] }): BeforeAfterData {
     const { target, text } = config;
     if (!target) throw new DecisionTreeError("supersede-question requires --target");
     if (!text) throw new DecisionTreeError("supersede-question requires --text");
@@ -4237,14 +4235,14 @@ const SupersedeQuestion = (() => {
     const old = Graph.liveNode(log, target, "target");
     if (old.kind !== "question") throw new DecisionTreeError(`target is not a question: ${target}`);
 
-    const superseded = Graph.buildTree(log, target);
+    const before = Graph.buildTree(log, target);
 
     return Log.transaction(log, (staged) => {
       const question = AddQuestion.run(staged, { text, origin: old.parent?.id, option: config.option });
 
       staged.append({ type: "supersede-question", target, question: question.id });
 
-      return { question, superseded };
+      return { before, after: Graph.buildTree(staged, question.id) };
     });
   }
 
@@ -4307,10 +4305,9 @@ const SupersedeQuestion = (() => {
       const log = Log.memoryLog([...events]);
 
       // when
-      const supersede = run(log, { target: "Q2", text: "q3" });
+      run(log, { target: "Q2", text: "q3" });
 
       // then
-      assert.deepEqual(supersede.question, { id: "Q3", text: "q3", options: [] });
       assert.deepEqual(log.read(), [
         ...events,
         { type: "add-question", id: "Q3", text: "q3", origin: "Q1a" },
@@ -4324,17 +4321,9 @@ const SupersedeQuestion = (() => {
       const log = Log.memoryLog([...events]);
 
       // when
-      const supersede = run(log, { target: "Q1", text: "q2", option: ["x", "y"] });
+      run(log, { target: "Q1", text: "q2", option: ["x", "y"] });
 
       // then
-      assert.deepEqual(supersede.question, {
-        id: "Q2",
-        text: "q2",
-        options: [
-          { id: "Q2a", text: "x" },
-          { id: "Q2b", text: "y" },
-        ],
-      });
       assert.deepEqual(log.read(), [
         ...events,
         { type: "add-question", id: "Q2", text: "q2" },
@@ -4344,7 +4333,7 @@ const SupersedeQuestion = (() => {
       ]);
     });
 
-    test("superseding a question returns the old subtree with every option and the selected one marked", () => {
+    test("superseding a question returns the old question before and the new one after", () => {
       // given
       const log = Log.memoryLog([
         { type: "add-question", id: "Q1", text: "q1" },
@@ -4359,33 +4348,36 @@ const SupersedeQuestion = (() => {
       const supersede = run(log, { target: "Q1", text: "q3" });
 
       // then
-      assert.deepEqual(supersede.superseded, [
-        {
-          kind: "question",
-          state: "settled",
-          id: "Q1",
-          text: "q1",
-          options: [
-            {
-              id: "Q1a",
-              text: "a",
-              selected: true,
-              children: [
-                {
-                  kind: "question",
-                  state: "open",
-                  id: "Q2",
-                  text: "q2",
-                  options: [{ id: "Q2a", text: "x", children: [] }],
-                  children: [],
-                },
-              ],
-            },
-            { id: "Q1b", text: "b", children: [] },
-          ],
-          children: [],
-        },
-      ]);
+      assert.deepEqual(supersede, {
+        before: [
+          {
+            kind: "question",
+            state: "settled",
+            id: "Q1",
+            text: "q1",
+            options: [
+              {
+                id: "Q1a",
+                text: "a",
+                selected: true,
+                children: [
+                  {
+                    kind: "question",
+                    state: "open",
+                    id: "Q2",
+                    text: "q2",
+                    options: [{ id: "Q2a", text: "x", children: [] }],
+                    children: [],
+                  },
+                ],
+              },
+              { id: "Q1b", text: "b", children: [] },
+            ],
+            children: [],
+          },
+        ],
+        after: [{ kind: "question", state: "open", id: "Q3", text: "q3", supersedes: "Q1", options: [], children: [] }],
+      });
     });
   }
 
@@ -6294,17 +6286,6 @@ const Xml = (() => {
     );
   }
 
-  function supersede(data: SupersedeData): string {
-    const replacement = question(data.question)
-      .split("\n")
-      .map((line) => `  ${line}`);
-    const superseded = data.superseded.flatMap(treeLines).map((line) => `    ${line}`);
-
-    return ["<supersede>", ...replacement, "  <superseded>", ...superseded, "  </superseded>", "</supersede>"].join(
-      "\n",
-    );
-  }
-
   function beforeAfter(name: string, data: BeforeAfterData): string {
     const before = data.before.flatMap(treeLines).map((line) => `    ${line}`);
     const after = data.after.flatMap(treeLines).map((line) => `    ${line}`);
@@ -7266,50 +7247,6 @@ const Xml = (() => {
       ]);
     });
 
-    test("supersede renders the superseded question with every option, the selected one marked", () => {
-      // given
-      const data: SupersedeData = {
-        question: { id: "Q3", text: "q3", options: [] },
-        superseded: [
-          {
-            kind: "question",
-            state: "settled",
-            id: "Q1",
-            text: "q1",
-            options: [
-              { id: "Q1a", text: "a", selected: true, children: [] },
-              { id: "Q1b", text: "b", children: [] },
-            ],
-            children: [],
-          },
-        ],
-      };
-
-      // when
-      const xml = supersede(data);
-
-      // then
-      assert.deepEqual(xml.split("\n"), [
-        "<supersede>",
-        "  <question>",
-        "    <id>Q3</id>",
-        "    <text>q3</text>",
-        "    <options></options>",
-        "  </question>",
-        "  <superseded>",
-        '    <question state="settled">',
-        "      <id>Q1</id>",
-        "      <text>q1</text>",
-        "      <options>",
-        '        <option selected="true"><id>Q1a</id><text>a</text></option>',
-        "        <option><id>Q1b</id><text>b</text></option>",
-        "      </options>",
-        "    </question>",
-        "  </superseded>",
-        "</supersede>",
-      ]);
-    });
-
     test("a before-and-after result renders both trees under the given name", () => {
       // given
       const data: BeforeAfterData = {
@@ -7613,7 +7550,6 @@ const Xml = (() => {
     tree,
     status,
     promote,
-    supersede,
     beforeAfter,
     taggedItem,
     items,
@@ -7933,7 +7869,7 @@ const Cli = (() => {
 
       case "supersede-question": {
         const config = readModeConfig(SupersedeQuestion.options);
-        console.log(Xml.supersede(SupersedeQuestion.run(log, config)));
+        console.log(Xml.beforeAfter("supersede", SupersedeQuestion.run(log, config)));
         break;
       }
 
