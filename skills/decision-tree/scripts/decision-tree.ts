@@ -653,6 +653,11 @@ const Graph = (() => {
         case "supersede-option": {
           const old = optionNode(nodes, event.target);
           const replacement = optionNode(nodes, event.option);
+          if (replacement.question !== old.question) {
+            throw new DecisionTreeError(
+              `${replacement.id} cannot supersede ${old.id}: they belong to different questions`,
+            );
+          }
           if (old.question.selected.includes(old)) {
             throw new DecisionTreeError(
               `${old.id} is still selected: supersede-option needs a clear-selection on ${old.question.id} first`,
@@ -1367,6 +1372,28 @@ const Graph = (() => {
         (error) =>
           error instanceof DecisionTreeError &&
           error.message === "Q1a is still selected: supersede-option needs a clear-selection on Q1 first",
+      );
+    });
+
+    test("a supersede-option naming a replacement from another question throws", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-question", id: "Q2", text: "q2" },
+        { type: "add-option", id: "Q2a", text: "x", origin: "Q2" },
+        { type: "supersede-option", target: "Q1a", option: "Q2a" },
+      ]);
+
+      // when
+      const act = () => build(log);
+
+      // then
+      assert.throws(
+        act,
+        (error) =>
+          error instanceof DecisionTreeError &&
+          error.message === "Q2a cannot supersede Q1a: they belong to different questions",
       );
     });
 
