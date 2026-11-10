@@ -3421,6 +3421,7 @@ const Graph = (() => {
     hasOpen,
     rejectOffPath,
     trail,
+    unfrozenNode,
     liveNode,
     excludedNode,
     itemData,
@@ -3623,7 +3624,7 @@ const AddOption = (() => {
   function add(log: Log, text: string, origin: string): string {
     if (!text) throw new DecisionTreeError("option requires a text");
 
-    const question = Graph.liveNode(log, origin, "origin");
+    const question = Graph.unfrozenNode(log, origin, "origin");
     if (question.kind !== "question") {
       throw new DecisionTreeError(`origin is not a question: ${origin}`);
     }
@@ -3747,6 +3748,25 @@ const AddOption = (() => {
       assert.deepEqual(log.read(), [
         ...events,
         { type: "add-option", id: "Q2a", text: "b", origin: "Q2" },
+      ]);
+    });
+
+    test("option under an excluded question is stored with its origin", () => {
+      // given
+      const events: Event[] = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "exclude", target: "Q1", reason: "deferred" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const id = add(log, "a", "Q1");
+
+      // then
+      assert.equal(id, "Q1a");
+      assert.deepEqual(log.read(), [
+        ...events,
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
       ]);
     });
   }
