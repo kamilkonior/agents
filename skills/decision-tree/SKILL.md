@@ -76,7 +76,7 @@ New work under an answer comes before later roots. An open question stays at the
 | `select-option --target OID… [--rationale R]` | Makes these options, all of one question, its whole selection, replacing any earlier one and its rationale. To add an option to a selection, pass them all again. `R` records why. |
 | `clear-selection --target QID` | Withdraws a question's whole selection and its rationale. The question is open again with every option still on offer. What hung under the answer goes off the path, and returns if that option is selected again. Fails if nothing is selected. |
 | `promote-follow-up --target FID [--text T] [--option A]…` | Creates a question under the follow-up, worded as `T` or as the follow-up. The follow-up stays as history under its own id. |
-| `supersede-question --target QID --text T [--option A]…` | Puts a new question in the old one's place, with its tags and only the options given. The old question and everything under it are frozen, and nothing carries over. |
+| `supersede-question --target QID --text T [--option A]…` | Puts a new question in the old one's place, with its tags, the focus if it held it, and only the options given. The old question and everything under it are frozen; no answers or children carry over. |
 | `supersede-option --target OID --text T` | Adds a new option to the same question, with the next free letter, and freezes the old option and everything under it. Nothing carries over. If the old option was selected, the question's whole selection is dropped and the question is open again. |
 | `exclude --target ID --reason deferred\|not-applicable [--note N]` | Takes an item and everything under it out of the walk. Nothing under it can change until it is restored. Excluding every selected option reopens the question. |
 | `restore --target ID` | Brings back the item the exclusion was made on, with everything under it. A selection returns unless a newer one replaced it or it was cleared. |
@@ -92,7 +92,7 @@ New work under an answer comes before later roots. An open question stays at the
 | `tree [--state S]… [--target ID]` | the full structure, with every option |
 | `items [--tag T] [--target ID [--trail]] [--state S]… [--limit N]` | a flat list in walk order |
 
-`S` is `open` (the default), `settled`, `off-path`, `deferred`, `not-applicable`, `frozen` or `all`. It never filters options, and `tree` keeps the ancestors of a match. `--target` limits `status` and `tree` to that item and what's under it, and `status` prints nothing for an item it leaves out. In `items`, `--target` finds one item in any state unless `--state` is given. `--limit` doesn't say whether more exist. A focus affects only `next`.
+`S` is `open` (the default), `settled`, `off-path`, `deferred`, `not-applicable`, `frozen` or `all`. It never filters options, and `tree` keeps the ancestors of a match. `--target` limits `status` and `tree` to that item and what's under it, and `status` prints an empty `<status></status>` for an item it leaves out. In `items`, `--target` finds one item in any state unless `--state` is given. `--limit` doesn't say whether more exist. A focus affects only `next`.
 
 ## When things get in the way
 
@@ -143,4 +143,5 @@ Position in the XML carries meaning:
 - **`tree`:** the chosen option has `selected="true"` and holds its children, `<rationale>` follows `<options>`, and the question's own children come after that. A promoted follow-up appears as a step, and a superseded question follows its replacement. An excluded or superseded option comes after the live ones, with its `state`. A replacement carries `<supersedes>` and what it replaced carries `<superseded-by>`, each with the other's id.
 - **`items`:** `<rationale>` says why the options were selected, `<note>` why the item was excluded, and `<hidden-by>` names what hides it. `<supersedes>` and `<superseded-by>` appear on a listed question, and `<superseded-by>` on a hidden option.
 - **`promote-follow-up`:** `<promote>` holds the new question and, in `<promoted>`, the follow-up it came from.
-- **`supersede-question`, `supersede-option`, `clear-selection`:** `<before>` holds the question as it stood and `<after>` as it is now, both in `tree` shape with every state.
+- **`supersede-question`, `supersede-option`:** `<supersede>` holds `<before>` and `<after>` in `tree` shape with every state. For an option they are its question as it stood and as it is now; for a question, the old question and the new one.
+- **`clear-selection`:** `<clear-selection>` holds the question in `<before>` and `<after>` the same way.
