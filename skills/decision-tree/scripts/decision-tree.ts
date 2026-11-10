@@ -6754,12 +6754,15 @@ const Xml = (() => {
     return ["  <options>", ...options.map((each) => `    ${option(each)}`), "  </options>"];
   }
 
-  function question(data: QuestionData): string {
+  function question(data: QuestionData & Partial<StateData>): string {
+    const { attribute, hidden } = stateParts(data);
+
     return [
-      "<question>",
+      `<question${attribute}>`,
       `  <id>${data.id}</id>`,
       `  <text>${escapeXml(data.text)}</text>`,
       ...optionsLines(data.options),
+      ...(hidden === "" ? [] : [`  ${hidden}`]),
       "</question>",
     ].join("\n");
   }
@@ -7787,6 +7790,24 @@ const Xml = (() => {
         xml,
         ["<question>", "  <id>Q1</id>", "  <text>q</text>", "  <options></options>", "</question>"].join("\n"),
       );
+    });
+
+    test("a question with a state renders the state, and what hides it after its options", () => {
+      // given
+      const data: QuestionData & StateData = { id: "Q2", text: "q2", options: [], state: "off-path", hiddenBy: "Q1b" };
+
+      // when
+      const xml = question(data);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        '<question state="off-path">',
+        "  <id>Q2</id>",
+        "  <text>q2</text>",
+        "  <options></options>",
+        "  <hidden-by><id>Q1b</id></hidden-by>",
+        "</question>",
+      ]);
     });
 
     test("question with options renders them nested in order", () => {
