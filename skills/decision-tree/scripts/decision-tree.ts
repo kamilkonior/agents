@@ -105,14 +105,14 @@ type TaggedData = {
   tags: string[];
 };
 
+type StateData = { state: ItemState; hiddenBy?: string };
+
 type HiddenOption = OptionData & { state: ExclusionReason | "frozen"; note?: string; supersededBy?: string };
 
-type ListedItem = TaggedData & {
-  state: ItemState;
+type ListedItem = TaggedData & StateData & {
   selected?: OptionData[];
   rationale?: string;
   note?: string;
-  hiddenBy?: string;
   supersedes?: string;
   supersededBy?: string;
   trail?: TrailStep[];
@@ -1122,19 +1122,25 @@ const Graph = (() => {
     return openWithin(graph, focusedNode(graph));
   }
 
-  function taggedData(graph: Graph, node: QuestionNode | FollowUpNode): TaggedData {
+  function stateData(node: QuestionNode | OptionNode | FollowUpNode): StateData {
+    const state = assignedState(node);
+
+    return node.hiddenBy === undefined ? { state } : { state, hiddenBy: node.hiddenBy };
+  }
+
+  function taggedData(graph: Graph, node: QuestionNode | FollowUpNode): TaggedData & StateData {
     const tags = [...(graph.tags.get(node.id) ?? [])];
 
     if (node.kind === "follow-up") {
-      return { item: { kind: "follow-up", followUp: { id: node.id, text: node.text } }, tags };
+      return { item: { kind: "follow-up", followUp: { id: node.id, text: node.text } }, tags, ...stateData(node) };
     }
 
     const question = { id: node.id, text: node.text, options: liveOptions(graph, node) };
 
-    return { item: { kind: "question", question }, tags };
+    return { item: { kind: "question", question }, tags, ...stateData(node) };
   }
 
-  function taggedItem(log: Log, id: string): TaggedData {
+  function taggedItem(log: Log, id: string): TaggedData & StateData {
     const graph = build(log);
 
     const node = parentNode(graph.nodes, id);
@@ -1188,8 +1194,7 @@ const Graph = (() => {
       if (tag !== undefined && !graph.tags.get(node.id)?.has(tag)) return [];
       if (target !== undefined && node.id !== target) return [];
 
-      const state = assignedState(node);
-      if (!states.includes(state)) return [];
+      if (!states.includes(assignedState(node))) return [];
 
       const selected = node.kind === "question" ? liveSelected(graph, node) : [];
       const selectedData = selected.length === 0 ? {} : { selected: selected.map(({ id, text }) => ({ id, text })) };
@@ -1198,12 +1203,11 @@ const Graph = (() => {
 
       const note = graph.exclusions.get(node.id)?.note;
       const noteData = note === undefined ? {} : { note };
-      const causeData = node.hiddenBy === undefined ? {} : { hiddenBy: node.hiddenBy };
       const linkData = node.kind === "question" ? supersedeLinks(node) : {};
       const hidden = node.kind === "question" ? hiddenOptions(graph, node) : [];
       const hiddenData = hidden.length === 0 ? {} : { hiddenOptions: hidden };
 
-      return [{ ...taggedData(graph, node), state, ...selectedData, ...rationaleData, ...noteData, ...causeData, ...linkData, ...hiddenData }];
+      return [{ ...taggedData(graph, node), ...selectedData, ...rationaleData, ...noteData, ...linkData, ...hiddenData }];
     });
   }
 
@@ -3128,6 +3132,28 @@ const Graph = (() => {
 
       // then
       assert.deepEqual(items, []);
+    });
+
+    test("a tagged item under an unselected option carries off-path and the option that hides it", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1b" },
+        { type: "select-option", targets: ["Q1a"] },
+      ]);
+
+      // when
+      const tagged = taggedItem(log, "Q2");
+
+      // then
+      assert.deepEqual(tagged, {
+        item: { kind: "question", question: { id: "Q2", text: "q2", options: [] } },
+        tags: [],
+        state: "off-path",
+        hiddenBy: "Q1b",
+      });
     });
 
     test("looking up an unknown id throws not found for its role", () => {
@@ -5286,6 +5312,7 @@ const Tag = (() => {
       assert.deepEqual(tagged, {
         item: { kind: "question", question: { id: "Q1", text: "q", options: [] } },
         tags: ["a", "b"],
+        state: "open",
       });
       assert.deepEqual(log.read(), [...events, { type: "tag", target: "Q1", tags: ["a", "b"] }]);
     });
@@ -5305,6 +5332,7 @@ const Tag = (() => {
       assert.deepEqual(tagged, {
         item: { kind: "question", question: { id: "Q1", text: "q", options: [] } },
         tags: ["legal"],
+        state: "deferred",
       });
       assert.deepEqual(log.read(), [...events, { type: "tag", target: "Q1", tags: ["legal"] }]);
     });
@@ -5359,6 +5387,7 @@ const Untag = (() => {
       assert.deepEqual(untagged, {
         item: { kind: "question", question: { id: "Q1", text: "q", options: [] } },
         tags: ["b"],
+        state: "open",
       });
       assert.deepEqual(log.read(), [...events, { type: "untag", target: "Q1", tags: ["a"] }]);
     });
