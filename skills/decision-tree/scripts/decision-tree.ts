@@ -4250,6 +4250,9 @@ const SupersedeOption = (() => {
     const { target, text } = config;
     if (!target) throw new DecisionTreeError("supersede-option requires --target");
     if (!text) throw new DecisionTreeError("supersede-option requires --text");
+
+    const old = Graph.liveNode(log, target, "target");
+    if (old.kind !== "option") throw new DecisionTreeError(`target is not an option: ${target}`);
   }
 
   function tests() {
@@ -4287,6 +4290,25 @@ const SupersedeOption = (() => {
       assert.throws(
         act,
         (error) => error instanceof DecisionTreeError && error.message === "supersede-option requires --text",
+      );
+      assert.deepEqual(log.read(), events);
+    });
+
+    test("superseding a question as an option throws and appends nothing", () => {
+      // given
+      const events: Event[] = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const act = () => run(log, { target: "Q1", text: "b" });
+
+      // then
+      assert.throws(
+        act,
+        (error) => error instanceof DecisionTreeError && error.message === "target is not an option: Q1",
       );
       assert.deepEqual(log.read(), events);
     });
