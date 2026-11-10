@@ -8150,7 +8150,7 @@ const Cli = (() => {
       return;
     }
 
-    Log.locked(mode.log, () => runOp(log, mode.op));
+    Log.locked(mode.log, () => console.log(runOp(log, mode.op)));
   }
 
   function runQuery(log     , query        ) {
@@ -8184,84 +8184,71 @@ const Cli = (() => {
     }
   }
 
-  function runOp(log     , op        ) {
+  function runOp(log     , op        )         {
     switch (op) {
       case "add-question": {
         const config = readModeConfig(AddQuestion.options);
-        console.log(Xml.question(AddQuestion.run(log, config)));
-        break;
+        return Xml.question(AddQuestion.run(log, config));
       }
 
       case "add-option": {
         const config = readModeConfig(AddOption.options);
-        console.log(Xml.option(AddOption.run(log, config)));
-        break;
+        return Xml.option(AddOption.run(log, config));
       }
 
       case "select-option": {
         const config = readModeConfig(SelectOption.options);
-        console.log(Xml.selection(SelectOption.run(log, config)));
-        break;
+        return Xml.selection(SelectOption.run(log, config));
       }
 
       case "clear-selection": {
         const config = readModeConfig(ClearSelection.options);
-        console.log(Xml.beforeAfter("clear-selection", ClearSelection.run(log, config)));
-        break;
+        return Xml.beforeAfter("clear-selection", ClearSelection.run(log, config));
       }
 
       case "add-follow-up": {
         const config = readModeConfig(AddFollowUp.options);
-        console.log(Xml.followUp(AddFollowUp.run(log, config)));
-        break;
+        return Xml.followUp(AddFollowUp.run(log, config));
       }
 
       case "promote-follow-up": {
         const config = readModeConfig(PromoteFollowUp.options);
-        console.log(Xml.promote(PromoteFollowUp.run(log, config)));
-        break;
+        return Xml.promote(PromoteFollowUp.run(log, config));
       }
 
       case "exclude": {
         const config = readModeConfig(Exclude.options);
-        console.log(Xml.item(Exclude.run(log, config)));
-        break;
+        return Xml.item(Exclude.run(log, config));
       }
 
       case "restore": {
         const config = readModeConfig(Restore.options);
-        console.log(Xml.item(Restore.run(log, config)));
-        break;
+        return Xml.item(Restore.run(log, config));
       }
 
       case "tag": {
         const config = readModeConfig(Tag.options);
-        console.log(Xml.taggedItem(Tag.run(log, config)));
-        break;
+        return Xml.taggedItem(Tag.run(log, config));
       }
 
       case "untag": {
         const config = readModeConfig(Untag.options);
-        console.log(Xml.taggedItem(Untag.run(log, config)));
-        break;
+        return Xml.taggedItem(Untag.run(log, config));
       }
 
       case "focus": {
         const config = readModeConfig(Focus.options);
-        console.log(Xml.item(Focus.run(log, config)));
-        break;
+        return Xml.item(Focus.run(log, config));
       }
 
       case "supersede-question": {
         const config = readModeConfig(SupersedeQuestion.options);
-        console.log(Xml.beforeAfter("supersede", SupersedeQuestion.run(log, config)));
-        break;
+        return Xml.beforeAfter("supersede", SupersedeQuestion.run(log, config));
       }
 
       case "supersede-option": {
         const config = readModeConfig(SupersedeOption.options);
-        console.log(Xml.beforeAfter("supersede", SupersedeOption.run(log, config)));
-        break;
+        return Xml.beforeAfter("supersede", SupersedeOption.run(log, config));
       }
       default:
         throw new DecisionTreeError(`unknown op: ${op}`);
