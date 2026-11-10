@@ -4246,13 +4246,21 @@ const SupersedeOption = (() => {
     text: { type: "string" },
   } as const;
 
-  function run(log: Log, config: { target?: string; text?: string }): void {
+  function run(log: Log, config: { target?: string; text?: string }): { option: OptionData } {
     const { target, text } = config;
     if (!target) throw new DecisionTreeError("supersede-option requires --target");
     if (!text) throw new DecisionTreeError("supersede-option requires --text");
 
     const old = Graph.liveNode(log, target, "target");
     if (old.kind !== "option") throw new DecisionTreeError(`target is not an option: ${target}`);
+
+    return Log.transaction(log, (staged) => {
+      const option = AddOption.run(staged, { text, origin: old.question.id });
+
+      staged.append({ type: "supersede-option", target, option: option.id });
+
+      return { option };
+    });
   }
 
   function tests() {
@@ -4311,6 +4319,27 @@ const SupersedeOption = (() => {
         (error) => error instanceof DecisionTreeError && error.message === "target is not an option: Q1",
       );
       assert.deepEqual(log.read(), events);
+    });
+
+    test("superseding an option adds one with the next letter before recording the supersede", () => {
+      // given
+      const events: Event[] = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const supersede = run(log, { target: "Q1a", text: "c" });
+
+      // then
+      assert.deepEqual(supersede.option, { id: "Q1c", text: "c" });
+      assert.deepEqual(log.read(), [
+        ...events,
+        { type: "add-option", id: "Q1c", text: "c", origin: "Q1" },
+        { type: "supersede-option", target: "Q1a", option: "Q1c" },
+      ]);
     });
   }
 
