@@ -289,6 +289,18 @@ const Log = (() => {
     });
   }
 
+  function stamped(log     , call                                   )      {
+    return {
+      read() {
+        return log.read();
+      },
+
+      append(...added) {
+        log.append(...stamp(added, { existing: log.read().length, op: call.op, at: call.now() }));
+      },
+    };
+  }
+
   function transaction   (log     , work                    )    {
     const existing = log.read();
     const staged = memoryLog([...existing]);
@@ -508,6 +520,40 @@ const Log = (() => {
         { type: "add-option", id: "Q1c", text: "c", origin: "Q1", meta: { eid: 3, at: 1000, causedByEid: 5 } },
         { type: "clear-selection", target: "Q1", meta: { eid: 4, at: 1000, causedByEid: 5 } },
         { type: "supersede-option", target: "Q1a", option: "Q1c", meta: { eid: 5, at: 1000 } },
+      ]);
+    });
+
+    test("a stamped log refuses lines that hold none of the op's own type and appends nothing", () => {
+      // given
+      const question        = { type: "add-question", id: "Q1", text: "q" };
+      const log = memoryLog([question]);
+      const stampedLog = stamped(log, { op: "supersede-option", now: () => 1000 });
+
+      // when
+      const act = () => stampedLog.append({ type: "add-option", id: "Q1a", text: "a", origin: "Q1" });
+
+      // then
+      assert.throws(act, (error) => error instanceof Error && error.message === "supersede-option wrote no line of its own");
+      assert.deepEqual(log.read(), [question]);
+    });
+
+    test("a stamped log stamps what is appended to it, numbering after the lines it holds", () => {
+      // given
+      const existing        = { type: "add-question", id: "Q1", text: "q1" };
+      const log = memoryLog([existing]);
+      const stampedLog = stamped(log, { op: "add-question", now: () => 1000 });
+
+      // when
+      stampedLog.append(
+        { type: "add-question", id: "Q2", text: "q2" },
+        { type: "add-option", id: "Q2a", text: "a", origin: "Q2" },
+      );
+
+      // then
+      assert.deepEqual(log.read(), [
+        existing,
+        { type: "add-question", id: "Q2", text: "q2", meta: { eid: 2, at: 1000 } },
+        { type: "add-option", id: "Q2a", text: "a", origin: "Q2", meta: { eid: 3, at: 1000, causedByEid: 2 } },
       ]);
     });
   }
