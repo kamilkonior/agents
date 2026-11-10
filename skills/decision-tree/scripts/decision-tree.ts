@@ -11,7 +11,9 @@ type ParseArgsOptionsConfig = import("node:util").ParseArgsOptionsConfig;
 
 type ExclusionReason = "not-applicable" | "deferred";
 
-type Event =
+type Meta = { eid: number; at: number; causedByEid?: number };
+
+type Event = (
   | { type: "add-question"; id: string; text: string; origin?: string }
   | { type: "add-option"; id: string; text: string; origin: string }
   | { type: "select-option"; targets: string[]; rationale?: string }
@@ -24,7 +26,8 @@ type Event =
   | { type: "supersede-option"; target: string; option: string }
   | { type: "focus"; target: string }
   | { type: "tag"; target: string; tags: string[] }
-  | { type: "untag"; target: string; tags: string[] };
+  | { type: "untag"; target: string; tags: string[] }
+) & { meta?: Meta };
 
 type IdEvent = Extract<Event, { id: string }>;
 
@@ -272,6 +275,20 @@ const Log = (() => {
     return `${prefix}${Math.max(0, ...numbers) + 1}`;
   }
 
+  function stamp(added: Event[], call: { existing: number; op: string; at: number }): Event[] {
+    const own = added.findIndex((event) => event.type === call.op);
+    if (own === -1) throw new Error(`${call.op} wrote no line of its own`);
+
+    const ownEid = call.existing + own + 1;
+
+    return added.map((event, index) => {
+      const eid = call.existing + index + 1;
+      const meta = eid === ownEid ? { eid, at: call.at } : { eid, at: call.at, causedByEid: ownEid };
+
+      return { ...event, meta };
+    });
+  }
+
   function transaction<T>(log: Log, work: (staged: Log) => T): T {
     const existing = log.read();
     const staged = memoryLog([...existing]);
@@ -456,6 +473,42 @@ const Log = (() => {
 
       // then
       assert.deepEqual(log.read(), [question]);
+    });
+
+    test("stamping lines that hold none of the op's own type throws", () => {
+      // given
+      const added: Event[] = [{ type: "add-option", id: "Q1b", text: "b", origin: "Q1" }];
+
+      // when
+      const act = () => stamp(added, { existing: 2, op: "supersede-option", at: 1000 });
+
+      // then
+      assert.throws(
+        act,
+        (error) =>
+          error instanceof Error &&
+          !(error instanceof DecisionTreeError) &&
+          error.message === "supersede-option wrote no line of its own",
+      );
+    });
+
+    test("stamping numbers the lines after the existing ones, times them and points side effects at the op's line", () => {
+      // given
+      const added: Event[] = [
+        { type: "add-option", id: "Q1c", text: "c", origin: "Q1" },
+        { type: "clear-selection", target: "Q1" },
+        { type: "supersede-option", target: "Q1a", option: "Q1c" },
+      ];
+
+      // when
+      const stamped = stamp(added, { existing: 2, op: "supersede-option", at: 1000 });
+
+      // then
+      assert.deepEqual(stamped, [
+        { type: "add-option", id: "Q1c", text: "c", origin: "Q1", meta: { eid: 3, at: 1000, causedByEid: 5 } },
+        { type: "clear-selection", target: "Q1", meta: { eid: 4, at: 1000, causedByEid: 5 } },
+        { type: "supersede-option", target: "Q1a", option: "Q1c", meta: { eid: 5, at: 1000 } },
+      ]);
     });
   }
 
