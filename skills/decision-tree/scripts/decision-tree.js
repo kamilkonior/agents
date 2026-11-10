@@ -121,6 +121,8 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
 
                                                                                
 
+                                                                   
+
                                                                                          
 
                  
@@ -6288,6 +6290,15 @@ const Xml = (() => {
     ].join("\n");
   }
 
+  function beforeAfter(name        , data                 )         {
+    const before = data.before.flatMap(treeLines).map((line) => `    ${line}`);
+    const after = data.after.flatMap(treeLines).map((line) => `    ${line}`);
+
+    return [`<${name}>`, "  <before>", ...before, "  </before>", "  <after>", ...after, "  </after>", `</${name}>`].join(
+      "\n",
+    );
+  }
+
   function tests() {
     test("items renders a trail after the tags, escaped and in order", () => {
       // given
@@ -7314,6 +7325,63 @@ const Xml = (() => {
         "      </question>",
         "    </option>",
         "  </superseded>",
+        "</supersede>",
+      ]);
+    });
+
+    test("a before-and-after result renders both trees under the given name", () => {
+      // given
+      const data                  = {
+        before: [
+          {
+            kind: "question",
+            state: "settled",
+            id: "Q1",
+            text: "q",
+            options: [{ id: "Q1a", text: "a", selected: true, children: [] }],
+            children: [],
+          },
+        ],
+        after: [
+          {
+            kind: "question",
+            state: "open",
+            id: "Q1",
+            text: "q",
+            options: [
+              { id: "Q1b", text: "b", supersedes: "Q1a", children: [] },
+              { id: "Q1a", text: "a", state: "frozen", supersededBy: "Q1b", children: [] },
+            ],
+            children: [],
+          },
+        ],
+      };
+
+      // when
+      const xml = beforeAfter("supersede", data);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<supersede>",
+        "  <before>",
+        '    <question state="settled">',
+        "      <id>Q1</id>",
+        "      <text>q</text>",
+        "      <options>",
+        '        <option selected="true"><id>Q1a</id><text>a</text></option>',
+        "      </options>",
+        "    </question>",
+        "  </before>",
+        "  <after>",
+        '    <question state="open">',
+        "      <id>Q1</id>",
+        "      <text>q</text>",
+        "      <options>",
+        "        <option><id>Q1b</id><text>b</text><supersedes><id>Q1a</id></supersedes></option>",
+        '        <option state="frozen"><id>Q1a</id><text>a</text><superseded-by><id>Q1b</id></superseded-by></option>',
+        "      </options>",
+        "    </question>",
+        "  </after>",
         "</supersede>",
       ]);
     });
