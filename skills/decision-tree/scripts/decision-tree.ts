@@ -3259,6 +3259,7 @@ const Graph = (() => {
     filterTree,
     status,
     frontier: (log: Log) => frontier(build(log)),
+    activeFocus: (log: Log) => activeFocus(build(log)),
     hasOpen,
     rejectOffPath,
     trail,
@@ -4455,12 +4456,14 @@ const SupersedeQuestion = (() => {
 
     const before = Graph.buildTree(log, target);
     const { tags } = Graph.taggedItem(log, target);
+    const focused = Graph.activeFocus(log) === target;
 
     return Log.transaction(log, (staged) => {
       const question = AddQuestion.run(staged, { text, origin: old.parent?.id, option: config.option });
 
       staged.append({ type: "supersede-question", target, question: question.id });
       if (tags.length > 0) Tag.run(staged, { target: question.id, tag: tags });
+      if (focused) Focus.run(staged, { target: question.id });
 
       return { before, after: Graph.buildTree(staged, question.id) };
     });
@@ -4570,6 +4573,26 @@ const SupersedeQuestion = (() => {
         { type: "add-question", id: "Q2", text: "q2" },
         { type: "supersede-question", target: "Q1", question: "Q2" },
         { type: "tag", target: "Q2", tags: ["t", "u"] },
+      ]);
+    });
+
+    test("superseding the focused question focuses the new one after recording the supersede", () => {
+      // given
+      const events: Event[] = [
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "focus", target: "Q1" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      run(log, { target: "Q1", text: "q2" });
+
+      // then
+      assert.deepEqual(log.read(), [
+        ...events,
+        { type: "add-question", id: "Q2", text: "q2" },
+        { type: "supersede-question", target: "Q1", question: "Q2" },
+        { type: "focus", target: "Q2" },
       ]);
     });
 
