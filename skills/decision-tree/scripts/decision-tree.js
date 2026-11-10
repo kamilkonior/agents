@@ -3724,6 +3724,41 @@ const SelectOption = (() => {
   return { options, run, tests };
 })();
 
+const ClearSelection = (() => {
+  const options = {
+    target: { type: "string" },
+  }         ;
+
+  function run(log     , config                     )       {
+    const { target } = config;
+    if (!target) throw new DecisionTreeError("clear-selection requires --target");
+  }
+
+  function tests() {
+    test("clearing a selection without a target throws and appends nothing", () => {
+      // given
+      const events          = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const act = () => run(log, {});
+
+      // then
+      assert.throws(
+        act,
+        (error) => error instanceof DecisionTreeError && error.message === "clear-selection requires --target",
+      );
+      assert.deepEqual(log.read(), events);
+    });
+  }
+
+  return { options, run, tests };
+})();
+
 const AddFollowUp = (() => {
   const options = {
     text: { type: "string" },
@@ -7739,6 +7774,7 @@ const Cli = (() => {
     AddQuestion.tests();
     AddOption.tests();
     SelectOption.tests();
+    ClearSelection.tests();
     AddFollowUp.tests();
     PromoteFollowUp.tests();
     Exclude.tests();
