@@ -4541,10 +4541,14 @@ const SupersedeOption = (() => {
     if (old.kind !== "option") throw new DecisionTreeError(`target is not an option: ${target}`);
 
     const before = Graph.buildTree(log, old.question.id);
+    const wasSelected = before
+      .flatMap((entry) => (entry.kind === "question" ? entry.options : []))
+      .some((option) => option.id === target && option.selected === true);
 
     return Log.transaction(log, (staged) => {
       const option = AddOption.run(staged, { text, origin: old.question.id });
 
+      if (wasSelected) ClearSelection.run(staged, { target: old.question.id });
       staged.append({ type: "supersede-option", target, option: option.id });
 
       return { before, after: Graph.buildTree(staged, old.question.id) };
@@ -4625,6 +4629,28 @@ const SupersedeOption = (() => {
       assert.deepEqual(log.read(), [
         ...events,
         { type: "add-option", id: "Q1c", text: "c", origin: "Q1" },
+        { type: "supersede-option", target: "Q1a", option: "Q1c" },
+      ]);
+    });
+
+    test("superseding a selected option clears the selection before recording the supersede", () => {
+      // given
+      const events          = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      run(log, { target: "Q1a", text: "c" });
+
+      // then
+      assert.deepEqual(log.read(), [
+        ...events,
+        { type: "add-option", id: "Q1c", text: "c", origin: "Q1" },
+        { type: "clear-selection", target: "Q1" },
         { type: "supersede-option", target: "Q1a", option: "Q1c" },
       ]);
     });
