@@ -3729,17 +3729,24 @@ const ClearSelection = (() => {
     target: { type: "string" },
   }         ;
 
-  function run(log     , config                     )       {
+  function run(log     , config                     )                  {
     const { target } = config;
     if (!target) throw new DecisionTreeError("clear-selection requires --target");
 
     const question = Graph.liveNode(log, target, "target");
     if (question.kind !== "question") throw new DecisionTreeError(`target is not a question: ${target}`);
 
-    const hasSelection = Graph.buildTree(log, target)
+    const before = Graph.buildTree(log, target);
+    const hasSelection = before
       .flatMap((entry) => (entry.kind === "question" ? entry.options : []))
       .some((option) => option.selected === true);
     if (!hasSelection) throw new DecisionTreeError(`${target} has no selection`);
+
+    return Log.transaction(log, (staged) => {
+      staged.append({ type: "clear-selection", target });
+
+      return { before, after: Graph.buildTree(staged, target) };
+    });
   }
 
   function tests() {
@@ -3797,6 +3804,62 @@ const ClearSelection = (() => {
       // then
       assert.throws(act, (error) => error instanceof DecisionTreeError && error.message === "Q1 has no selection");
       assert.deepEqual(log.read(), events);
+    });
+
+    test("clearing a selection records it and returns the question before and after", () => {
+      // given
+      const events          = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "add-option", id: "Q1b", text: "b", origin: "Q1" },
+        { type: "add-question", id: "Q2", text: "q2", origin: "Q1a" },
+        { type: "select-option", targets: ["Q1a"], rationale: "why" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const cleared = run(log, { target: "Q1" });
+
+      // then
+      assert.deepEqual(log.read(), [...events, { type: "clear-selection", target: "Q1" }]);
+      assert.deepEqual(cleared, {
+        before: [
+          {
+            kind: "question",
+            state: "settled",
+            id: "Q1",
+            text: "q",
+            options: [
+              {
+                id: "Q1a",
+                text: "a",
+                selected: true,
+                children: [{ kind: "question", state: "open", id: "Q2", text: "q2", options: [], children: [] }],
+              },
+              { id: "Q1b", text: "b", children: [] },
+            ],
+            rationale: "why",
+            children: [],
+          },
+        ],
+        after: [
+          {
+            kind: "question",
+            state: "open",
+            id: "Q1",
+            text: "q",
+            options: [
+              {
+                id: "Q1a",
+                text: "a",
+                children: [{ kind: "question", state: "off-path", id: "Q2", text: "q2", options: [], children: [] }],
+              },
+              { id: "Q1b", text: "b", children: [] },
+            ],
+            children: [],
+          },
+        ],
+      });
     });
   }
 
