@@ -4240,6 +4240,41 @@ const SupersedeQuestion = (() => {
   return { options, run, tests };
 })();
 
+const SupersedeOption = (() => {
+  const options = {
+    target: { type: "string" },
+    text: { type: "string" },
+  }         ;
+
+  function run(log     , config                                    )       {
+    const { target } = config;
+    if (!target) throw new DecisionTreeError("supersede-option requires --target");
+  }
+
+  function tests() {
+    test("superseding an option without a target throws and appends nothing", () => {
+      // given
+      const events          = [
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+      ];
+      const log = Log.memoryLog([...events]);
+
+      // when
+      const act = () => run(log, { text: "b" });
+
+      // then
+      assert.throws(
+        act,
+        (error) => error instanceof DecisionTreeError && error.message === "supersede-option requires --target",
+      );
+      assert.deepEqual(log.read(), events);
+    });
+  }
+
+  return { options, run, tests };
+})();
+
 const Focus = (() => {
   const options = {
     target: { type: "string" },
@@ -7191,6 +7226,7 @@ const Cli = (() => {
     Exclude.tests();
     Restore.tests();
     SupersedeQuestion.tests();
+    SupersedeOption.tests();
     Focus.tests();
     Tag.tests();
     Untag.tests();
