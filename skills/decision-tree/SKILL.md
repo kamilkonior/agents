@@ -89,7 +89,7 @@ Superseding replaces a question or an option whose premise no longer holds.
 
 What was decided under it rested on that premise, so it is frozen with everything under it: history, closed to changes, that no later decision can rest on.
 
-No decision moves to the replacement on its own, because whether it still holds is a judgement. Judge each item that was frozen, open items and viable options included; `<before>` shows it as it stood. Migrate what holds by rebuilding it, and surface what changed, since whoever decided it believes it stands.
+No decision moves to the replacement on its own, because whether it still holds is a judgement.
 
 ## Queries
 
