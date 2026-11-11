@@ -1,6 +1,6 @@
 ---
 name: grill-me
-description: Interview the user until you share an understanding of a design and every decision in it is theirs. Use whenever the user asks to be grilled or interviewed, wants to pressure-test a plan, stress-test it, poke holes in it, find what they're missing, decide an architecture or approach before building, or pick an earlier grilling session back up, even if they don't say "interview". Not for one-off factual questions, decisions already made, or work the user just wants done.
+description: Interview the user until you share an understanding of a design and every decision in it is theirs. Use whenever the user asks to be grilled or interviewed, wants to pressure-test a plan, stress-test it, poke holes in it, find what they're missing, decide on an architecture, a strategy or an approach before building, or pick an earlier grilling session back up, even if they don't say "interview". Not for one-off factual questions, decisions already made, or work the user just wants done.
 ---
 
 # Grill me
