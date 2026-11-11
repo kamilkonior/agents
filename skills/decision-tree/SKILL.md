@@ -83,6 +83,14 @@ New work under an answer comes before later roots. An open question stays at the
 | `focus --target ID` | Puts an item with something open at the head of `next`. Only the latest focus counts. It ends when nothing is open inside it, or its item is excluded or goes off the path, and it never comes back. Superseding the focused question moves it to the replacement. |
 | `tag` / `untag --target ID --tag T…` | Adds or removes tags on a question or follow-up. |
 
+## Superseding
+
+Superseding replaces a question or an option whose premise no longer holds.
+
+What was decided under it rested on that premise, so it is frozen with everything under it: history, closed to changes, that no later decision can rest on.
+
+Nothing moves to the replacement on its own, because whether a decision still holds is a judgement. Judge each item in `<before>`: migrate what holds by rebuilding it, and surface what changed, since whoever decided it believes it stands.
+
 ## Queries
 
 | `--query` | Returns |
@@ -99,8 +107,8 @@ New work under an answer comes before later roots. An open question stays at the
 | Situation | Consider |
 |---|---|
 | Not ready to decide | `exclude --reason deferred` with the blocker as `--note` frees the walk, and `restore` brings it back once the blocker clears. Items waiting on the same person can share a tag, so `--query items --tag T --state deferred` lists them together. |
-| A question's premise changed | `supersede-question` with the corrected wording, because patching answers leaves decisions standing on the old premise. `--query tree --target QID --state all` shows what it would freeze, and the normal ops rebuild what still holds from `<before>`, including open items and viable options. |
-| An option's meaning changed | Rewording isn't possible. `supersede-option` with the corrected wording, because `exclude` would leave what was decided under the old wording restorable. The normal ops rebuild what still holds from `<before>`. |
+| A question's premise changed | `supersede-question` with the corrected wording. `--query tree --target QID --state all` shows what it would freeze. Open items and viable options migrate too, not only answers. |
+| An option's meaning changed | Rewording isn't possible. `supersede-option` with the corrected wording; `exclude` would leave what was decided under the old wording restorable. |
 | Stopping before everything is decided | A pause needs nothing. To close the tree, `exclude --reason deferred` each open item, top-level items first. |
 | An option is ruled out | `exclude` on the option, with `--reason not-applicable`. |
 | A question's answer is in doubt | `clear-selection` reopens the question without removing or replacing anything. `exclude` on the chosen option also reopens it, but takes that option off the offer. |
