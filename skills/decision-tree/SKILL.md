@@ -78,7 +78,7 @@ New work under an answer comes before later roots. An open question stays at the
 | `promote-follow-up --target FID [--text T] [--option A]…` | Creates a question under the follow-up, worded as `T` or as the follow-up, with the follow-up's tags. The follow-up stays as history under its own id. |
 | `supersede-question --target QID --text T [--option A]…` | Puts a new question in the old one's place, with its tags, the focus if it held it, and only the options given. The old question and everything under it are frozen; no answers or children carry over. |
 | `supersede-option --target OID --text T` | Adds a new option to the same question, with the next free letter, and freezes the old option and everything under it. Nothing carries over. If the old option was selected, the question's whole selection is dropped and the question is open again. |
-| `exclude --target ID --reason deferred\|not-applicable [--note N]` | Takes an item and everything under it out of the walk. Until it is restored, the item and what is under it accept only `add-question`, `add-option`, `add-follow-up`, `tag` and `untag`. What is added stays hidden with it. Excluding every selected option reopens the question. |
+| `exclude --target ID --reason deferred\|not-applicable [--note N]` | Takes an item and everything under it out of the walk. Until it is restored, the item and what is under it accept only `add-question`, `add-option`, `add-follow-up`, `tag` and `untag`. Excluding every selected option reopens the question. |
 | `restore --target ID` | Brings back the item the exclusion was made on, with everything under it. A selection returns unless a newer one replaced it or it was cleared. |
 | `focus --target ID` | Puts an item with something open at the head of `next`. Only the latest focus counts. It ends when nothing is open inside it, or its item is excluded or goes off the path, and it never comes back. Superseding the focused question moves it to the replacement. |
 | `tag` / `untag --target ID --tag T…` | Adds or removes tags on a question or follow-up. |
@@ -87,12 +87,12 @@ New work under an answer comes before later roots. An open question stays at the
 
 | `--query` | Returns |
 |---|---|
-| `next [--trail]` | the first open item, with the path to it if `--trail` is given |
-| `status [--target ID]` | open, settled and deferred items in one compact hierarchy |
-| `tree [--state S]… [--target ID]` | the full structure, with every option |
-| `items [--tag T] [--target ID [--trail]] [--state S]… [--limit N]` | a flat list in walk order |
+| `next [--trail]` | the first open item, with the path to it if `--trail` is given. It is the only query a focus affects. |
+| `status [--target ID]` | open, settled and deferred items in one compact hierarchy; off-path, not-applicable and frozen items are left out. An item inside a decided option goes if that answer changes, and one beside `<decided>` stays. `--target` limits it to that item and what's under it, and prints an empty `<status></status>` for an item it leaves out. |
+| `tree [--state S]… [--target ID]` | the full structure, with every option. It keeps the ancestors of a match. `--target` limits it to that item and what's under it. |
+| `items [--tag T] [--target ID [--trail]] [--state S]… [--limit N]` | a flat list in walk order. `--target` finds one item in any state unless `--state` is given. `--limit` doesn't say whether more exist. |
 
-`S` is `open` (the default), `settled`, `off-path`, `deferred`, `not-applicable`, `frozen` or `all`. It never filters options, and `tree` keeps the ancestors of a match. `--target` limits `status` and `tree` to that item and what's under it, and `status` prints an empty `<status></status>` for an item it leaves out. In `items`, `--target` finds one item in any state unless `--state` is given. `--limit` doesn't say whether more exist. A focus affects only `next`.
+`S` is `open` (the default), `settled`, `off-path`, `deferred`, `not-applicable`, `frozen` or `all`. It never filters options.
 
 ## When things get in the way
 
@@ -104,44 +104,3 @@ New work under an answer comes before later roots. An open question stays at the
 | An option no longer applies | `exclude` on the option, with `--reason not-applicable`, removes just that answer. The other options keep their letters. |
 | An option's meaning changed | Rewording isn't possible, and `exclude` would leave what was decided under the old wording restorable. `supersede-option` with the corrected wording freezes the old option and what hung under it. It can't be undone, and the normal ops rebuild what still holds from `<before>`. |
 | An answer is in doubt | `clear-selection` reopens the question without removing or replacing anything. `exclude` on the chosen option also reopens it, but takes that option off the offer. |
-
-## Output
-
-Position in the XML carries meaning:
-
-```xml
-<status>
-  <question state="settled">
-    <id>Q1</id>
-    <text>Where do events live?</text>
-    <decided>
-      <option>
-        <id>Q1b</id>
-        <text>a database</text>
-        <question state="open">
-          <id>Q2</id>
-          <text>Which database?</text>
-          <options>
-            <option><id>Q2a</id><text>SQLite</text></option>
-            <option><id>Q2b</id><text>Postgres</text></option>
-          </options>
-        </question>
-      </option>
-      <rationale>We already run Postgres</rationale>
-    </decided>
-    <question state="deferred">
-      <id>Q3</id>
-      <text>Retention?</text>
-      <note>Legal is deciding</note>
-    </question>
-  </question>
-</status>
-```
-
-- **`next`:** one `<question>` or `<follow-up>`, and a follow-up has no options. `--trail` puts the path to it in `<trail>`.
-- **`status`:** an item inside a decided option goes if that answer changes, and one beside `<decided>` stays. Off-path, not-applicable and frozen items are left out, and a deferred item shows only its note.
-- **`tree`:** the chosen option has `selected="true"` and holds its children, `<rationale>` follows `<options>`, and the question's own children come after that. A promoted follow-up appears as a step, and a superseded question follows its replacement. An excluded or superseded option comes after the live ones, with its `state`. A replacement carries `<supersedes>` and what it replaced carries `<superseded-by>`, each with the other's id.
-- **`items`:** `<rationale>` says why the options were selected, `<note>` why the item was excluded, and `<hidden-by>` names what hides it. `<supersedes>` and `<superseded-by>` appear on a listed question, and `<superseded-by>` on a hidden option.
-- **`promote-follow-up`:** `<promote>` holds the new question and, in `<promoted>`, the follow-up it came from.
-- **`supersede-question`, `supersede-option`:** `<supersede>` holds `<before>` and `<after>` in `tree` shape with every state. For an option they are its question as it stood and as it is now; for a question, the old question and the new one.
-- **`clear-selection`:** `<clear-selection>` holds the question in `<before>` and `<after>` the same way.
