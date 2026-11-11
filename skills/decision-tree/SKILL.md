@@ -60,7 +60,7 @@ Ids are never reused, so excluding an option leaves a gap in the letters. `--tar
 2. Under a settled question: the answer's questions, the answer's follow-ups, the question's own questions, its own follow-ups.
 3. Root follow-ups last.
 
-New work under an answer comes before later roots. An open question stays at the front until it is selected, excluded or superseded. While a focus is active, `next` stays inside it.
+New work under an answer comes before later roots. While a focus is active, `next` stays inside it.
 
 `<next></next>` means nothing is open. Deferred items remain in the tree, and nothing restores them automatically.
 
