@@ -66,7 +66,7 @@ Each thing the design needs has one source. Mixing the sources up is how an agen
 
 These apply to what you say to the user and to what you write into the record. What the user said stays in their words.
 
-**Every action names its actor.** "The session is renewed" hides whether the browser or the server renews it, and that is often the decision itself. When you don't know who acts, look it up or ask the user. Don't guess.
+**Every action names its actor.** "The contract is renewed" hides whether the supplier or the buyer renews it, and that is often the decision itself. When you don't know who acts, look it up or ask the user. Don't guess.
 
 **One idea per sentence, with no words dropped.** A sentence with two ideas gets one of them skimmed. A sentence with words dropped has to be guessed: "cache fallback" can mean falling back to the cache or a fallback for the cache, and neither of you notices when the user picks the wrong one. Writing it out costs the user less attention than guessing does.
 
