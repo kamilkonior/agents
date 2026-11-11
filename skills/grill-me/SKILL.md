@@ -144,19 +144,39 @@ The interview is done when every decision that shapes what gets built is settled
 3. the defaults: first the ones the user accepted, then the ones still only proposed;
 4. where the log lives.
 
-The decisions are a tree:
+The decisions are a tree. Each settled root question is one `<decision>`:
 
 ```
-- **Q2 · Working hours** → **Office hours only** (you told me)
-  - **Q3 · Session length** → **One working day**
-    - a morning login costs little, and a stolen session stops working the same day (mine, accepted)
-- **Q5 · Login methods** → **a) Password**, **c) Company single sign-on**
-  - contractors have no company account (yours)
+- **<question-id> · <question-text>**
+  - <chosen-options><fact-mark>
+    - <rationale>
+    - <decisions-on-the-option>
+  - <decisions-on-the-question>
 ```
 
-- **A decision** is one line: the id and title, then the chosen answer. Several chosen answers keep their letters.
-- **A user-only fact** is marked `(you told me)` on that line.
-- **Under it** come the rationale and whose it is, then the decisions that the answer led to.
+- `<question-id>`, `<question-text>`: the question's id and text, as the record has them.
+- `<chosen-options>`: each chosen option as `**<option-letter>) <option-text>**`, as the record has them, separated by commas.
+- `<fact-mark>`: ` (you told me)` when the answer is a user-only fact, and nothing otherwise.
+- `<rationale>`: the rationale, as the record has it. It calls out the owner, if known, with either `(yours)` or `(mine, accepted)`.
+- `<decisions-on-the-option>`: one `<decision>` for each settled question that hangs on a chosen option.
+- `<decisions-on-the-question>`: one `<decision>` for each settled question that hangs on the question itself.
+
+A line whose placeholder is empty is left out. For example:
+
+```
+- **Q2 · Which hours do your users work?**
+  - **a) Office hours only** (you told me)
+    - **Q3 · How long should a session last before the user must log in again?**
+      - **a) One working day**
+        - a morning login costs little, and a stolen session stops working the same day (mine, accepted)
+  - **Q7 · How does a public holiday count?**
+    - **b) As a weekend day**
+      - the support desk is closed on both (yours)
+- **Q5 · Which login methods do you offer?**
+  - **a) Password**, **c) Company single sign-on**
+    - contractors have no company account (yours)
+```
+
 - **Open and deferred questions** appear only in the first part.
 - **Anything else the user needs** comes after the four parts.
 
