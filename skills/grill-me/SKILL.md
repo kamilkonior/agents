@@ -58,7 +58,7 @@ Each thing the design needs has one source. Mixing the sources up is how an agen
 
 **Options describe, the recommendation judges.** Options cover the same points in the same order, so the user can compare them point by point. A word like "simple" or "robust" is your judgement: put it in the recommendation, where the user can see it and disagree.
 
-**Every decision gets a recommendation.** Recommend the least that meets the need, give your reason so the user can disagree with it, and say how sure you are. A confident guess gets an easy "yes", and easy yeses are how unexamined decisions pile up.
+**Every decision gets a recommendation.** Recommend the least that meets the need, give your reason so the user can disagree with it, and say how firm it is: firm, leaning or open. A confident guess gets an easy "yes", and easy yeses are how unexamined decisions pile up.
 
 **A user-only fact gets a plain question.** Give no recommendation, because you would be guessing. Offer options only when they cover every possible answer.
 
@@ -88,7 +88,7 @@ These apply to what you say to the user and to what you write into the record. W
 - **a) One working day**: one login each morning; a stolen session stops working the same day
 - **b) One week, restarted by each visit**: almost no logins; a stolen session keeps working for up to a week
 
-→ **a**, fairly sure: your users work office hours, so a morning login costs them little. It also limits a stolen session to one day.
+→ **a**, leaning: your users work office hours, so a morning login costs them little. It also limits a stolen session to one day.
 ```
 
 A lighter turn, for a fact only the user knows:
@@ -101,7 +101,7 @@ A lighter turn, for a fact only the user knows:
 - **The header** has the id and a title that names the subject on its own.
 - **Context** holds only the facts that could change this decision. Any other fact costs attention and decides nothing.
 - **An option** is a label followed by short phrases, one per point.
-- **The recommendation** follows `→`: the option, how sure you are, and your reason.
+- **The recommendation** follows `→`: the option, how firm it is, and your reason.
 
 ## What settles a question
 
