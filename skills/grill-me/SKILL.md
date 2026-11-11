@@ -31,7 +31,7 @@ Each thing the design needs has one source. Mixing the sources up is how an agen
 | **Default**: an answer you propose because it is likely right and cheap to change | you | propose it; it settles nothing until the user accepts it |
 
 - **Ask, don't guess.** A guess at what only the user knows anchors their answer.
-- **The current system informs, it doesn't decide.** It shows what someone chose before, not what the user wants now.
+- **What exists today informs, it doesn't decide.** It shows what someone chose before, not what the user wants now.
 - **Show the source, don't overrule.** When what you looked up contradicts the user, show them the source and let them settle it.
 - **Not finding something proves nothing.** Say that you didn't find it. It doesn't make the user wrong.
 - **Say how you know.** Mark each fact `(checked: <source>)` or `(inferred: <basis>)`.
