@@ -23,7 +23,7 @@ Each thing the design needs has one source. Mixing the sources up is how an agen
 
 | Kind | Who supplies it | How |
 |---|---|---|
-| **Fact**: true of the code, config, docs or data | you | look it up, never ask, and look it up again when an interview resumes |
+| **Fact**: true of what exists today, in a source you can check | you | look it up, never ask, and look it up again when an interview resumes |
 | **User-only fact**: something you can't look up, where a wrong guess could make a decision wrong | the user | ask, never guess; it stands until they change it |
 | **Someone else's answer**: what only another person can settle | that person, through the user | defer it, grouped by person, so the user can collect the answers in one go |
 | **Decision**: what the design should be | the user | ask, never answer for them |
