@@ -89,7 +89,7 @@ Superseding replaces a question or an option whose premise no longer holds.
 
 What was decided under it rested on that premise, so it is frozen with everything under it: history, closed to changes, that no later decision can rest on.
 
-Nothing moves to the replacement on its own, because whether a decision still holds is a judgement. Judge each item in `<before>`, open items and viable options included: migrate what holds by rebuilding it, and surface what changed, since whoever decided it believes it stands.
+Nothing moves to the replacement on its own, because whether a decision still holds is a judgement. Judge each item that was frozen, open items and viable options included; `<before>` shows it as it stood. Migrate what holds by rebuilding it, and surface what changed, since whoever decided it believes it stands.
 
 ## Queries
 
@@ -97,7 +97,7 @@ Nothing moves to the replacement on its own, because whether a decision still ho
 |---|---|
 | `next [--trail]` | the first open item, with the path to it if `--trail` is given. It is the only query a focus affects. |
 | `status [--target ID]` | open, settled and deferred items in one compact hierarchy; off-path, not-applicable and frozen items are left out. An item inside a decided option goes if that answer changes, and one beside `<decided>` stays. `--target` limits it to that item and what's under it, and prints an empty `<status></status>` for an item it leaves out. |
-| `tree [--state S]… [--target ID]` | the full structure, with every option. It keeps the ancestors of a match. `--target` limits it to that item and what's under it. |
+| `tree [--state S]… [--target ID]` | the nested structure, with every option. It keeps the ancestors of a match. `--target` limits it to that item and what's under it. |
 | `items [--tag T] [--target ID [--trail]] [--state S]… [--limit N]` | a flat list in walk order. `--target` finds one item in any state unless `--state` is given. `--limit` doesn't say whether more exist. |
 
 `S` is `open` (the default), `settled`, `off-path`, `deferred`, `not-applicable`, `frozen` or `all`. It never filters options.
