@@ -94,13 +94,13 @@ New work under an answer comes before later roots. An open question stays at the
 
 `S` is `open` (the default), `settled`, `off-path`, `deferred`, `not-applicable`, `frozen` or `all`. It never filters options.
 
-## When things get in the way
+## Judgement calls
 
-| Situation | What works |
+| Situation | Consider |
 |---|---|
-| Not ready to decide | `exclude --reason deferred` with the blocker as `--note` frees the walk, and `restore` brings it back once the blocker clears. Everything under it waits with it. Items waiting on the same person can share a tag, so `--query items --tag T --state deferred` lists them together. |
-| The premise of a question changed | Patching answers leaves decisions standing on the old premise, while `supersede-question` with corrected wording freezes them. Superseding can't be undone, and `--query tree --target QID --state all` shows exactly what it would freeze. The normal ops rebuild what still holds from `<before>`, including open items and viable options. |
+| Not ready to decide | `exclude --reason deferred` with the blocker as `--note` frees the walk, and `restore` brings it back once the blocker clears. Items waiting on the same person can share a tag, so `--query items --tag T --state deferred` lists them together. |
+| The premise of a question changed | `supersede-question` with the corrected wording, because patching answers leaves decisions standing on the old premise. `--query tree --target QID --state all` shows what it would freeze, and the normal ops rebuild what still holds from `<before>`, including open items and viable options. |
 | Stopping with items still open | A pause needs nothing. To close the tree, `exclude --reason deferred` each open item, top-level items first. |
-| An option no longer applies | `exclude` on the option, with `--reason not-applicable`, removes just that answer. The other options keep their letters. |
-| An option's meaning changed | Rewording isn't possible, and `exclude` would leave what was decided under the old wording restorable. `supersede-option` with the corrected wording freezes the old option and what hung under it. It can't be undone, and the normal ops rebuild what still holds from `<before>`. |
+| An option no longer applies | `exclude` on the option, with `--reason not-applicable`. |
+| An option's meaning changed | Rewording isn't possible. `supersede-option` with the corrected wording, because `exclude` would leave what was decided under the old wording restorable. The normal ops rebuild what still holds from `<before>`. |
 | An answer is in doubt | `clear-selection` reopens the question without removing or replacing anything. `exclude` on the chosen option also reopens it, but takes that option off the offer. |
