@@ -89,7 +89,7 @@ Superseding replaces a question or an option whose premise no longer holds.
 
 What was decided under it rested on that premise, so it is frozen with everything under it: history, closed to changes, that no later decision can rest on.
 
-Nothing moves to the replacement on its own, because whether a decision still holds is a judgement. Judge each item in `<before>`: migrate what holds by rebuilding it, and surface what changed, since whoever decided it believes it stands.
+Nothing moves to the replacement on its own, because whether a decision still holds is a judgement. Judge each item in `<before>`, open items and viable options included: migrate what holds by rebuilding it, and surface what changed, since whoever decided it believes it stands.
 
 ## Queries
 
@@ -107,8 +107,8 @@ Nothing moves to the replacement on its own, because whether a decision still ho
 | Situation | Consider |
 |---|---|
 | Not ready to decide | `exclude --reason deferred` with the blocker as `--note` frees the walk, and `restore` brings it back once the blocker clears. Items waiting on the same person can share a tag, so `--query items --tag T --state deferred` lists them together. |
-| A question's premise changed | `supersede-question` with the corrected wording. `--query tree --target QID --state all` shows what it would freeze. Open items and viable options migrate too, not only answers. |
-| An option's meaning changed | Rewording isn't possible. `supersede-option` with the corrected wording; `exclude` would leave what was decided under the old wording restorable. |
+| A question's premise changed | `supersede-question`, asking it on the premise that holds now; see Superseding. `--query tree --target QID --state all` shows what it would freeze. |
+| An option's meaning changed | `supersede-option`, stating what it means now; see Superseding. `exclude` would leave what was decided under the old meaning restorable. |
 | Stopping before everything is decided | A pause needs nothing. To close the tree, `exclude --reason deferred` each open item, top-level items first. |
 | An option is ruled out | `exclude` on the option, with `--reason not-applicable`. |
 | A question's answer is in doubt | `clear-selection`. `exclude` on the chosen option also reopens the question, but takes that option off the offer. |
