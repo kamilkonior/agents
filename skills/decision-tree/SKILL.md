@@ -111,4 +111,4 @@ Nothing moves to the replacement on its own, because whether a decision still ho
 | An option's meaning changed | Rewording isn't possible. `supersede-option` with the corrected wording; `exclude` would leave what was decided under the old wording restorable. |
 | Stopping before everything is decided | A pause needs nothing. To close the tree, `exclude --reason deferred` each open item, top-level items first. |
 | An option is ruled out | `exclude` on the option, with `--reason not-applicable`. |
-| A question's answer is in doubt | `clear-selection` reopens the question without removing or replacing anything. `exclude` on the chosen option also reopens it, but takes that option off the offer. |
+| A question's answer is in doubt | `clear-selection`. `exclude` on the chosen option also reopens the question, but takes that option off the offer. |
