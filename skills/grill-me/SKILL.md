@@ -144,4 +144,22 @@ The interview is done when every decision that shapes what gets built is settled
 3. the defaults: first the ones the user accepted, then the ones still only proposed;
 4. where the log lives.
 
+The decisions are a tree:
+
+```
+- **Q2 · Working hours** → **Office hours only**
+  - fact from you
+  - **Q3 · Session length** → **One working day**
+    - a morning login costs little, and a stolen session stops working the same day (mine, accepted)
+- **Q5 · Login methods** → **a) Password**, **c) Company single sign-on**
+  - contractors have no company account (yours)
+```
+
+- **A decision** is one line: the id and title, then the chosen answer. Several chosen answers keep their letters.
+- **Under it** come the rationale and whose it is, then the decisions that the answer led to.
+- **Open and deferred questions** appear only in the first part.
+- **Anything else the user needs** comes after the four parts.
+
+Write the summary in the conversation.
+
 The user confirms or corrects the summary by id. Build nothing until they confirm. Having nothing left open is the cue to ask for confirmation, not permission to build.
