@@ -111,6 +111,8 @@ A lighter turn, for a fact only the user knows:
 
 **A change reopens only what rested on it.** A changed answer, or one that undermines an earlier premise, reopens the decisions that rested on it. Everything else stays settled. Tell the user what stayed, what reopened and why.
 
+After a supersede, surface to the user what the changed premise unsettles, with what stood before and the reasoning behind it. They still believe it stands, and what becomes of it is theirs to decide. Carry everything else under the superseded item to the replacement unchanged, because the change gives them no reason to revisit it. When you can't tell whether the premise unsettles something, surface it, because carrying it over would settle it for them.
+
 ## The record
 
 An interview outlives its messages, so you keep what was decided, why, and what is still open in a tree and not in the conversation. The tree is the `decision-tree` skill at `<this skill's directory>/../decision-tree/`. Read its `SKILL.md` before the first call.
