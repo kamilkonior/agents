@@ -147,8 +147,7 @@ The interview is done when every decision that shapes what gets built is settled
 The decisions are a tree:
 
 ```
-- **Q2 · Working hours** → **Office hours only**
-  - fact from you
+- **Q2 · Working hours** → **Office hours only** (you told me)
   - **Q3 · Session length** → **One working day**
     - a morning login costs little, and a stolen session stops working the same day (mine, accepted)
 - **Q5 · Login methods** → **a) Password**, **c) Company single sign-on**
@@ -156,6 +155,7 @@ The decisions are a tree:
 ```
 
 - **A decision** is one line: the id and title, then the chosen answer. Several chosen answers keep their letters.
+- **A user-only fact** is marked `(you told me)` on that line.
 - **Under it** come the rationale and whose it is, then the decisions that the answer led to.
 - **Open and deferred questions** appear only in the first part.
 - **Anything else the user needs** comes after the four parts.
