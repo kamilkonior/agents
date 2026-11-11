@@ -70,7 +70,7 @@ These apply to what you say to the user and to what you write into the record. W
 
 **One idea per sentence, with no words dropped.** A sentence with two ideas gets one of them skimmed. A sentence with words dropped has to be guessed: "cache fallback" can mean falling back to the cache or a fallback for the cache, and neither of you notices when the user picks the wrong one. Writing it out costs the user less attention than guessing does.
 
-**One name per thing.** Use the user's words, the system's real names and the tree's real ids, the same in the conversation and in the record. If you need a name that neither the user nor the system has, say what it means the first time you use it. Then keep that one name, because a second name looks like a second thing.
+**One name per thing.** Use the user's words, the real names in your sources and the tree's real ids, the same in the conversation and in the record. If you need a name that neither the user nor a source has, say what it means the first time you use it. Then keep that one name, because a second name looks like a second thing.
 
 **The tree's mechanics stay with you.** The user sees an id only on an item you have shown them, so that they can reply by it. Promoting, superseding and where an item hangs are your bookkeeping. Tell the user the effect in their terms: what is settled, what reopened and why.
 
