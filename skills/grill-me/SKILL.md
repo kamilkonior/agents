@@ -94,7 +94,7 @@ These apply to what you say to the user and to what you write into the record. W
 A lighter turn, for a fact only the user knows:
 
 ```
-**Q4 · Offboarding today**: When someone leaves the company, do you delete their user row or keep it?
+**Q4 · Leavers today**: When someone leaves the company, do you close their accounts the same day or later?
 ```
 
 - **Recorded** says in words what the last reply settled, never a bare "yes". The first turn has none.
