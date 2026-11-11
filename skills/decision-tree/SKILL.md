@@ -85,11 +85,9 @@ New work under an answer comes before later roots. While a focus is active, `nex
 
 ## Superseding
 
-Superseding replaces a question or an option whose premise no longer holds.
+Superseding replaces a question or an option whose premise no longer holds. That unsettles whatever depended on the premise. The tree cannot tell which items those are, so it freezes the superseded item and everything under it. Frozen items are history: they stay readable, accept no changes, and nothing new can hang under them.
 
-What was decided under it rested on that premise, so it is frozen with everything under it: history, closed to changes, that no later decision can rest on.
-
-No decision moves to the replacement on its own, because whether it still holds is a judgement. `<before>` shows each frozen item as it stood; what still holds reaches the replacement only by being rebuilt there.
+For the same reason, nothing under the superseded item moves to the replacement. `<before>` shows each frozen item as it stood, and what still holds reaches the replacement only by being rebuilt there.
 
 ## Queries
 
