@@ -176,10 +176,10 @@ An example of the tree:
       - the support desk is closed on both (yours)
 - **Q5 · Which login methods do you offer?**
   - **a) Password**, **c) Company single sign-on**
-    - contractors have no company account (yours)
+    - contractors have no company account (yours). Single sign-on spares everyone else a second password (mine, accepted)
 ```
 
-- **Open and deferred questions** appear only in the first part.
+- **Open and deferred questions** are not in the tree.
 - **Anything else the user needs** comes after the four parts.
 
 Write the summary in the conversation.
