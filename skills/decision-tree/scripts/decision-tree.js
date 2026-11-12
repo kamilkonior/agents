@@ -81,7 +81,7 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
 
                
                                                                                                
-                                                    
+                                                                     
 
                  
                                                                                   
@@ -892,7 +892,7 @@ const Graph = (() => {
   }
 
   function openItem(graph       , node                             )           {
-    if (node.kind === "follow-up") return { kind: "follow-up", id: node.id, text: node.text };
+    if (node.kind === "follow-up") return { kind: "follow-up", id: node.id, text: node.text, ...tagsOf(graph, node) };
 
     return {
       kind: "open-question",
@@ -2527,6 +2527,26 @@ const Graph = (() => {
       assert.deepEqual(open, [
         { kind: "open-question", id: "Q1", text: "tagged", tags: ["t", "u"], options: [] },
         { kind: "open-question", id: "Q2", text: "untagged", options: [] },
+      ]);
+    });
+
+    test("an open follow-up on the frontier carries its tags, and none when it has none", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-follow-up", id: "F1", text: "tagged" },
+          { type: "add-follow-up", id: "F2", text: "untagged" },
+          { type: "tag", target: "F1", tags: ["t", "u"] },
+        ]),
+      );
+
+      // when
+      const open = frontier(graph);
+
+      // then
+      assert.deepEqual(open, [
+        { kind: "follow-up", id: "F1", text: "tagged", tags: ["t", "u"] },
+        { kind: "follow-up", id: "F2", text: "untagged" },
       ]);
     });
 
