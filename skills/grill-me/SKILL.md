@@ -111,6 +111,8 @@ A lighter turn, for a fact only the user knows:
 
 **An unclear answer settles nothing.** Hedging and "it depends" leave the question open. When two answers contradict each other, point it out.
 
+**"I don't know" asks for what would decide it.** Find what the user is missing. A fact you can look up, you look up. What another person knows is someone else's answer. When they have not seen enough to choose, show concrete variants and let them react before you recommend. When only trying will tell, propose the option that is cheapest to change as a default, and say what would show that it is wrong.
+
 **A change reopens only what rested on it.** A changed answer, or one that undermines an earlier premise, reopens the decisions that rested on it. Everything else stays settled. Tell the user what stayed, what reopened and why.
 
 After a supersede, surface to the user what the changed premise unsettles, with what stood before and the reasoning behind it. They still believe it stands, and what becomes of it is theirs to decide. Carry everything else under the superseded item to the replacement unchanged, because the change gives them no reason to revisit it. When you can't tell whether the premise unsettles something, surface it, because carrying it over would settle it for them.
