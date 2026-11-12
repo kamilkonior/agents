@@ -5,7 +5,7 @@ description: Persistent memory for decisions. Records questions, options, select
 
 # Decision tree
 
-A memory for decisions. The CLI stores a tree, validates every write and reports what is open. It has no opinion on how the tree is used.
+A memory for decisions. The CLI stores a tree, validates every write and reports what is open.
 
 ## Running it
 
