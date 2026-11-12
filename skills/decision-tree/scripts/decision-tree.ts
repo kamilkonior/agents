@@ -127,9 +127,9 @@ type BeforeAfterData = { before: TreeEntry[]; after: TreeEntry[] };
 type TrailStep = { kind: "question" | "option" | "follow-up"; id: string; text: string };
 
 type NextData = (
-  | { kind: "question"; question: QuestionData; tags?: string[] }
+  | { kind: "question"; question: QuestionData }
   | { kind: "follow-up"; followUp: FollowUpData }
-) & { trail?: TrailStep[] };
+) & { tags?: string[]; trail?: TrailStep[] };
 
 type QuestionNode = {
   kind: "question";
@@ -5960,12 +5960,11 @@ const Next = (() => {
 
     const steps = config.trail ? Graph.trail(log, node.id) : [];
     const trail = steps.length === 0 ? {} : { trail: steps };
+    const tags = node.tags === undefined ? {} : { tags: node.tags };
 
     if (node.kind === "follow-up") {
-      return { kind: "follow-up", followUp: { id: node.id, text: node.text }, ...trail };
+      return { kind: "follow-up", followUp: { id: node.id, text: node.text }, ...tags, ...trail };
     }
-
-    const tags = node.tags === undefined ? {} : { tags: node.tags };
 
     return { kind: "question", question: { id: node.id, text: node.text, options: node.options }, ...tags, ...trail };
   }
@@ -6061,6 +6060,20 @@ const Next = (() => {
 
       // then
       assert.deepEqual(item, { kind: "follow-up", followUp: { id: "F1", text: "f1" } });
+    });
+
+    test("next carries the tags of the follow-up it returns", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-follow-up", id: "F1", text: "f1" },
+        { type: "tag", target: "F1", tags: ["t", "u"] },
+      ]);
+
+      // when
+      const item = run(log);
+
+      // then
+      assert.deepEqual(item, { kind: "follow-up", followUp: { id: "F1", text: "f1" }, tags: ["t", "u"] });
     });
   }
 
