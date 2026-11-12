@@ -2053,6 +2053,21 @@ const Graph = (() => {
       );
     });
 
+    test("the built tree leaves the tags out of a question whose last tag was removed", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "tag", target: "Q1", tags: ["t"] },
+        { type: "untag", target: "Q1", tags: ["t"] },
+      ]);
+
+      // when
+      const items = buildTree(log);
+
+      // then
+      assert.deepEqual(items, [{ kind: "question", state: "open", id: "Q1", text: "q", options: [], children: [] }]);
+    });
+
     test("filtering drops an entry whose state was not asked for", () => {
       // given
       const entries              = [
