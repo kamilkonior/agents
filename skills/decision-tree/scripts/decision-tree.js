@@ -6996,11 +6996,13 @@ const Xml = (() => {
   function statusLines(item            )           {
     if (item.state === "deferred") {
       const note = item.note === undefined ? [] : [`  <note>${escapeXml(item.note)}</note>`];
+      const tags = item.kind === "option" ? [] : tagsLines(item.tags);
 
       return [
         `<${item.kind} state="deferred">`,
         `  <id>${item.id}</id>`,
         `  <text>${escapeXml(item.text)}</text>`,
+        ...tags,
         ...note,
         `</${item.kind}>`,
       ];
@@ -7929,6 +7931,28 @@ const Xml = (() => {
           "</status>",
         ].join("\n"),
       );
+    });
+
+    test("status renders a deferred question's tags right after the text, escaped", () => {
+      // given
+      const items               = [
+        { kind: "question", state: "deferred", id: "Q1", text: "q", tags: ["a<b", "c"], note: "why" },
+      ];
+
+      // when
+      const xml = status(items);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<status>",
+        '  <question state="deferred">',
+        "    <id>Q1</id>",
+        "    <text>q</text>",
+        "    <tags><tag>a&lt;b</tag><tag>c</tag></tags>",
+        "    <note>why</note>",
+        "  </question>",
+        "</status>",
+      ]);
     });
 
     test("status escapes every text it renders", () => {
