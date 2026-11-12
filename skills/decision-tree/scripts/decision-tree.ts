@@ -8638,7 +8638,7 @@ const Xml = (() => {
       ]);
     });
 
-    test("listed items render multi-line, with their tags last and escaped, and no tags when they have none", () => {
+    test("listed items render multi-line, with their tags right after the text and escaped, and no tags when they have none", () => {
       // given
       const list: ListedItem[] = [
         {
@@ -8658,8 +8658,8 @@ const Xml = (() => {
         '  <question state="open">',
         "    <id>Q1</id>",
         "    <text>q</text>",
-        "    <options></options>",
         "    <tags><tag>a&lt;b</tag><tag>c</tag></tags>",
+        "    <options></options>",
         "  </question>",
         '  <follow-up state="open">',
         "    <id>F1</id>",
@@ -8669,7 +8669,7 @@ const Xml = (() => {
       ]);
     });
 
-    test("a settled tagged question renders its state, options, selection and tags", () => {
+    test("a settled tagged question renders its state, tags, options and selection", () => {
       // given
       const a = { id: "Q1a", text: "a" };
       const b = { id: "Q1b", text: "b" };
@@ -8691,11 +8691,11 @@ const Xml = (() => {
         '  <question state="settled">',
         "    <id>Q1</id>",
         "    <text>q</text>",
+        "    <tags><tag>t</tag></tags>",
         "    <options>",
         '      <option selected="true"><id>Q1a</id><text>a</text></option>',
         "      <option><id>Q1b</id><text>b</text></option>",
         "    </options>",
-        "    <tags><tag>t</tag></tags>",
         "  </question>",
         "</items>",
       ]);
@@ -8734,7 +8734,7 @@ const Xml = (() => {
       ]);
     });
 
-    test("a tagged item renders its note, escaped, before its tags", () => {
+    test("a tagged item renders its note, escaped, after its tags", () => {
       // given
       const list: ListedItem[] = [
         {
@@ -8754,14 +8754,14 @@ const Xml = (() => {
         '  <follow-up state="deferred">',
         "    <id>F1</id>",
         "    <text>f</text>",
-        "    <note>a &lt; b</note>",
         "    <tags><tag>t</tag></tags>",
+        "    <note>a &lt; b</note>",
         "  </follow-up>",
         "</items>",
       ]);
     });
 
-    test("a tagged item renders what hides it before its tags", () => {
+    test("a tagged item renders what hides it after its tags", () => {
       // given
       const list: ListedItem[] = [
         {
@@ -8781,8 +8781,8 @@ const Xml = (() => {
         '  <follow-up state="frozen">',
         "    <id>F1</id>",
         "    <text>f</text>",
-        "    <hidden-by><id>Q1</id></hidden-by>",
         "    <tags><tag>t</tag></tags>",
+        "    <hidden-by><id>Q1</id></hidden-by>",
         "  </follow-up>",
         "</items>",
       ]);
@@ -8836,12 +8836,12 @@ const Xml = (() => {
         `<question${state}>`,
         `  <id>${id}</id>`,
         `  <text>${escapeXml(text)}</text>`,
+        ...tags,
         ...optionsBlock,
         ...(data.rationale === undefined ? [] : [`  <rationale>${escapeXml(data.rationale)}</rationale>`]),
         ...note,
         ...hidden,
         ...links,
-        ...tags,
         ...trailLines(data.trail),
         "</question>",
       ];
@@ -8853,9 +8853,9 @@ const Xml = (() => {
       `<follow-up${state}>`,
       `  <id>${id}</id>`,
       `  <text>${escapeXml(text)}</text>`,
+      ...tags,
       ...note,
       ...hidden,
-      ...tags,
       ...trailLines(data.trail),
       "</follow-up>",
     ];
