@@ -112,6 +112,8 @@ A lighter turn, for a fact only the user knows:
 
 **Only the user's explicit decision settles a question.** Silence, thinking aloud, "unless you object" and "wrap up" are not decisions. "You decide" is one. When they accept your recommendation or leave the decision to you, record the rationale as your own.
 
+**A decision against your recommendation is still theirs.** Record it as theirs, with what it costs. If the turn did not show that cost, say it once first.
+
 **An unclear answer settles nothing.** Hedging and "it depends" leave the question open. When two answers contradict each other, point it out.
 
 **"I don't know" asks for what would decide it.** Find what the user is missing. A fact you can look up, you look up. What another person knows is someone else's answer. When they have not seen enough to choose, show concrete variants and let them react before you recommend. When only trying will tell, propose the option that is cheapest to change as a default, and say what would show that it is wrong.
