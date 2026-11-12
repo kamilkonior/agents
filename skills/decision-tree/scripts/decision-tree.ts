@@ -87,7 +87,7 @@ type StatusItem =
   | { kind: "option"; state: "deferred"; id: string; text: string; note?: string }
   | { kind: "follow-up"; state: "open"; id: string; text: string }
   | { kind: "follow-up"; state: "deferred"; id: string; text: string; note?: string }
-  | { kind: "question"; state: "deferred"; id: string; text: string; note?: string }
+  | { kind: "question"; state: "deferred"; id: string; text: string; tags?: string[]; note?: string }
   | { kind: "question"; state: "open"; id: string; text: string; tags?: string[]; options: OptionData[]; children: StatusItem[] }
   | {
       kind: "question";
@@ -926,7 +926,16 @@ const Graph = (() => {
     if (question.state === "not-applicable") return [];
 
     if (question.state === "deferred") {
-      return [{ kind: "question", state: "deferred", id: question.id, text: question.text, ...noteOf(graph, question) }];
+      return [
+        {
+          kind: "question",
+          state: "deferred",
+          id: question.id,
+          text: question.text,
+          ...tagsOf(graph, question),
+          ...noteOf(graph, question),
+        },
+      ];
     }
 
     const deferredOptions = question.options
@@ -6591,6 +6600,21 @@ const Status = (() => {
 
       // then
       assert.deepEqual(items, [{ kind: "question", state: "deferred", id: "Q1", text: "q", note: "why" }]);
+    });
+
+    test("a deferred question carries its tags", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "tag", target: "Q1", tags: ["t", "u"] },
+        { type: "exclude", target: "Q1", reason: "deferred" },
+      ]);
+
+      // when
+      const items = run(log);
+
+      // then
+      assert.deepEqual(items, [{ kind: "question", state: "deferred", id: "Q1", text: "q", tags: ["t", "u"] }]);
     });
 
     test("a child of a deferred question is left out", () => {
