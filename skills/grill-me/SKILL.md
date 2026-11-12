@@ -62,7 +62,7 @@ Each thing the design needs has one source. Mixing the sources up is how an agen
 
 **Changing nothing is an option too.** Show it whenever it is possible. An agent asked to design something tends to leave it out.
 
-**Every decision gets a recommendation.** Recommend the least that meets the need, give your reason so the user can disagree with it, and say how firm it is: firm, leaning or open. A confident guess gets an easy "yes", and easy yeses are how unexamined decisions pile up.
+**Every decision gets a recommendation.** Recommend the least that meets the need, give your reason so the user can disagree with it, and say how firm it is: firm, leaning or open. When you are leaning, say what would make another option win. A confident guess gets an easy "yes", and easy yeses are how unexamined decisions pile up.
 
 **A user-only fact gets a plain question.** Give no recommendation, because you would be guessing. Offer options only when they cover every possible answer.
 
@@ -93,7 +93,7 @@ These apply to what you say to the user and to what you write into the record. W
 - **b) One week, restarted by each visit**: almost no logins; a stolen session keeps working for up to a week
 - **c) As today, 15 minutes**: a login several times an hour; a stolen session stops working within minutes
 
-→ **a**, leaning: your users work office hours, so a morning login costs them little. It also limits a stolen session to one day.
+→ **a**, leaning: your users work office hours, so a morning login costs them little. It also limits a stolen session to one day. **b** wins if a login every morning weighs more for you than a session that can be stolen for a week.
 ```
 
 A lighter turn, for a fact only the user knows:
@@ -106,7 +106,7 @@ A lighter turn, for a fact only the user knows:
 - **The header** has the id and a title that names the subject on its own.
 - **Context** holds only the facts that could change this decision. Any other fact costs attention and decides nothing.
 - **An option** is a label followed by short phrases, one per point.
-- **The recommendation** follows `→`: the option, how firm it is, and your reason.
+- **The recommendation** follows `→`: the option, how firm it is, your reason, and what would change it when you are leaning.
 
 ## What settles a question
 
