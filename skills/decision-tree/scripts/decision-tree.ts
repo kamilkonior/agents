@@ -7195,13 +7195,15 @@ const Xml = (() => {
   }
 
   function tagsElement(tags: string[] | undefined): string {
-    if (tags === undefined) return "";
+    if (tags === undefined || tags.length === 0) return "";
 
     return `<tags>${tags.map((tag) => `<tag>${escapeXml(tag)}</tag>`).join("")}</tags>`;
   }
 
   function tagsLines(tags: string[] | undefined): string[] {
-    return tags === undefined ? [] : [`  ${tagsElement(tags)}`];
+    const element = tagsElement(tags);
+
+    return element === "" ? [] : [`  ${element}`];
   }
 
   function linkTags(links: { supersedes?: string; supersededBy?: string }): string[] {
@@ -7290,7 +7292,7 @@ const Xml = (() => {
   }
 
   function tests() {
-    test("items renders a trail after the tags, escaped and in order", () => {
+    test("items renders a trail last, escaped and in order", () => {
       // given
       const list: ListedItem[] = [
         {
@@ -7316,7 +7318,6 @@ const Xml = (() => {
           "    <id>Q2</id>",
           "    <text>q2</text>",
           "    <options></options>",
-          "    <tags></tags>",
           "    <trail>",
           "      <question><id>Q1</id><text>a &lt; b</text></question>",
           "      <option><id>Q1a</id><text>a</text></option>",
@@ -7327,7 +7328,7 @@ const Xml = (() => {
       );
     });
 
-    test("items renders a follow-up's trail after its tags", () => {
+    test("items renders a follow-up's trail last", () => {
       // given
       const list: ListedItem[] = [
         {
@@ -7349,7 +7350,6 @@ const Xml = (() => {
           '  <follow-up state="open">',
           "    <id>F1</id>",
           "    <text>f</text>",
-          "    <tags></tags>",
           "    <trail>",
           "      <question><id>Q1</id><text>q</text></question>",
           "    </trail>",
@@ -7383,7 +7383,6 @@ const Xml = (() => {
         "      <option><id>Q1a</id><text>a</text></option>",
         '      <option state="deferred"><id>Q1b</id><text>b</text><note>a &lt; b</note></option>',
         "    </options>",
-        "    <tags></tags>",
         "  </question>",
         "</items>",
       ]);
@@ -7424,7 +7423,6 @@ const Xml = (() => {
         "      <option><id>Q1c</id><text>c</text></option>",
         '      <option state="frozen"><id>Q1a</id><text>a</text><superseded-by><id>Q1c</id></superseded-by></option>',
         "    </options>",
-        "    <tags></tags>",
         "  </question>",
         "</items>",
       ]);
@@ -7458,14 +7456,12 @@ const Xml = (() => {
         "    <text>new</text>",
         "    <options></options>",
         "    <supersedes><id>Q1</id></supersedes>",
-        "    <tags></tags>",
         "  </question>",
         '  <question state="frozen">',
         "    <id>Q1</id>",
         "    <text>old</text>",
         "    <options></options>",
         "    <superseded-by><id>Q2</id></superseded-by>",
-        "    <tags></tags>",
         "  </question>",
         "</items>",
       ]);
@@ -8642,7 +8638,7 @@ const Xml = (() => {
       ]);
     });
 
-    test("tagged items render multi-line with their tags last, escaped", () => {
+    test("listed items render multi-line, with their tags last and escaped, and no tags when they have none", () => {
       // given
       const list: ListedItem[] = [
         {
@@ -8668,7 +8664,6 @@ const Xml = (() => {
         '  <follow-up state="open">',
         "    <id>F1</id>",
         "    <text>f</text>",
-        "    <tags></tags>",
         "  </follow-up>",
         "</items>",
       ]);
@@ -8734,7 +8729,6 @@ const Xml = (() => {
         "    </options>",
         "    <rationale>a &lt; b</rationale>",
         "    <note>later</note>",
-        "    <tags></tags>",
         "  </question>",
         "</items>",
       ]);
@@ -8823,8 +8817,7 @@ const Xml = (() => {
   }
 
   function taggedLines(data: TaggedData & Partial<ListedItem>): string[] {
-    const tags = data.tags.map((tag) => `<tag>${escapeXml(tag)}</tag>`).join("");
-    const line = `  <tags>${tags}</tags>`;
+    const tags = tagsLines(data.tags);
     const state = data.state === undefined ? "" : ` state="${data.state}"`;
     const note = data.note === undefined ? [] : [`  <note>${escapeXml(data.note)}</note>`];
     const hidden = data.hiddenBy === undefined ? [] : [`  <hidden-by><id>${data.hiddenBy}</id></hidden-by>`];
@@ -8848,7 +8841,7 @@ const Xml = (() => {
         ...note,
         ...hidden,
         ...links,
-        line,
+        ...tags,
         ...trailLines(data.trail),
         "</question>",
       ];
@@ -8862,7 +8855,7 @@ const Xml = (() => {
       `  <text>${escapeXml(text)}</text>`,
       ...note,
       ...hidden,
-      line,
+      ...tags,
       ...trailLines(data.trail),
       "</follow-up>",
     ];
