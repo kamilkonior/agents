@@ -7083,7 +7083,7 @@ const Xml = (() => {
       case "option":
         return option(data.option);
       case "follow-up":
-        return followUp(data.followUp);
+        return followUp({ ...data.followUp, tags: data.tags });
     }
   }
 
@@ -8500,6 +8500,17 @@ const Xml = (() => {
         "  </options>",
         "</question>",
       ]);
+    });
+
+    test("a follow-up item renders its tags inside its line, right after the text, escaped", () => {
+      // given
+      const data: ItemData = { kind: "follow-up", followUp: { id: "F1", text: "f" }, tags: ["a<b", "c"] };
+
+      // when
+      const xml = item(data);
+
+      // then
+      assert.equal(xml, "<follow-up><id>F1</id><text>f</text><tags><tag>a&lt;b</tag><tag>c</tag></tags></follow-up>");
     });
 
     test("promote renders the new question and the follow-up it came from", () => {
