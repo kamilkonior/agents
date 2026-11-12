@@ -77,7 +77,7 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
                          
                             
      
-                                                                                                            
+                                                                                                                             
 
                
                                                                               
@@ -908,7 +908,7 @@ const Graph = (() => {
     return note === undefined ? {} : { note };
   }
 
-  function tagsOf(graph       , node              )                      {
+  function tagsOf(graph       , node                             )                      {
     const tags = [...(graph.tags.get(node.id) ?? [])];
 
     return tags.length === 0 ? {} : { tags };
@@ -1061,6 +1061,7 @@ const Graph = (() => {
       state: assignedState(followUp),
       id: followUp.id,
       text: followUp.text,
+      ...tagsOf(graph, followUp),
       ...noteOf(graph, followUp),
       children: childEntries(graph, followUp),
     };
@@ -2091,6 +2092,24 @@ const Graph = (() => {
       assert.deepEqual(items, [
         { kind: "question", state: "open", id: "Q1", text: "tagged", tags: ["t", "u"], options: [], children: [] },
         { kind: "question", state: "open", id: "Q2", text: "untagged", options: [], children: [] },
+      ]);
+    });
+
+    test("the built tree carries a follow-up's tags, and none for a follow-up without them", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-follow-up", id: "F1", text: "tagged" },
+        { type: "add-follow-up", id: "F2", text: "untagged" },
+        { type: "tag", target: "F1", tags: ["t", "u"] },
+      ]);
+
+      // when
+      const items = buildTree(log);
+
+      // then
+      assert.deepEqual(items, [
+        { kind: "follow-up", state: "open", id: "F1", text: "tagged", tags: ["t", "u"], children: [] },
+        { kind: "follow-up", state: "open", id: "F2", text: "untagged", children: [] },
       ]);
     });
 
