@@ -104,7 +104,9 @@ For the same reason, nothing under the superseded item moves to the replacement.
 
 | Situation | Consider |
 |---|---|
+| One decision depends on another | `--origin` on what it depends on, when adding it. Where an item hangs is the only dependence the tree knows. |
 | Not ready to decide | `exclude --reason deferred` with the blocker as `--note` frees the walk, and `restore` brings it back once the blocker clears. Items waiting on the same person can share a tag, so `--query items --tag T --state deferred` lists them together. |
+| A premise changed, and several items rest on it | Supersede the highest item that no longer holds, and nothing above it; see Superseding. |
 | A question's premise changed | `supersede-question`, asking it on the premise that holds now; see Superseding. `--query tree --target QID --state all` shows what it would freeze. |
 | An option's meaning changed | `supersede-option`, stating what it means now; see Superseding. `exclude` would leave what was decided under the old meaning restorable. |
 | Stopping before everything is decided | A pause needs nothing. To close the tree, `exclude --reason deferred` each open item, top-level items first. |
