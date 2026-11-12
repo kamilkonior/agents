@@ -127,7 +127,7 @@ type BeforeAfterData = { before: TreeEntry[]; after: TreeEntry[] };
 type TrailStep = { kind: "question" | "option" | "follow-up"; id: string; text: string };
 
 type NextData = (
-  | { kind: "question"; question: QuestionData }
+  | { kind: "question"; question: QuestionData; tags?: string[] }
   | { kind: "follow-up"; followUp: FollowUpData }
 ) & { trail?: TrailStep[] };
 
@@ -5965,7 +5965,9 @@ const Next = (() => {
       return { kind: "follow-up", followUp: { id: node.id, text: node.text }, ...trail };
     }
 
-    return { kind: "question", question: { id: node.id, text: node.text, options: node.options }, ...trail };
+    const tags = node.tags === undefined ? {} : { tags: node.tags };
+
+    return { kind: "question", question: { id: node.id, text: node.text, options: node.options }, ...tags, ...trail };
   }
 
   function tests() {
@@ -6024,6 +6026,24 @@ const Next = (() => {
             { id: "Q1b", text: "b" },
           ],
         },
+      });
+    });
+
+    test("next carries the tags of the question it returns", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q1" },
+        { type: "tag", target: "Q1", tags: ["t", "u"] },
+      ]);
+
+      // when
+      const question = run(log);
+
+      // then
+      assert.deepEqual(question, {
+        kind: "question",
+        question: { id: "Q1", text: "q1", options: [] },
+        tags: ["t", "u"],
       });
     });
 
