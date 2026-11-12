@@ -7030,10 +7030,11 @@ const Xml = (() => {
     ].join("\n");
   }
 
-  function followUp(data: FollowUpData & Partial<StateData>): string {
+  function followUp(data: FollowUpData & Partial<StateData> & { tags?: string[] }): string {
     const { attribute, hidden } = stateParts(data);
+    const tags = tagsElement(data.tags);
 
-    return `<follow-up${attribute}><id>${data.id}</id><text>${escapeXml(data.text)}</text>${hidden}</follow-up>`;
+    return `<follow-up${attribute}><id>${data.id}</id><text>${escapeXml(data.text)}</text>${tags}${hidden}</follow-up>`;
   }
 
   function item(data: ItemData): string {
@@ -7053,7 +7054,7 @@ const Xml = (() => {
     const trail = trailLines(data.trail);
     const body =
       data.kind === "follow-up"
-        ? [`  ${followUp(data.followUp)}`]
+        ? [`  ${followUp({ ...data.followUp, tags: data.tags })}`]
         : question({ ...data.question, tags: data.tags })
             .split("\n")
             .map((line) => `  ${line}`);
@@ -7136,10 +7137,14 @@ const Xml = (() => {
     return note === undefined ? [] : [`  <note>${escapeXml(note)}</note>`];
   }
 
-  function tagsLines(tags: string[] | undefined): string[] {
-    if (tags === undefined) return [];
+  function tagsElement(tags: string[] | undefined): string {
+    if (tags === undefined) return "";
 
-    return [`  <tags>${tags.map((tag) => `<tag>${escapeXml(tag)}</tag>`).join("")}</tags>`];
+    return `<tags>${tags.map((tag) => `<tag>${escapeXml(tag)}</tag>`).join("")}</tags>`;
+  }
+
+  function tagsLines(tags: string[] | undefined): string[] {
+    return tags === undefined ? [] : [`  ${tagsElement(tags)}`];
   }
 
   function linkTags(links: { supersedes?: string; supersededBy?: string }): string[] {
@@ -8406,6 +8411,21 @@ const Xml = (() => {
 
       // then
       assert.deepEqual(xml.split("\n"), ["<next>", `  ${followUp(data)}`, "</next>"]);
+    });
+
+    test("next renders a follow-up's tags inside its line, right after the text, escaped", () => {
+      // given
+      const data: NextData = { kind: "follow-up", followUp: { id: "F1", text: "f" }, tags: ["a<b", "c"] };
+
+      // when
+      const xml = next(data);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<next>",
+        "  <follow-up><id>F1</id><text>f</text><tags><tag>a&lt;b</tag><tag>c</tag></tags></follow-up>",
+        "</next>",
+      ]);
     });
 
     test("a follow-up item renders as its follow-up line", () => {
