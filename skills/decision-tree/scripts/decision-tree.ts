@@ -7955,6 +7955,28 @@ const Xml = (() => {
       ]);
     });
 
+    test("status renders a deferred follow-up's tags right after the text, escaped", () => {
+      // given
+      const items: StatusItem[] = [
+        { kind: "follow-up", state: "deferred", id: "F1", text: "f", tags: ["a<b", "c"], note: "later" },
+      ];
+
+      // when
+      const xml = status(items);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<status>",
+        '  <follow-up state="deferred">',
+        "    <id>F1</id>",
+        "    <text>f</text>",
+        "    <tags><tag>a&lt;b</tag><tag>c</tag></tags>",
+        "    <note>later</note>",
+        "  </follow-up>",
+        "</status>",
+      ]);
+    });
+
     test("status escapes every text it renders", () => {
       // given
       const text = "<&>";
