@@ -47,7 +47,7 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
                
                                                                  
                                           
-                                                  
+                                                                   
 
 
                                                                                             
@@ -1307,7 +1307,7 @@ const Graph = (() => {
         return { kind: "option", option: { id: node.id, text: node.text } };
 
       case "follow-up":
-        return { kind: "follow-up", followUp: { id: node.id, text: node.text } };
+        return { kind: "follow-up", followUp: { id: node.id, text: node.text }, ...tagsOf(build(log), node) };
     }
   }
 
@@ -3595,6 +3595,23 @@ const Graph = (() => {
         tags: ["t", "u"],
       });
       assert.deepEqual(untagged, { kind: "question", question: { id: "Q2", text: "untagged", options: [] } });
+    });
+
+    test("the item data of a follow-up carries its tags, and none when it has none", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-follow-up", id: "F1", text: "tagged" },
+        { type: "add-follow-up", id: "F2", text: "untagged" },
+        { type: "tag", target: "F1", tags: ["t", "u"] },
+      ]);
+
+      // when
+      const tagged = itemData(log, liveNode(log, "F1", "target"));
+      const untagged = itemData(log, liveNode(log, "F2", "target"));
+
+      // then
+      assert.deepEqual(tagged, { kind: "follow-up", followUp: { id: "F1", text: "tagged" }, tags: ["t", "u"] });
+      assert.deepEqual(untagged, { kind: "follow-up", followUp: { id: "F2", text: "untagged" } });
     });
   }
 
