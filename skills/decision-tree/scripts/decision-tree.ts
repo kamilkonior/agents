@@ -80,7 +80,7 @@ type TreeEntry =
   | { kind: "follow-up"; state: ItemState; id: string; text: string; tags?: string[]; note?: string; children: TreeEntry[] };
 
 type OpenItem =
-  | { kind: "open-question"; id: string; text: string; options: OptionData[] }
+  | { kind: "open-question"; id: string; text: string; tags?: string[]; options: OptionData[] }
   | { kind: "follow-up"; id: string; text: string };
 
 type StatusItem =
@@ -894,7 +894,13 @@ const Graph = (() => {
   function openItem(graph: Graph, node: QuestionNode | FollowUpNode): OpenItem {
     if (node.kind === "follow-up") return { kind: "follow-up", id: node.id, text: node.text };
 
-    return { kind: "open-question", id: node.id, text: node.text, options: liveOptions(graph, node) };
+    return {
+      kind: "open-question",
+      id: node.id,
+      text: node.text,
+      ...tagsOf(graph, node),
+      options: liveOptions(graph, node),
+    };
   }
 
   function openWithin(graph: Graph, ancestor?: QuestionNode | FollowUpNode): OpenItem[] {
@@ -2501,6 +2507,26 @@ const Graph = (() => {
       // then
       assert.deepEqual(open, [
         { kind: "open-question", id: "Q1", text: "q1", options: [{ id: "Q1b", text: "b" }] },
+      ]);
+    });
+
+    test("an open question on the frontier carries its tags, and none when it has none", () => {
+      // given
+      const graph = build(
+        Log.memoryLog([
+          { type: "add-question", id: "Q1", text: "tagged" },
+          { type: "add-question", id: "Q2", text: "untagged" },
+          { type: "tag", target: "Q1", tags: ["t", "u"] },
+        ]),
+      );
+
+      // when
+      const open = frontier(graph);
+
+      // then
+      assert.deepEqual(open, [
+        { kind: "open-question", id: "Q1", text: "tagged", tags: ["t", "u"], options: [] },
+        { kind: "open-question", id: "Q2", text: "untagged", options: [] },
       ]);
     });
 
