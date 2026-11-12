@@ -169,7 +169,7 @@ The decisions are a tree. Each settled root question is one `<decision>`:
 ```
 
 - `<question-id>`, `<question-text>`: the question's id and text, as the record has them.
-- `<chosen-options>`: each chosen option as `**<option-letter>) <option-text>**`, as the record has them, separated by commas. The letter ends the option's id: `Q9h` gives `h`.
+- `<chosen-options>`: each chosen option as `**<option-text>** (<option-letter>)`, as the record has them, separated by commas. The letter ends the option's id: `Q9h` gives `h`.
 - `<rationale>`: the rationale, as the record has it.
 - `<decisions-on-the-option>`: one `<decision>` for each settled question that hangs on a chosen option.
 - `<decisions-on-the-question>`: one `<decision>` for each settled question that hangs on the question itself.
@@ -180,16 +180,16 @@ An example of the tree:
 
 ```
 - **Q2 · Which hours do your users work?**
-  - **a) Office hours only**
+  - **Office hours only** (a)
     - nobody is in before eight or after six (yours)
     - **Q3 · How long should a session last before the user must log in again?**
-      - **a) One working day**
+      - **One working day** (a)
         - a morning login costs little, and a stolen session stops working the same day (mine, accepted)
   - **Q7 · How does a public holiday count?**
-    - **b) As a weekend day**
+    - **As a weekend day** (b)
       - the support desk is closed on both (yours)
 - **Q5 · Which login methods do you offer?**
-  - **a) Password**, **c) Company single sign-on**
+  - **Password** (a), **Company single sign-on** (c)
     - contractors have no company account (yours). Single sign-on spares everyone else a second password (mine, accepted)
 ```
 
