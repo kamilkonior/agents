@@ -6932,6 +6932,12 @@ const Xml = (() => {
     return note === undefined ? [] : [`  <note>${escapeXml(note)}</note>`];
   }
 
+  function tagsLines(tags                      )           {
+    if (tags === undefined) return [];
+
+    return [`  <tags>${tags.map((tag) => `<tag>${escapeXml(tag)}</tag>`).join("")}</tags>`];
+  }
+
   function linkTags(links                                                )           {
     return [
       ...(links.supersedes === undefined ? [] : [`<supersedes><id>${links.supersedes}</id></supersedes>`]),
@@ -6981,6 +6987,7 @@ const Xml = (() => {
       `<question state="${entry.state}">`,
       `  <id>${entry.id}</id>`,
       `  <text>${escapeXml(entry.text)}</text>`,
+      ...tagsLines(entry.tags),
       ...noteLines(entry.note),
       ...linkTags(entry).map((line) => `  ${line}`),
       ...optionsBlock,
@@ -7439,6 +7446,42 @@ const Xml = (() => {
         "    <text>old</text>",
         "    <superseded-by><id>Q2</id></superseded-by>",
         "    <options></options>",
+        "  </question>",
+        "</tree>",
+      ]);
+    });
+
+    test("the built tree renders a question's tags right after the text, escaped", () => {
+      // given
+      const entries              = [
+        {
+          kind: "question",
+          state: "deferred",
+          id: "Q2",
+          text: "q",
+          tags: ["a<b", "c"],
+          note: "why",
+          supersedes: "Q1",
+          options: [{ id: "Q2a", text: "a", children: [] }],
+          children: [],
+        },
+      ];
+
+      // when
+      const xml = tree(entries);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<tree>",
+        '  <question state="deferred">',
+        "    <id>Q2</id>",
+        "    <text>q</text>",
+        "    <tags><tag>a&lt;b</tag><tag>c</tag></tags>",
+        "    <note>why</note>",
+        "    <supersedes><id>Q1</id></supersedes>",
+        "    <options>",
+        "      <option><id>Q2a</id><text>a</text></option>",
+        "    </options>",
         "  </question>",
         "</tree>",
       ]);
