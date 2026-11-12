@@ -121,7 +121,7 @@ type ListedItem = TaggedData & StateData & {
   hiddenOptions?: HiddenOption[];
 };
 
-type PromoteData = { question: QuestionData; promoted: FollowUpData };
+type PromoteData = { question: QuestionData; tags?: string[]; promoted: FollowUpData };
 type BeforeAfterData = { before: TreeEntry[]; after: TreeEntry[] };
 
 type TrailStep = { kind: "question" | "option" | "follow-up"; id: string; text: string };
@@ -4587,7 +4587,7 @@ const PromoteFollowUp = (() => {
       staged.append({ type: "promote-follow-up", target });
       if (tags.length > 0) Tag.run(staged, { target: question.id, tag: tags });
 
-      return { question, promoted: { id: followUp.id, text: followUp.text } };
+      return { question, ...(tags.length > 0 ? { tags } : {}), promoted: { id: followUp.id, text: followUp.text } };
     });
   }
 
@@ -4698,6 +4698,24 @@ const PromoteFollowUp = (() => {
         { type: "promote-follow-up", target: "F1" },
         { type: "tag", target: "Q1", tags: ["t", "u"] },
       ]);
+    });
+
+    test("promoting a tagged follow-up returns the new question with the tags it was given", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-follow-up", id: "F1", text: "f" },
+        { type: "tag", target: "F1", tags: ["t", "u"] },
+      ]);
+
+      // when
+      const promoted = run(log, { target: "F1" });
+
+      // then
+      assert.deepEqual(promoted, {
+        question: { id: "Q1", text: "f", options: [] },
+        tags: ["t", "u"],
+        promoted: { id: "F1", text: "f" },
+      });
     });
   }
 
