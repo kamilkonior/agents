@@ -7009,7 +7009,13 @@ const Xml = (() => {
     }
 
     if (item.kind === "follow-up") {
-      return ['<follow-up state="open">', `  <id>${item.id}</id>`, `  <text>${escapeXml(item.text)}</text>`, "</follow-up>"];
+      return [
+        '<follow-up state="open">',
+        `  <id>${item.id}</id>`,
+        `  <text>${escapeXml(item.text)}</text>`,
+        ...tagsLines(item.tags),
+        "</follow-up>",
+      ];
     }
 
     const children = item.children.flatMap(statusLines).map((line) => `  ${line}`);
@@ -7897,6 +7903,25 @@ const Xml = (() => {
           "\n",
         ),
       );
+    });
+
+    test("status renders an open follow-up's tags right after the text, escaped", () => {
+      // given
+      const items               = [{ kind: "follow-up", state: "open", id: "F1", text: "f", tags: ["a<b", "c"] }];
+
+      // when
+      const xml = status(items);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<status>",
+        '  <follow-up state="open">',
+        "    <id>F1</id>",
+        "    <text>f</text>",
+        "    <tags><tag>a&lt;b</tag><tag>c</tag></tags>",
+        "  </follow-up>",
+        "</status>",
+      ]);
     });
 
     test("status renders deferred items with their state, and a note only when there is one", () => {
