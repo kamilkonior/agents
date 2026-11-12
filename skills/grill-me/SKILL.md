@@ -40,6 +40,8 @@ Each thing the design needs has one source. Mixing the sources up is how an agen
 
 **The need comes before the request.** What the user asked for is one way to meet a need, and a smaller design may meet it better. Find the need first.
 
+**The user names the decisions they can see.** Look for the ones they can't: go through who acts, what the design touches that exists today, and what happens to it over time. Whatever no decision covers yet is a question.
+
 **Limits and failures are decisions too.** The user settles what the design won't do and how it fails, the same as everything else. Don't leave them for later.
 
 **A question changes what gets built.** If the answer could change the design, ask it. If one answer is likely right and cheap to change, propose it as a default. If no answer would change anything, don't raise it.
