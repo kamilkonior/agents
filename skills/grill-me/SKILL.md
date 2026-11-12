@@ -90,9 +90,9 @@ These apply to what you say to the user and to what you write into the record. W
 *Context:* The access token lasts 15 minutes. Nothing renews it. (checked: `src/auth.ts:5`)
 
 *Options:*
-- **a) One working day**: one login each morning; a stolen session stops working the same day
-- **b) One week, restarted by each visit**: almost no logins; a stolen session keeps working for up to a week
-- **c) As today, 15 minutes**: a login several times an hour; a stolen session stops working within minutes
+  **a) One working day**: one login each morning; a stolen session stops working the same day
+  **b) One week, restarted by each visit**: almost no logins; a stolen session keeps working for up to a week
+  **c) As today, 15 minutes**: a login several times an hour; a stolen session stops working within minutes
 
 → **a**, leaning: your users work office hours, so a morning login costs them little. It also limits a stolen session to one day. **b** wins if a login every morning weighs more for you than a session that can be stolen for a week.
 ```
