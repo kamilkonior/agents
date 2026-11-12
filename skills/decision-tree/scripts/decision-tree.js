@@ -94,6 +94,7 @@ const { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync,
                        
                  
                    
+                      
                                                            
                              
                          
@@ -946,7 +947,15 @@ const Graph = (() => {
         children: childItems(graph, option),
       }));
 
-      const item             = { kind: "question", state: "settled", id: question.id, text: question.text, decided, children };
+      const item             = {
+        kind: "question",
+        state: "settled",
+        id: question.id,
+        text: question.text,
+        ...tagsOf(graph, question),
+        decided,
+        children,
+      };
       if (question.rationale !== undefined) item.rationale = question.rationale;
 
       return [item];
@@ -6419,6 +6428,32 @@ const Status = (() => {
           id: "Q1",
           text: "q",
           decided: [{ id: "Q1b", text: "b", children: [] }],
+          children: [],
+        },
+      ]);
+    });
+
+    test("a settled question carries its tags", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "add-option", id: "Q1a", text: "a", origin: "Q1" },
+        { type: "select-option", targets: ["Q1a"] },
+        { type: "tag", target: "Q1", tags: ["t", "u"] },
+      ]);
+
+      // when
+      const items = run(log);
+
+      // then
+      assert.deepEqual(items, [
+        {
+          kind: "question",
+          state: "settled",
+          id: "Q1",
+          text: "q",
+          tags: ["t", "u"],
+          decided: [{ id: "Q1a", text: "a", children: [] }],
           children: [],
         },
       ]);
