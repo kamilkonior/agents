@@ -69,6 +69,7 @@ type TreeEntry =
       state: ItemState;
       id: string;
       text: string;
+      tags?: string[];
       note?: string;
       supersedes?: string;
       supersededBy?: string;
@@ -907,6 +908,12 @@ const Graph = (() => {
     return note === undefined ? {} : { note };
   }
 
+  function tagsOf(graph: Graph, node: QuestionNode): { tags?: string[] } {
+    const tags = [...(graph.tags.get(node.id) ?? [])];
+
+    return tags.length === 0 ? {} : { tags };
+  }
+
   function childItems(graph: Graph, node: QuestionNode | OptionNode | FollowUpNode): StatusItem[] {
     return [
       ...node.children.flatMap((child) => statusItems(graph, child)),
@@ -1037,6 +1044,7 @@ const Graph = (() => {
         state: assignedState(question),
         id: question.id,
         text: question.text,
+        ...tagsOf(graph, question),
         ...noteOf(graph, question),
         ...supersedeLinks(question),
         options,
@@ -2066,6 +2074,24 @@ const Graph = (() => {
 
       // then
       assert.deepEqual(items, [{ kind: "question", state: "open", id: "Q1", text: "q", options: [], children: [] }]);
+    });
+
+    test("the built tree carries a question's tags, and none for a question without them", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "tagged" },
+        { type: "add-question", id: "Q2", text: "untagged" },
+        { type: "tag", target: "Q1", tags: ["t", "u"] },
+      ]);
+
+      // when
+      const items = buildTree(log);
+
+      // then
+      assert.deepEqual(items, [
+        { kind: "question", state: "open", id: "Q1", text: "tagged", tags: ["t", "u"], options: [], children: [] },
+        { kind: "question", state: "open", id: "Q2", text: "untagged", options: [], children: [] },
+      ]);
     });
 
     test("filtering drops an entry whose state was not asked for", () => {
