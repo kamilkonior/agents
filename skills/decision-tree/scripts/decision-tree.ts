@@ -45,7 +45,7 @@ type SelectionData = { question: { id: string; text: string }; options: OptionDa
 type FollowUpData = { id: string; text: string };
 
 type ItemData =
-  | { kind: "question"; question: QuestionData }
+  | { kind: "question"; question: QuestionData; tags?: string[] }
   | { kind: "option"; option: OptionData }
   | { kind: "follow-up"; followUp: FollowUpData };
 
@@ -1297,9 +1297,10 @@ const Graph = (() => {
   function itemData(log: Log, node: QuestionNode | OptionNode | FollowUpNode): ItemData {
     switch (node.kind) {
       case "question": {
-        const options = liveOptions(build(log), node);
+        const graph = build(log);
+        const options = liveOptions(graph, node);
 
-        return { kind: "question", question: { id: node.id, text: node.text, options } };
+        return { kind: "question", question: { id: node.id, text: node.text, options }, ...tagsOf(graph, node) };
       }
 
       case "option":
@@ -3573,6 +3574,27 @@ const Graph = (() => {
           error instanceof DecisionTreeError &&
           error.message === "Q1a is frozen, as its ancestor Q1 was superseded by Q2",
       );
+    });
+
+    test("the item data of a question carries its tags, and none when it has none", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "tagged" },
+        { type: "add-question", id: "Q2", text: "untagged" },
+        { type: "tag", target: "Q1", tags: ["t", "u"] },
+      ]);
+
+      // when
+      const tagged = itemData(log, liveNode(log, "Q1", "target"));
+      const untagged = itemData(log, liveNode(log, "Q2", "target"));
+
+      // then
+      assert.deepEqual(tagged, {
+        kind: "question",
+        question: { id: "Q1", text: "tagged", options: [] },
+        tags: ["t", "u"],
+      });
+      assert.deepEqual(untagged, { kind: "question", question: { id: "Q2", text: "untagged", options: [] } });
     });
   }
 
