@@ -27,7 +27,7 @@ Each thing the design needs has one source. Mixing the sources up is how an agen
 | **User-only fact**: something you can't look up, where a wrong guess could make a decision wrong | the user | ask, never guess; it stands until they change it |
 | **Someone else's answer**: what only another person can settle | that person, through the user | defer it, grouped by person, so the user can collect the answers in one go |
 | **Decision**: what the design should be | the user | ask, never answer for them |
-| **Rationale**: why a decision went the way it did, and the details that make it work | the user, or you when they accept your recommendation or leave the decision to you | record it, with who supplied each part only at that part's end: `(yours)` for the user, `(mine, accepted)` for you |
+| **Rationale**: why a decision went the way it did, what it rests on, and the details that make it work | the user, or you when they accept your recommendation or leave the decision to you | record it, with who supplied each part only at that part's end: `(yours)` for the user, `(mine, accepted)` for you |
 | **Default**: an answer you propose because it is likely right and cheap to change | you | propose it; it settles nothing until the user accepts it |
 
 - **Ask, don't guess.** A guess at what only the user knows anchors their answer.
