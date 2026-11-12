@@ -7079,7 +7079,7 @@ const Xml = (() => {
   function item(data          )         {
     switch (data.kind) {
       case "question":
-        return question(data.question);
+        return question({ ...data.question, tags: data.tags });
       case "option":
         return option(data.option);
       case "follow-up":
@@ -8476,6 +8476,30 @@ const Xml = (() => {
 
       // then
       assert.equal(xml, "<follow-up><id>F1</id><text>f</text></follow-up>");
+    });
+
+    test("a question item renders its tags right after the text, escaped", () => {
+      // given
+      const data           = {
+        kind: "question",
+        question: { id: "Q1", text: "q", options: [{ id: "Q1a", text: "a" }] },
+        tags: ["a<b", "c"],
+      };
+
+      // when
+      const xml = item(data);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<question>",
+        "  <id>Q1</id>",
+        "  <text>q</text>",
+        "  <tags><tag>a&lt;b</tag><tag>c</tag></tags>",
+        "  <options>",
+        "    <option><id>Q1a</id><text>a</text></option>",
+        "  </options>",
+        "</question>",
+      ]);
     });
 
     test("promote renders the new question and the follow-up it came from", () => {
