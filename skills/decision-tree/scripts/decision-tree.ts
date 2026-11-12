@@ -88,7 +88,7 @@ type StatusItem =
   | { kind: "follow-up"; state: "open"; id: string; text: string }
   | { kind: "follow-up"; state: "deferred"; id: string; text: string; note?: string }
   | { kind: "question"; state: "deferred"; id: string; text: string; note?: string }
-  | { kind: "question"; state: "open"; id: string; text: string; options: OptionData[]; children: StatusItem[] }
+  | { kind: "question"; state: "open"; id: string; text: string; tags?: string[]; options: OptionData[]; children: StatusItem[] }
   | {
       kind: "question";
       state: "settled";
@@ -969,6 +969,7 @@ const Graph = (() => {
         state: "open",
         id: question.id,
         text: question.text,
+        ...tagsOf(graph, question),
         options: liveOptions(graph, question),
         children,
       },
@@ -6336,6 +6337,22 @@ const Status = (() => {
       // then
       assert.deepEqual(items, [
         { kind: "question", state: "open", id: "Q1", text: "q", options: [{ id: "Q1a", text: "a" }], children: [] },
+      ]);
+    });
+
+    test("an open question carries its tags", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-question", id: "Q1", text: "q" },
+        { type: "tag", target: "Q1", tags: ["t", "u"] },
+      ]);
+
+      // when
+      const items = run(log);
+
+      // then
+      assert.deepEqual(items, [
+        { kind: "question", state: "open", id: "Q1", text: "q", tags: ["t", "u"], options: [], children: [] },
       ]);
     });
 
