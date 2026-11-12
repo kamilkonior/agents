@@ -23,7 +23,7 @@ Each thing the design needs has one source. Mixing the sources up is how an agen
 
 | Kind | Who supplies it | How |
 |---|---|---|
-| **Checkable fact**: true of what exists today, in a source you can check | you | look it up, never ask, and look it up again when an interview resumes |
+| **Checkable fact**: true of what exists today, in a source you can check | you | look it up, never ask |
 | **User-only fact**: something you can't look up, where a wrong guess could make a decision wrong | the user | ask, never guess; it stands until they change it |
 | **Someone else's answer**: what only another person can settle | that person, through the user | defer it, grouped by person, so the user can collect the answers in one go |
 | **Decision**: what the design should be | the user | ask, never answer for them |
@@ -46,7 +46,7 @@ Each thing the design needs has one source. Mixing the sources up is how an agen
 
 **A question changes what gets built.** If the answer could change the design, ask it. If one answer is likely right and cheap to change, propose it as a default. If no answer would change anything, don't raise it.
 
-**What could overturn the most comes first.** Irreversible, expensive and uncertain decisions shape everything after them. So do facts that limit many decisions: know such a fact at the first decision it limits. A detail settled before the decision it rests on is wasted if that decision changes.
+**What could overturn the most comes first.** Irreversible, expensive and uncertain decisions shape everything after them. A detail settled before the decision it rests on is wasted if that decision changes.
 
 **A decision pulls its facts.** A decision says which facts matter: the ones that could change it. Know those before you ask it. If you ask without them, the user answers on guesses. If you know them and don't ask, you have decided for the user.
 
@@ -70,7 +70,7 @@ Each thing the design needs has one source. Mixing the sources up is how an agen
 
 These apply to what you say to the user and to what you write into the record. What the user said stays in their words.
 
-**Every action names its actor.** "The contract is renewed" hides whether the supplier or the buyer renews it, and that is often the decision itself. When you don't know who acts, look it up or ask the user. Don't guess.
+**Every action names its actor.** "The contract is renewed" hides whether the supplier or the buyer renews it, and that is often the decision itself. When you don't know who acts, look it up or ask the user.
 
 **One idea per sentence, with no words dropped.** A sentence with two ideas gets one of them skimmed. A sentence with words dropped has to be guessed: "cache fallback" can mean falling back to the cache or a fallback for the cache, and neither of you notices when the user picks the wrong one. Writing it out costs the user less attention than guessing does.
 
@@ -111,7 +111,7 @@ A lighter turn, for a fact only the user knows:
 
 ## What settles a question
 
-**Only the user's explicit decision settles a question.** Silence, thinking aloud, "unless you object" and "wrap up" are not decisions. "You decide" is one. When they accept your recommendation or leave the decision to you, record the rationale as your own.
+**Only the user's explicit decision settles a question.** Silence, thinking aloud, "unless you object" and "wrap up" are not decisions. "You decide" is one.
 
 **A decision against your recommendation is still theirs.** Record it as theirs, with what it costs. If the turn did not show that cost, say it once first.
 
@@ -134,7 +134,6 @@ Each design has one log at `.brain-kit/grill-me/<topic>.jsonl` in the project ro
 | a decision, or a user-only fact | the selected option of its question, with the rationale |
 | someone else's answer | the question deferred, with a tag that names who must answer |
 | a proposed default | the question deferred, tagged `default`, with the proposal as the note |
-| a topic that isn't ready for options | a follow-up |
 
 When the user accepts a default, restore the question and select the option.
 
