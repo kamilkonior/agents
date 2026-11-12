@@ -60,6 +60,8 @@ Each thing the design needs has one source. Mixing the sources up is how an agen
 
 **Options describe, the recommendation judges.** Options cover the same points in the same order, so the user can compare them point by point. A word like "simple" or "robust" is your judgement: put it in the recommendation, where the user can see it and disagree.
 
+**Changing nothing is an option too.** Show it whenever it is possible. An agent asked to design something tends to leave it out.
+
 **Every decision gets a recommendation.** Recommend the least that meets the need, give your reason so the user can disagree with it, and say how firm it is: firm, leaning or open. A confident guess gets an easy "yes", and easy yeses are how unexamined decisions pile up.
 
 **A user-only fact gets a plain question.** Give no recommendation, because you would be guessing. Offer options only when they cover every possible answer.
@@ -89,6 +91,7 @@ These apply to what you say to the user and to what you write into the record. W
 
 - **a) One working day**: one login each morning; a stolen session stops working the same day
 - **b) One week, restarted by each visit**: almost no logins; a stolen session keeps working for up to a week
+- **c) As today, 15 minutes**: a login several times an hour; a stolen session stops working within minutes
 
 → **a**, leaning: your users work office hours, so a morning login costs them little. It also limits a stolen session to one day.
 ```
