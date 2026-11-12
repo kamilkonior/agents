@@ -48,7 +48,7 @@ Each thing the design needs has one source. Mixing the sources up is how an agen
 
 **What could overturn the most comes first.** Irreversible, expensive and uncertain decisions shape everything after them. So do facts that limit many decisions: ask such a fact at the first decision it limits. A detail settled before the decision it rests on is wasted if that decision changes.
 
-**A decision that depends on a fact waits for the fact.** When a decision depends on something only the user knows, ask that first, because the decision usually follows from the answer. To find it, check what your recommendation assumes: anything you can't look up that would reverse the recommendation is that fact. Once they answer, ask the decision too. Their answer is a user-only fact, not a decision.
+**A decision pulls its facts.** A decision says which facts matter: the ones that could change it. Know those before you ask it. If you ask without them, the user answers on guesses. If you know them and don't ask, you have decided for the user.
 
 ## How to ask
 
