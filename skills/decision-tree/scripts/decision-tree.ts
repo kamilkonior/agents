@@ -7017,6 +7017,7 @@ const Xml = (() => {
         '<question state="settled">',
         `  <id>${item.id}</id>`,
         `  <text>${escapeXml(item.text)}</text>`,
+        ...tagsLines(item.tags),
         "  <decided>",
         ...item.decided.flatMap(decidedLines).map((line) => `    ${line}`),
         ...(item.rationale === undefined ? [] : [`    <rationale>${escapeXml(item.rationale)}</rationale>`]),
@@ -7841,6 +7842,38 @@ const Xml = (() => {
         "    <decided>",
         "      <option><id>Q1a</id><text>a</text></option>",
         "      <rationale>a &lt; b</rationale>",
+        "    </decided>",
+        "  </question>",
+        "</status>",
+      ]);
+    });
+
+    test("status renders a settled question's tags right after the text, escaped", () => {
+      // given
+      const items: StatusItem[] = [
+        {
+          kind: "question",
+          state: "settled",
+          id: "Q1",
+          text: "q",
+          tags: ["a<b", "c"],
+          decided: [{ id: "Q1a", text: "a", children: [] }],
+          children: [],
+        },
+      ];
+
+      // when
+      const xml = status(items);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<status>",
+        '  <question state="settled">',
+        "    <id>Q1</id>",
+        "    <text>q</text>",
+        "    <tags><tag>a&lt;b</tag><tag>c</tag></tags>",
+        "    <decided>",
+        "      <option><id>Q1a</id><text>a</text></option>",
         "    </decided>",
         "  </question>",
         "</status>",
