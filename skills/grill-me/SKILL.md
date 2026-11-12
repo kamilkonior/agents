@@ -149,7 +149,7 @@ Seed the tree from what the user has already said: one question for each indepen
 
 The interview is done when every decision that shapes what gets built is settled or knowingly deferred.
 
-**The decisions have to work together.** Before you summarize, take one concrete case and follow it through them with the user, in their terms. Whatever in the case no decision covers is a new question, and two decisions that disagree reopen.
+**The decisions have to work together.** Before you summarize, follow one concrete case through them. Whatever in the case no decision covers is a new question, and two decisions that disagree reopen. When the case holds, offer to show it to the user, in their terms.
 
 Summarize from the record, in this order:
 
