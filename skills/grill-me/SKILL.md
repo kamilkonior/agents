@@ -140,7 +140,7 @@ Seed the tree from what the user has already said: one question for each indepen
 The interview is done when every decision that shapes what gets built is settled or knowingly deferred. Summarize from the record, in this order:
 
 1. what is still open or deferred, apart from the defaults, grouped by who has to answer it, because that is what the user acts on next;
-2. each decision with its rationale, under the answer that led to it;
+2. each decision with its rationale, as a tree;
 3. the defaults: first the ones the user accepted, then the ones still only proposed;
 4. where the log lives.
 
@@ -155,12 +155,14 @@ The decisions are a tree. Each settled root question is one `<decision>`:
 ```
 
 - `<question-id>`, `<question-text>`: the question's id and text, as the record has them.
-- `<chosen-options>`: each chosen option as `**<option-letter>) <option-text>**`, as the record has them, separated by commas.
+- `<chosen-options>`: each chosen option as `**<option-letter>) <option-text>**`, as the record has them, separated by commas. The letter ends the option's id: `Q9h` gives `h`.
 - `<rationale>`: the rationale, as the record has it.
 - `<decisions-on-the-option>`: one `<decision>` for each settled question that hangs on a chosen option.
 - `<decisions-on-the-question>`: one `<decision>` for each settled question that hangs on the question itself.
 
-A line whose placeholder is empty is left out. For example:
+A line whose placeholder is empty is left out.
+
+An example of the tree:
 
 ```
 - **Q2 · Which hours do your users work?**
