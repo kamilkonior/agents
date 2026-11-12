@@ -139,7 +139,11 @@ Seed the tree from what the user has already said: one question for each indepen
 
 ## Finishing
 
-The interview is done when every decision that shapes what gets built is settled or knowingly deferred. Summarize from the record, in this order:
+The interview is done when every decision that shapes what gets built is settled or knowingly deferred.
+
+**The decisions have to work together.** Before you summarize, take one concrete case and follow it through them with the user, in their terms. Whatever in the case no decision covers is a new question, and two decisions that disagree reopen.
+
+Summarize from the record, in this order:
 
 1. what is still open or deferred, apart from the defaults, grouped by who has to answer it, because that is what the user acts on next;
 2. each decision with its rationale, as a tree;
