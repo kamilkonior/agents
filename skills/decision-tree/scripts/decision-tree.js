@@ -7031,6 +7031,7 @@ const Xml = (() => {
       '<question state="open">',
       `  <id>${item.id}</id>`,
       `  <text>${escapeXml(item.text)}</text>`,
+      ...tagsLines(item.tags),
       ...optionsLines(item.options),
       ...children,
       "</question>",
@@ -7986,6 +7987,38 @@ const Xml = (() => {
           "</status>",
         ].join("\n"),
       );
+    });
+
+    test("status renders an open question's tags right after the text, escaped", () => {
+      // given
+      const items               = [
+        {
+          kind: "question",
+          state: "open",
+          id: "Q1",
+          text: "q",
+          tags: ["a<b", "c"],
+          options: [{ id: "Q1a", text: "a" }],
+          children: [],
+        },
+      ];
+
+      // when
+      const xml = status(items);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<status>",
+        '  <question state="open">',
+        "    <id>Q1</id>",
+        "    <text>q</text>",
+        "    <tags><tag>a&lt;b</tag><tag>c</tag></tags>",
+        "    <options>",
+        "      <option><id>Q1a</id><text>a</text></option>",
+        "    </options>",
+        "  </question>",
+        "</status>",
+      ]);
     });
 
     test("status renders an answer's child inside the decided option and the question's own after it", () => {
