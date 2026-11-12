@@ -7271,7 +7271,7 @@ const Xml = (() => {
   }
 
   function promote(data             )         {
-    const replacement = question(data.question)
+    const replacement = question({ ...data.question, tags: data.tags })
       .split("\n")
       .map((line) => `  ${line}`);
 
@@ -8550,6 +8550,33 @@ const Xml = (() => {
         "    <options>",
         "      <option><id>Q2a</id><text>x</text></option>",
         "    </options>",
+        "  </question>",
+        "  <promoted>",
+        "    <follow-up><id>F1</id><text>f</text></follow-up>",
+        "  </promoted>",
+        "</promote>",
+      ]);
+    });
+
+    test("promote renders the new question's tags right after its text, and none on the follow-up it came from", () => {
+      // given
+      const data              = {
+        question: { id: "Q2", text: "better", options: [] },
+        tags: ["a<b", "c"],
+        promoted: { id: "F1", text: "f" },
+      };
+
+      // when
+      const xml = promote(data);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<promote>",
+        "  <question>",
+        "    <id>Q2</id>",
+        "    <text>better</text>",
+        "    <tags><tag>a&lt;b</tag><tag>c</tag></tags>",
+        "    <options></options>",
         "  </question>",
         "  <promoted>",
         "    <follow-up><id>F1</id><text>f</text></follow-up>",
