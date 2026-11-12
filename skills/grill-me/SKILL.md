@@ -27,7 +27,7 @@ Each thing the design needs has one source. Mixing the sources up is how an agen
 | **User-only fact**: something you can't look up, where a wrong guess could make a decision wrong | the user | ask, never guess; it stands until they change it |
 | **Someone else's answer**: what only another person can settle | that person, through the user | defer it, grouped by person, so the user can collect the answers in one go |
 | **Decision**: what the design should be | the user | ask, never answer for them |
-| **Rationale**: why a decision went the way it did, and the details that make it work | the user, or you when they accept your recommendation | record whose it is |
+| **Rationale**: why a decision went the way it did, and the details that make it work | the user, or you when they accept your recommendation or leave the decision to you | record it, with who supplied each part only at that part's end: `(yours)` for the user, `(mine, accepted)` for you |
 | **Default**: an answer you propose because it is likely right and cheap to change | you | propose it; it settles nothing until the user accepts it |
 
 - **Ask, don't guess.** A guess at what only the user knows anchors their answer.
@@ -105,7 +105,7 @@ A lighter turn, for a fact only the user knows:
 
 ## What settles a question
 
-**Only the user's explicit decision settles a question.** Silence, thinking aloud, "unless you object" and "wrap up" are not decisions. "You decide" is one. When they accept your recommendation or leave the decision to you, record the rationale as yours.
+**Only the user's explicit decision settles a question.** Silence, thinking aloud, "unless you object" and "wrap up" are not decisions. "You decide" is one. When they accept your recommendation or leave the decision to you, record the rationale as your own.
 
 **An unclear answer settles nothing.** Hedging and "it depends" leave the question open. When two answers contradict each other, point it out.
 
@@ -148,7 +148,7 @@ The decisions are a tree. Each settled root question is one `<decision>`:
 
 ```
 - **<question-id> · <question-text>**
-  - <chosen-options><fact-mark>
+  - <chosen-options>
     - <rationale>
     - <decisions-on-the-option>
   - <decisions-on-the-question>
@@ -156,8 +156,7 @@ The decisions are a tree. Each settled root question is one `<decision>`:
 
 - `<question-id>`, `<question-text>`: the question's id and text, as the record has them.
 - `<chosen-options>`: each chosen option as `**<option-letter>) <option-text>**`, as the record has them, separated by commas.
-- `<fact-mark>`: ` (you told me)` when the answer is a user-only fact, and nothing otherwise.
-- `<rationale>`: the rationale, as the record has it. It calls out the owner, if known, with either `(yours)` or `(mine, accepted)`.
+- `<rationale>`: the rationale, as the record has it.
 - `<decisions-on-the-option>`: one `<decision>` for each settled question that hangs on a chosen option.
 - `<decisions-on-the-question>`: one `<decision>` for each settled question that hangs on the question itself.
 
@@ -165,7 +164,8 @@ A line whose placeholder is empty is left out. For example:
 
 ```
 - **Q2 · Which hours do your users work?**
-  - **a) Office hours only** (you told me)
+  - **a) Office hours only**
+    - nobody is in before eight or after six (yours)
     - **Q3 · How long should a session last before the user must log in again?**
       - **a) One working day**
         - a morning login costs little, and a stolen session stops working the same day (mine, accepted)
