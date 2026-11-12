@@ -85,7 +85,7 @@ type OpenItem =
 
 type StatusItem =
   | { kind: "option"; state: "deferred"; id: string; text: string; note?: string }
-  | { kind: "follow-up"; state: "open"; id: string; text: string }
+  | { kind: "follow-up"; state: "open"; id: string; text: string; tags?: string[] }
   | { kind: "follow-up"; state: "deferred"; id: string; text: string; note?: string }
   | { kind: "question"; state: "deferred"; id: string; text: string; tags?: string[]; note?: string }
   | { kind: "question"; state: "open"; id: string; text: string; tags?: string[]; options: OptionData[]; children: StatusItem[] }
@@ -995,7 +995,7 @@ const Graph = (() => {
 
     if (followUp.state !== "open") throw new Error(`status reached a ${followUp.state} item: ${followUp.id}`);
 
-    return [{ kind: "follow-up", state: "open", id: followUp.id, text: followUp.text }];
+    return [{ kind: "follow-up", state: "open", id: followUp.id, text: followUp.text, ...tagsOf(graph, followUp) }];
   }
 
   function shownInStatus(node: QuestionNode | FollowUpNode): boolean {
@@ -6641,6 +6641,20 @@ const Status = (() => {
 
       // then
       assert.deepEqual(items, [{ kind: "follow-up", state: "open", id: "F1", text: "f" }]);
+    });
+
+    test("an open follow-up carries its tags", () => {
+      // given
+      const log = Log.memoryLog([
+        { type: "add-follow-up", id: "F1", text: "f" },
+        { type: "tag", target: "F1", tags: ["t", "u"] },
+      ]);
+
+      // when
+      const items = run(log);
+
+      // then
+      assert.deepEqual(items, [{ kind: "follow-up", state: "open", id: "F1", text: "f", tags: ["t", "u"] }]);
     });
 
     test("follow-ups sit where they hang, after the questions at their level", () => {
