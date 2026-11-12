@@ -6974,6 +6974,7 @@ const Xml = (() => {
         `<follow-up state="${entry.state}">`,
         `  <id>${entry.id}</id>`,
         `  <text>${escapeXml(entry.text)}</text>`,
+        ...tagsLines(entry.tags),
         ...noteLines(entry.note),
         ...entry.children.flatMap(treeLines).map((line) => `  ${line}`),
         "</follow-up>",
@@ -7483,6 +7484,41 @@ const Xml = (() => {
         "      <option><id>Q2a</id><text>a</text></option>",
         "    </options>",
         "  </question>",
+        "</tree>",
+      ]);
+    });
+
+    test("the built tree renders a follow-up's tags right after the text, escaped", () => {
+      // given
+      const entries              = [
+        {
+          kind: "follow-up",
+          state: "deferred",
+          id: "F1",
+          text: "f",
+          tags: ["a<b", "c"],
+          note: "later",
+          children: [{ kind: "question", state: "deferred", id: "Q1", text: "q", options: [], children: [] }],
+        },
+      ];
+
+      // when
+      const xml = tree(entries);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<tree>",
+        '  <follow-up state="deferred">',
+        "    <id>F1</id>",
+        "    <text>f</text>",
+        "    <tags><tag>a&lt;b</tag><tag>c</tag></tags>",
+        "    <note>later</note>",
+        '    <question state="deferred">',
+        "      <id>Q1</id>",
+        "      <text>q</text>",
+        "      <options></options>",
+        "    </question>",
+        "  </follow-up>",
         "</tree>",
       ]);
     });
