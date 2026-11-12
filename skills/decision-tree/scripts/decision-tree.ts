@@ -7007,13 +7007,14 @@ const Xml = (() => {
     return ["  <options>", ...options.map((each) => `    ${option(each)}`), "  </options>"];
   }
 
-  function question(data: QuestionData & Partial<StateData>): string {
+  function question(data: QuestionData & Partial<StateData> & { tags?: string[] }): string {
     const { attribute, hidden } = stateParts(data);
 
     return [
       `<question${attribute}>`,
       `  <id>${data.id}</id>`,
       `  <text>${escapeXml(data.text)}</text>`,
+      ...tagsLines(data.tags),
       ...optionsLines(data.options),
       ...(hidden === "" ? [] : [`  ${hidden}`]),
       "</question>",
@@ -7053,7 +7054,7 @@ const Xml = (() => {
     const body =
       data.kind === "follow-up"
         ? [`  ${followUp(data.followUp)}`]
-        : question(data.question)
+        : question({ ...data.question, tags: data.tags })
             .split("\n")
             .map((line) => `  ${line}`);
 
@@ -8343,6 +8344,32 @@ const Xml = (() => {
         .split("\n")
         .map((line) => `  ${line}`);
       assert.deepEqual(xml.split("\n"), ["<next>", ...inner, "</next>"]);
+    });
+
+    test("next renders a question's tags right after the text, escaped", () => {
+      // given
+      const data: NextData = {
+        kind: "question",
+        question: { id: "Q1", text: "q", options: [{ id: "Q1a", text: "a" }] },
+        tags: ["a<b", "c"],
+      };
+
+      // when
+      const xml = next(data);
+
+      // then
+      assert.deepEqual(xml.split("\n"), [
+        "<next>",
+        "  <question>",
+        "    <id>Q1</id>",
+        "    <text>q</text>",
+        "    <tags><tag>a&lt;b</tag><tag>c</tag></tags>",
+        "    <options>",
+        "      <option><id>Q1a</id><text>a</text></option>",
+        "    </options>",
+        "  </question>",
+        "</next>",
+      ]);
     });
 
     test("follow-up text is escaped", () => {
