@@ -16,15 +16,17 @@ npx skills add kamilkonior/brain-kit
 
 ## Usage
 
-To make a design that doesn't exist yet, ask your agent:
+To design something together:
 
-> Let's design how we should store events.
+```
+/co-design how we should store events
+```
 
-`co-design` steers the session by twelve goals, such as Framing, Agency, Brainstorming and Convergence. Each is a dial that can fall short or overshoot, not a rule, and each has a list of traits in `skills/co-design/goals/` to check the session against.
+To pressure-test a plan you already have:
 
-To pressure-test a plan you already have, ask:
-
-> Grill me on how we should store events.
+```
+/grill-me how we should store events
+```
 
 Each design you are grilled on gets its own log at `.brain-kit/grill-me/<topic>.jsonl`. To continue one later, ask the agent to pick that session back up.
 
